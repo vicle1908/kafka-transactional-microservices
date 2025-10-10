@@ -9,24 +9,20 @@ permissions:
   pull-requests: write
 
 jobs:
-  versions:
-    uses: ./.github/workflows/central-versions.yml
-
   dependency-review:
-    needs: versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
+        uses: actions/checkout@v4
 
       - name: Set up JDK 25
-        uses: actions/setup-java@${{ needs.versions.outputs.actions_setup_java_version }}
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
 
       - name: Cache Gradle packages
-        uses: actions/cache@${{ needs.versions.outputs.actions_cache_version }}
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -81,7 +77,7 @@ jobs:
 
       # Dependency review action
       - name: Dependency Review
-        uses: actions/dependency-review-action@${{ needs.versions.outputs.actions_dependency_review_action_version }}
+        uses: actions/dependency-review-action@v4
         with:
           config-file: .github/dependency-review-config.yml
           fail-on-severity: high
@@ -91,7 +87,7 @@ jobs:
 
       # Upload dependency reports
       - name: Upload dependency reports
-        uses: actions/upload-artifact@${{ needs.versions.outputs.actions_checkout_version }}
+        uses: actions/upload-artifact@v4
         with:
           name: dependency-reports
           path: |

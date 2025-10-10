@@ -29,10 +29,10 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.kafka.test.condition.EmbeddedKafkaCondition
-import java.util.function.Supplier
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.TestInstance
+import kotlin.system.setProperty
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -45,6 +45,7 @@ import java.util.UUID
     bootstrapServersProperty = "spring.kafka.bootstrap-servers",
 )
 @ActiveProfiles("test")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InventoryReservationListenerTest {
     @Autowired
     private lateinit var kafkaTemplate: KafkaTemplate<String, Any>
@@ -66,14 +67,10 @@ class InventoryReservationListenerTest {
 
     private val json = Json { ignoreUnknownKeys = false }
 
-    companion object {
-        @JvmStatic
-        @DynamicPropertySource
-        fun kafkaProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.kafka.bootstrap-servers", Supplier<Any> {
-                EmbeddedKafkaCondition.getBroker().brokersAsString()
-            })
-        }
+    @BeforeAll
+    fun configureKafkaProperty() {
+        val brokers = EmbeddedKafkaCondition.getBroker().brokersAsString()
+        kotlin.system.setProperty("spring.kafka.bootstrap-servers", brokers)
     }
 
     @BeforeEach

@@ -7,11 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  versions:
-    uses: ./.github/workflows/central-versions.yml
-
   integration-test:
-    needs: versions
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -78,15 +74,15 @@ jobs:
           - schema-registry
       
           steps:
-            - uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
+            - uses: actions/checkout@v4
             - name: Set up JDK 25
-              uses: actions/setup-java@${{ needs.versions.outputs.actions_setup_java_version }}
+              uses: actions/setup-java@v4
               with:
                 distribution: 'temurin'
                 java-version: '25'
                 cache: 'gradle'
             - name: Validate Gradle Wrapper
-              uses: gradle/actions/wrapper-validation@${{ needs.versions.outputs.gradle_actions_wrapper_validation_version }}
+              uses: gradle/actions/wrapper-validation@v3
             - name: Wait for services to be ready
               run: |
                 echo "Waiting for services to be ready..."
@@ -107,7 +103,7 @@ jobs:
                           -Dkafka.bootstrap.servers=localhost:9092
             - name: Upload test results
               if: failure()
-              uses: actions/upload-artifact@${{ needs.versions.outputs.actions_checkout_version }}
+              uses: actions/upload-artifact@v4
               with:
                 name: integration-test-results
                 path: '**/build/reports/**'

@@ -106,7 +106,6 @@ services:
       VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
       INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      OFFSET_STORAGE_FILE_FILENAME: /tmp/connect.offsets
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/"]
       interval: 10s

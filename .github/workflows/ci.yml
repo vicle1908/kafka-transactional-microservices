@@ -7,21 +7,17 @@ on:
     branches: [ main ]
 
 jobs:
-  versions:
-    uses: ./.github/workflows/central-versions.yml
-
   build:
-    needs: versions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
+      - uses: actions/checkout@v4
       - name: Set up JDK 25
-        uses: actions/setup-java@${{ needs.versions.outputs.actions_setup_java_version }}
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
       - name: Cache Gradle
-        uses: actions/cache@${{ needs.versions.outputs.actions_cache_version }}
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -36,9 +32,8 @@ jobs:
         run: ./gradlew --configuration-cache check
 
   docs:
-    needs: versions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
+      - uses: actions/checkout@v4
       - name: Markdown lint
-        uses: DavidAnson/markdownlint-cli2-action@${{ needs.versions.outputs.davidanson_markdownlint_cli2_action_version }}
+        uses: DavidAnson/markdownlint-cli2-action@v15

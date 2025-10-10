@@ -71,6 +71,8 @@ Security & Secrets
 - Do not commit .env files (already git-ignored). Use *.env.example to share non-secret defaults.
 - Staging/Prod secrets are sourced from Vault (see ADR‑0004 and docs/runbooks/vault.md). Local .env is for dev only.
 
+See also: docs/dev/env-reference.md for a complete list of supported environment variables and defaults.
+
 ## Building & Testing
 
 ### Run all checks (includes ktlint, detekt, Jacoco):

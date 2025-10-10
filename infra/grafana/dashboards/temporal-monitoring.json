@@ -1,0 +1,266 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Temporal Workflow Monitoring",
+    "tags": ["temporal", "workflows", "activities", "microservices"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "5s",
+    "schemaVersion": 30,
+    "version": 1,
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Workflow Execution Rates",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "rate(temporal_workflow_completed_count[5m])",
+            "legendFormat": "Completed Workflows",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(temporal_workflow_failed_count[5m])",
+            "legendFormat": "Failed Workflows",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(temporal_workflow_canceled_count[5m])",
+            "legendFormat": "Canceled Workflows",
+            "refId": "C"
+          },
+          {
+            "expr": "rate(temporal_workflow_continue_as_new_count[5m])",
+            "legendFormat": "Continue-as-New Workflows",
+            "refId": "D"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Workflows/sec",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Activity Execution Rates",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "rate(temporal_activity_execution_failed[5m])",
+            "legendFormat": "Failed Activities",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(temporal_activity_execution_succeeded[5m])",
+            "legendFormat": "Successful Activities",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Activities/sec",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Workflow Execution Duration",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, rate(temporal_workflow_endtoend_latency_bucket[5m]))",
+            "legendFormat": "50th Percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(temporal_workflow_endtoend_latency_bucket[5m]))",
+            "legendFormat": "95th Percentile",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(temporal_workflow_endtoend_latency_bucket[5m]))",
+            "legendFormat": "99th Percentile",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Duration (seconds)",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Activity Execution Duration",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, rate(temporal_activity_execution_latency_bucket[5m]))",
+            "legendFormat": "50th Percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(temporal_activity_execution_latency_bucket[5m]))",
+            "legendFormat": "95th Percentile",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(temporal_activity_execution_latency_bucket[5m]))",
+            "legendFormat": "99th Percentile",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Duration (seconds)",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Task Queue Depths",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "temporal_task_queue_pending_tasks",
+            "legendFormat": "{{task_queue}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Pending Tasks",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Worker Utilization",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "temporal_worker_task_slots_used",
+            "legendFormat": "Used Task Slots",
+            "refId": "A"
+          },
+          {
+            "expr": "temporal_worker_task_slots_available",
+            "legendFormat": "Available Task Slots",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Task Slots",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Retry Rates",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "rate(temporal_activity_retry_count[5m])",
+            "legendFormat": "Activity Retries",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(temporal_workflow_retry_count[5m])",
+            "legendFormat": "Workflow Retries",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Retries/sec",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Workflow Failure Reasons",
+        "type": "piechart",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "temporal_workflow_failed_count",
+            "legendFormat": "{{failure_reason}}",
+            "refId": "A"
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "value": "Prometheus"
+          }
+        }
+      ]
+    }
+  }
+}
