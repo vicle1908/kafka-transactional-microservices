@@ -13,7 +13,7 @@
 ## Task Board
 | ID | Task | Owner | Status | Notes |
 |----|------|-------|--------|-------|
-| P5.1 | Integrate OpenTelemetry SDK and propagate context headers | Platform Team | In Progress | Implementing OpenTelemetry tracing across all services |
+| P5.1 | Integrate OpenTelemetry SDK and propagate context headers | Platform Team | Completed | Implemented OpenTelemetry tracing configuration with context propagation across HTTP/Kafka boundaries; verified spans for service interactions. |
 | P5.2 | Configure Micrometer metrics exporters and dashboards | Platform Team | Completed | Implemented in `common-observability` module with Prometheus integration and Kafka client metrics. |
 | P5.3 | Implement retry/DLQ policies and chaos drills | DevOps Team | Completed | GitHub Actions workflow (`chaos-engineering.yml`) implementing broker restart, DB failover, mesh failure, and cache outage drills with monitoring and reporting. Document drill outcomes. |
 | P5.4 | Configure Temporal Micrometer metrics and OTel tracing | Platform Team | Completed | Export metrics to Prometheus and add tracing interceptor to workers. |
