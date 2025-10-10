@@ -11,85 +11,24 @@ permissions:
 jobs:
   dependency-review:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '25'
-
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/libs.versions.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      # Generate dependency report
-      - name: Generate dependencies report
-        run: |
-          echo "# Dependency Report" > dependency-report.txt
-          echo "
-## Compile Classpath" >> dependency-report.txt
-          ./gradlew dependencies --configuration compileClasspath >> dependency-report.txt
-          echo "
-## Runtime Classpath" >> dependency-report.txt
-          ./gradlew dependencies --configuration runtimeClasspath >> dependency-report.txt
-          echo "
-## Common Events" >> dependency-report.txt
-          ./gradlew :common-events:dependencies >> dependency-report.txt
-          echo "
-## Common Kafka" >> dependency-report.txt
-          ./gradlew :common-kafka:dependencies >> dependency-report.txt
-          echo "
-## Common Persistence" >> dependency-report.txt
-          ./gradlew :common-persistence:dependencies >> dependency-report.txt
-          echo "
-## Common Sagas" >> dependency-report.txt
-          ./gradlew :common-sagas:dependencies >> dependency-report.txt
-          echo "
-## Common Events Avro" >> dependency-report.txt
-          ./gradlew :common-events-avro:dependencies >> dependency-report.txt
-          echo "
-## Common Proto" >> dependency-report.txt
-          ./gradlew :common-proto:dependencies >> dependency-report.txt
-          echo "
-## Common Temporal" >> dependency-report.txt
-          ./gradlew :common-temporal:dependencies >> dependency-report.txt
-          echo "
-## Orders Service" >> dependency-report.txt
-          ./gradlew :services:orders-service:dependencies >> dependency-report.txt
-          echo "
-## Payments Service" >> dependency-report.txt
-          ./gradlew :services:payments-service:dependencies >> dependency-report.txt
-          echo "
-## Inventory Service" >> dependency-report.txt
-          ./gradlew :services:inventory-service:dependencies >> dependency-report.txt
-          echo "
-## Notification Service" >> dependency-report.txt
-          ./gradlew :services:notification-service:dependencies >> dependency-report.txt
-
-      # Dependency review action
+      # Lightweight GitHub-native dependency review (no build)
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
         with:
           config-file: .github/dependency-review-config.yml
           fail-on-severity: high
-          deny-licenses: "AGPL-1.0, AGPL-3.0, CC-BY-NC-1.0, CC-BY-NC-2.0, CC-BY-NC-4.0, GPL-1.0, GPL-2.0, GPL-3.0"
-          allow-licenses: "Apache-2.0, MIT, BSD-2-Clause, BSD-3-Clause, ISC, CC-BY-4.0, MPL-2.0"
           deny-identified-vulnerabilities: true
 
-      # Upload dependency reports
-      - name: Upload dependency reports
+      - name: Upload version catalog for context
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: dependency-reports
-          path: |
-            dependency-report.txt
-            gradle/libs.versions.toml
+          name: dependency-version-catalog
+          path: gradle/libs.versions.toml
