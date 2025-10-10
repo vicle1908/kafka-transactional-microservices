@@ -1,0 +1,25 @@
+{
+  "context": {
+    "fileName": "AGENTS.md"
+  },
+  "mcp": {
+    "allowed": ["mcp-router"]
+  },
+  "tools": {
+    "allowed": ["mcp-router*", "WebFetch*", "Shell*"]
+  },
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    }
+  },
+  "ui": {
+    "theme": "Dracula"
+  },
+  "ide": {
+    "enabled": true,
+    "hasSeenNudge": true
+  },
+  "useSmartEdit": true,
+  "useWriteTodos": true
+}

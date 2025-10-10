@@ -1,0 +1,93 @@
+build:
+  maxIssues: 0
+  weights:
+    complexity: 2
+    formatting: 1
+    LongParameterList: 1
+    style: 1
+
+config:
+  validation: true
+  warningsAsErrors: true
+
+processors:
+  active: true
+  exclude:
+    - 'DetektProgressListener'
+
+console-reports:
+  active: true
+  exclude:
+    - 'ProjectStatisticsReport'
+    - 'ComplexityReport'
+    - 'NotificationReport'
+
+output-reports:
+  active: true
+
+comments:
+  CommentOverPrivateFunction:
+    active: false
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false
+
+complexity:
+  ComplexCondition:
+    threshold: 4
+  LargeClass:
+    threshold: 400
+  LongMethod:
+    threshold: 60
+  LongParameterList:
+    functionThreshold: 6
+    constructorThreshold: 8
+  TooManyFunctions:
+    thresholdInClasses: 20
+    ignorePrivate: true
+
+style:
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+    excludePackageStatements: true
+    excludeImportStatements: true
+  MagicNumber:
+    active: true
+    ignoreNumbers: ["0", "1", "-1"]
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+  WildcardImport:
+    active: true
+    excludes: ['java.util.*']
+  DataClassShouldBeImmutable:
+    active: true
+
+formatting:
+  active: true
+  android: false
+  autoCorrect: true
+  Indentation:
+    active: false
+  FinalNewline:
+    active: true
+  NoWildcardImports:
+    active: true
+  ParameterListWrapping:
+    active: true
+
+naming:
+  FunctionNaming:
+    active: true
+    ignoreAnnotated: ['Bean']
+  TopLevelPropertyNaming:
+    active: true
+  ObjectPropertyNaming:
+    active: true
+
+potential-bugs:
+  NullableToStringCall:
+    active: true
+  UnsafeCast:
+    active: true

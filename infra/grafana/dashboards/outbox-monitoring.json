@@ -1,0 +1,268 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Outbox and Transaction Monitoring",
+    "tags": ["kafka", "outbox", "transactions", "eos"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "5s",
+    "schemaVersion": 30,
+    "version": 1,
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Outbox Table Depth",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "outbox_table_depth",
+            "legendFormat": "Pending Messages",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count",
+            "show": true
+          }
+        ],
+        "alert": {
+          "name": "High Outbox Depth Alert",
+          "rules": [
+            {
+              "query": "outbox_table_depth > 1000",
+              "evaluator": {
+                "type": "gt",
+                "params": [1000]
+              },
+              "executionErrorState": "alerting",
+              "for": "5m"
+            }
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "title": "Kafka Consumer Lag",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "kafka_consumer_lag",
+            "legendFormat": "{{topic}} - {{partition}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Lag",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Transaction Commit Rate",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(kafka_transaction_commit_total[5m])",
+            "legendFormat": "Commits/sec",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Rate (per second)",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Relay Performance",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "relay_kafka_commit_latency",
+            "legendFormat": "Commit Latency (ms)",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Latency (ms)",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "End-to-End Latency",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "end_to_end_latency",
+            "legendFormat": "Message Processing Time (ms)",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Latency (ms)",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Debezium Connector Health",
+        "type": "stat",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "debezium_connector_health_status",
+            "legendFormat": "Health Status",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 1
+                },
+                {
+                  "color": "green",
+                  "value": 2
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Polling Relay Metrics",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "outbox_pending_messages",
+            "legendFormat": "Pending Messages",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(outbox_processed_messages_total[5m])",
+            "legendFormat": "Processed Messages Rate",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(outbox_failed_messages_total[5m])",
+            "legendFormat": "Failed Messages Rate",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count / Rate",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Polling Relay Latency",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "relay_kafka_commit_latency",
+            "legendFormat": "Kafka Commit Latency (ms)",
+            "refId": "A"
+          },
+          {
+            "expr": "outbox_end_to_end_latency",
+            "legendFormat": "End-to-End Latency (ms)",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Latency (ms)",
+            "show": true
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "value": "Prometheus"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package payments.v1;
+
+option java_package = "com.example.payments.proto";
+option java_multiple_files = true;
+
+message PaymentDetails {
+  string payment_method = 1;
+  string card_number_last4 = 2;
+  string card_brand = 3;
+  string expiry_month = 4;
+  string expiry_year = 5;
+}
+
+message ProcessPaymentRequest {
+  string request_id = 1;
+  string order_id = 2;
+  string customer_id = 3;
+  double amount = 4;
+  string currency = 5;
+  PaymentDetails payment_details = 6;
+}
+
+message PaymentStatus {
+  string payment_id = 1;
+  string status = 2;
+  string message = 3;
+  string transaction_id = 4;
+}
+
+message ProcessPaymentResponse {
+  string payment_id = 1;
+  string status = 2;
+  string message = 3;
+  string transaction_id = 4;
+}
+
+message GetPaymentRequest {
+  string payment_id = 1;
+}
+
+message GetPaymentResponse {
+  string payment_id = 1;
+  string order_id = 2;
+  string customer_id = 3;
+  double amount = 4;
+  string currency = 5;
+  PaymentDetails payment_details = 6;
+  string status = 7;
+  string transaction_id = 8;
+  int64 processed_at = 9;
+}
+
+service PaymentService {
+  rpc ProcessPayment (ProcessPaymentRequest) returns (ProcessPaymentResponse);
+  rpc GetPayment (GetPaymentRequest) returns (GetPaymentResponse);
+}

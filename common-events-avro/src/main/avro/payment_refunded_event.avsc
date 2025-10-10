@@ -1,0 +1,13 @@
+{
+  "namespace": "com.example.events.avro",
+  "type": "record",
+  "name": "PaymentRefundedEvent",
+  "doc": "Emitted when a payment is refunded as part of saga compensation.",
+  "fields": [
+    { "name": "event_id", "type": { "type": "string", "logicalType": "uuid" } },
+    { "name": "aggregate_id", "type": { "type": "string", "logicalType": "uuid" } },
+    { "name": "occurred_at", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "payload", "type": "string" },
+    { "name": "headers", "type": ["null", { "type": "map", "values": "string" }], "default": null }
+  ]
+}

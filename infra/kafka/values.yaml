@@ -1,0 +1,27 @@
+config:
+  process.roles: "broker,controller"
+  node.id: 1
+  controller.quorum.voters: "1@kafka:9093"
+  listeners: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+  listener.security.protocol.map: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+  controller.listener.names: "CONTROLLER"
+  inter.broker.listener.name: "PLAINTEXT"
+  auto.create.topics.enable: false
+  transaction.state.log.replication.factor: 3
+  transaction.state.log.min.isr: 2
+  offsets.topic.replication.factor: 3
+  min.insync.replicas: 2
+  default.replication.factor: 3
+  log.retention.hours: 168
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "2000m"
+    memory: "4Gi"
+
+persistence:
+  enabled: true
+  size: 20Gi

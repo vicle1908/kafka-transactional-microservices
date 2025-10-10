@@ -1,0 +1,46 @@
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Build outputs
+/build/
+/build-*/
+/target/
+/out/
+*.class
+*.log
+
+# Gradle
+.gradle/
+**/build/
+!src/**/build/
+**/.gradle/
+
+# Node / Frontend
+node_modules/
+package-lock.json
+npm-debug.log
+
+# Docker / Compose
+*.env
+.env.local
+.env.*
+
+# Test / Coverage
+.coverage/
+coverage/
+*.lcov
+
+# Tooling
+/.terraform/
+*.tfstate*
+/kiali-local/
+
+# Redis / Kafka / Istio dumps
+*.rdb
+*.sql
+/tmp/
+
+.kotlin

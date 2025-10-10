@@ -1,0 +1,70 @@
+# Prometheus configuration for Kafka Transactional Microservices
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-1:9092', 'kafka-2:9092', 'kafka-3:9092']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  - job_name: 'schema-registry'
+    static_configs:
+      - targets: ['schema-registry:8081']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  - job_name: 'debezium-connect'
+    static_configs:
+      - targets: ['debezium-connect:8083']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  - job_name: 'orders-service'
+    static_configs:
+      - targets: ['orders-service:8080']
+    metrics_path: /actuator/prometheus
+    scrape_interval: 5s
+
+  - job_name: 'payments-service'
+    static_configs:
+      - targets: ['payments-service:8080']
+    metrics_path: /actuator/prometheus
+    scrape_interval: 5s
+
+  - job_name: 'inventory-service'
+    static_configs:
+      - targets: ['inventory-service:8080']
+    metrics_path: /actuator/prometheus
+    scrape_interval: 5s
+
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:8080']
+    metrics_path: /actuator/prometheus
+    scrape_interval: 5s
+
+  - job_name: 'outbox-monitor'
+    static_configs:
+      - targets: ['postgres:5432']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    params:
+      target: ['postgresql']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - replacement: 'postgres-exporter:9187'
+        target_label: __address__

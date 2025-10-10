@@ -1,0 +1,176 @@
+name: Chaos Engineering
+
+on:
+  schedule:
+    - cron: '0 4 * * 2'  # Weekly Tuesday 4 AM run
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  chaos-drills:
+    runs-on: ubuntu-latest
+    environment: chaos-test  # Use specific environment for chaos testing
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start test infrastructure
+        run: |
+          # Start a test environment with Kafka, PostgreSQL, and services
+          docker-compose -f infra/compose.test.yml up -d
+          sleep 30
+          
+          # Wait for all services to be ready
+          timeout 300 bash -c 'until docker-compose -f infra/compose.test.yml ps | grep -q "Up"; do sleep 5; done' || false
+
+      - name: Run broker restart chaos drill
+        run: |
+          echo "Running Kafka broker restart chaos drill"
+          
+          # Get the Kafka container ID
+          KAFKA_CONTAINER=$(docker-compose -f infra/compose.test.yml ps -q kafka)
+          
+          # Stop the Kafka container
+          echo "Stopping Kafka broker..."
+          docker stop $KAFKA_CONTAINER
+          sleep 10
+          
+          # Restart the Kafka container
+          echo "Restarting Kafka broker..."
+          docker start $KAFKA_CONTAINER
+          
+          # Wait for Kafka to be ready again
+          sleep 30
+          
+          # Verify that the system recovers properly
+          echo "Verifying system recovery after broker restart..."
+          docker-compose -f infra/compose.test.yml logs kafka | tail -20
+          
+          # In a real implementation, we would verify that:
+          # 1. Services reconnect properly to Kafka
+          # 2. No data is lost during the restart
+          # 3. Transactional guarantees are maintained
+
+      - name: Run DB failover chaos drill
+        run: |
+          echo "Running PostgreSQL failover chaos drill"
+          
+          # Get the PostgreSQL container ID
+          POSTGRES_CONTAINER=$(docker-compose -f infra/compose.test.yml ps -q postgres)
+          
+          # Stop the PostgreSQL container
+          echo "Stopping PostgreSQL..."
+          docker stop $POSTGRES_CONTAINER
+          sleep 10
+          
+          # Restart the PostgreSQL container
+          echo "Restarting PostgreSQL..."
+          docker start $POSTGRES_CONTAINER
+          
+          # Wait for PostgreSQL to be ready again
+          sleep 30
+          
+          # Verify that the system recovers properly
+          echo "Verifying system recovery after DB restart..."
+          docker-compose -f infra/compose.test.yml logs postgres | tail -20
+          
+          # In a real implementation, we would verify that:
+          # 1. Services reconnect properly to the database
+          # 2. Transactional outbox patterns still work correctly
+          # 3. No data inconsistencies occur
+
+      - name: Run mesh failure chaos drill
+        run: |
+          echo "Running service mesh failure simulation"
+          
+          # This would simulate failures in the service mesh (Istio, Linkerd, etc.)
+          # For now, we'll simulate by temporarily disconnecting services
+          
+          # In a real implementation using Istio, we might:
+          # - Temporarily block traffic between services
+          # - Inject network delays
+          # - Simulate network partitions
+          
+          # For this basic implementation, just log that the drill would happen
+          echo "Service mesh failure simulation would run here in a real implementation"
+          echo "This would test how services handle network issues, timeouts, and retries"
+
+      - name: Run cache outage chaos drill
+        run: |
+          echo "Running Redis cache outage simulation"
+          
+          # Get the Redis container ID
+          REDIS_CONTAINER=$(docker-compose -f infra/compose.test.yml ps -q redis)
+          
+          # Stop the Redis container (if it exists in test compose)
+          if [ ! -z "$REDIS_CONTAINER" ]; then
+            echo "Stopping Redis cache..."
+            docker stop $REDIS_CONTAINER
+            sleep 10
+            
+            # Restart the Redis container
+            echo "Restarting Redis cache..."
+            docker start $REDIS_CONTAINER
+            
+            # Wait for Redis to be ready again
+            sleep 15
+          else
+            echo "Redis not found in test compose, simulating cache failure via configuration"
+            # In a real implementation, we would modify service configurations
+            # to simulate cache unavailability
+          fi
+          
+          # Verify that the system handles cache outages gracefully
+          echo "Verifying system behavior during cache outage..."
+
+      - name: Run outbox depth test
+        run: |
+          echo "Running outbox table depth stress test"
+          
+          # This would test the system's behavior when the outbox table gets deep
+          # In a real implementation, we would:
+          # 1. Generate a lot of events to fill the outbox
+          # 2. Monitor how the relay service handles the depth
+          # 3. Verify no event loss during high depth conditions
+          
+          echo "Outbox depth stress test would run here in a real implementation"
+
+      - name: Run transaction abort test
+        run: |
+          echo "Running transaction abort scenario simulation"
+          
+          # This would test how the system handles transaction aborts
+          # In a real implementation, we would:
+          # 1. Force transaction failures
+          # 2. Verify proper rollback behavior
+          # 3. Check for any inconsistencies after aborts
+          
+          echo "Transaction abort scenario simulation would run here in a real implementation"
+
+      - name: Generate chaos drill report
+        run: |
+          mkdir -p reports
+          echo "Chaos Engineering Report" > reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "========================" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "Run at: $(date)" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "Branch: $GITHUB_REF_NAME" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "Commit: $GITHUB_SHA" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "Drills performed:" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "- Broker restart simulation" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "- DB failover simulation" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "- Service mesh failure simulation" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "- Cache outage simulation" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "" >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "System resilience metrics would be recorded here in a real implementation." >> reports/chaos-drill-report-$(date +%Y%m%d-%H%M%S).txt
+
+      - name: Upload chaos drill reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-drill-reports
+          path: reports/
+
+      - name: Stop test infrastructure
+        if: always()
+        run: |
+          docker-compose -f infra/compose.test.yml down

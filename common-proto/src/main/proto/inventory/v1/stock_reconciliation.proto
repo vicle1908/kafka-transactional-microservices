@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package inventory.v1;
+
+option java_package = "com.example.inventory.proto";
+option java_multiple_files = true;
+
+message StockAdjustment {
+  string sku = 1;
+  int32 available_quantity = 2;
+  string reason = 3;
+}
+
+message ReconcileStockRequest {
+  string request_id = 1;
+  repeated StockAdjustment adjustments = 2;
+}
+
+message AdjustmentStatus {
+  string sku = 1;
+  bool applied = 2;
+  string message = 3;
+}
+
+message ReconcileStockResponse {
+  repeated AdjustmentStatus statuses = 1;
+}
+
+service StockReconciliationService {
+  rpc ReconcileStock (ReconcileStockRequest) returns (ReconcileStockResponse);
+}

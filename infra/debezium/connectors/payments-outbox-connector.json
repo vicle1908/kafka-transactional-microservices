@@ -1,0 +1,33 @@
+{
+  "name": "payments-outbox-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "app",
+    "database.password": "app",
+    "database.dbname": "payments",
+    "database.server.name": "payments-outbox-server",
+    "table.include.list": "public.outbox",
+    "plugin.name": "pgoutput",
+    "publication.name": "outbox_publication",
+    "publication.autocreate.mode": "filtered",
+    "slot.name": "payments_outbox_slot",
+    "snapshot.mode": "never",
+    "transforms": "outbox",
+    "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+    "transforms.outbox.table.field.event.key": "aggregate_id",
+    "transforms.outbox.table.fields.additional.placement": "id:envelope:eventId,aggregate_id:envelope:aggregateId,aggregate_type:envelope:aggregateType,event_type:envelope:eventType,payload:envelope:payload,headers:envelope:headers",
+    "transforms.outbox.route.topic.replacement": "${routetopic.replacement}",
+    "transforms.outbox.route.by.field": "aggregate_type",
+    "transforms.outbox.operation.routing.enabled": "false",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
+    "internal.key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "internal.value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "internal.key.converter.schemas.enable": "false",
+    "internal.value.converter.schemas.enable": "false"
+  }
+}

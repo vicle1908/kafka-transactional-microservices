@@ -1,0 +1,119 @@
+version: "3.9"
+
+# Docker Compose file for integration testing environment
+# This matches the setup used in GitHub Actions for consistent local and CI testing
+
+services:
+  postgres-test:
+    image: postgres:18
+    container_name: postgres-test
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: test
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka-test:
+    image: apache/kafka:4.1.0
+    container_name: kafka-test
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-test:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      # EOS configuration: Transaction state log replication for exactly-once semantics
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    volumes:
+      - kafka-test-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server 0.0.0.0:9092 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  schema-registry-test:
+    image: confluentinc/cp-schema-registry:7.7.0
+    container_name: schema-registry-test
+    depends_on:
+      kafka-test:
+        condition: service_healthy
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-test
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-test:9092
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  debezium-connect-test:
+    image: debezium/connect:3.3
+    container_name: debezium-connect-test
+    depends_on:
+      kafka-test:
+        condition: service_healthy
+      schema-registry-test:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka-test:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: debezium_config
+      OFFSET_STORAGE_TOPIC: debezium_offsets
+      STATUS_STORAGE_TOPIC: debezium_status
+      KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry-test:8081
+      VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry-test:8081
+      INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      OFFSET_STORAGE_FILE_FILENAME: /tmp/connect.offsets
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: redis-test
+    ports:
+      - "6379:6379"
+
+  akhq-test:
+    image: tchiotludo/akhq:0.24.0
+    container_name: akhq-test
+    depends_on:
+      kafka-test:
+        condition: service_healthy
+      schema-registry-test:
+        condition: service_healthy
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            test:
+              properties:
+                bootstrap.servers: kafka-test:9092
+                schema.registry.url: http://schema-registry-test:8081
+    ports:
+      - "8080:8080"
+
+volumes:
+  kafka-test-data:

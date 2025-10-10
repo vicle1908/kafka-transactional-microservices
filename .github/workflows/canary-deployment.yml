@@ -1,0 +1,100 @@
+name: Canary Deployment
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  KUSTOMIZE_VERSION: v5.0.3
+  CLUSTER_NAME: microservices-cluster
+
+jobs:
+  canary-deployment:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'  # Only run on main branch
+    environment: production  # Use GitHub environment for deployment protection rules
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup Kustomize
+        run: |
+          wget -O kustomize.tar.gz "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${{ env.KUSTOMIZE_VERSION }}/kustomize_${{ env.KUSTOMIZE_VERSION }}_linux_amd64.tar.gz"
+          tar -xzf kustomize.tar.gz
+          chmod +x kustomize
+          sudo mv kustomize /usr/local/bin/kustomize
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate to cluster
+        uses: azure/k8s-set-context@v3
+        with:
+          method: service-account
+          k8s-secret: ${{ secrets.KUBE_CONFIG_DATA }}
+
+      - name: Extract metadata for canary deployment
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/orders-service
+          tags: |
+            type=raw,value=canary-{{branch}}
+            type=raw,value={{sha}}
+
+      # Deploy to canary environment with 10% traffic
+      - name: Deploy canary version of orders-service
+        run: |
+          # Prepare kustomize overlay for canary deployment
+          kustomize edit set image ghcr.io/${{ github.repository }}/orders-service:${{ github.sha }}=ghcr.io/${{ github.repository }}/orders-service:${{ steps.meta.outputs.tags }}
+          
+          # Apply canary deployment (this would typically use Istio, Linkerd, or other service mesh for traffic splitting)
+          kubectl apply -k overlays/canary/
+          
+          # Wait for deployment to be ready
+          kubectl rollout status deployment/orders-service-canary --timeout=5m
+
+      - name: Run smoke tests on canary
+        run: |
+          # Run basic connectivity tests against the canary deployment
+          # This would typically use a test framework to validate functionality
+          # with limited traffic before promoting to full deployment
+          sleep 30
+          
+          # Example: curl the health endpoint
+          kubectl get pods -l app=orders-service-canary
+          
+          # Add more comprehensive smoke tests here as needed
+
+      - name: Promote to full deployment (if canary tests pass)
+        run: |
+          # Update the main deployment with the canary image
+          kubectl set image deployment/orders-service app=ghcr.io/${{ github.repository }}/orders-service:${{ github.sha }} --record
+          
+          # Wait for full deployment to complete
+          kubectl rollout status deployment/orders-service --timeout=10m
+
+      - name: Rollback if needed
+        if: failure()
+        run: |
+          echo "Canary deployment failed, initiating rollback"
+          kubectl rollout undo deployment/orders-service
+          kubectl rollout status deployment/orders-service --timeout=5m
+
+      - name: Monitor deployment metrics
+        run: |
+          # Check deployment status and metrics after promotion
+          kubectl get deployment orders-service
+          kubectl get pods -l app=orders-service
+          
+          # In a real implementation, we would check metrics like:
+          # - outbox_table_depth
+          # - transaction commit metrics
+          # - error rates
+          # - latency

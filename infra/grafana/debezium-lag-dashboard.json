@@ -1,0 +1,74 @@
+{
+  "title": "Debezium Lag Overview",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeSeries",
+      "title": "Connector Task Lag (seconds)",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 60 },
+              { "color": "red", "value": 120 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "debezium_task_lag_seconds{connector=~\"$connector\"}",
+          "legendFormat": "{{task}}"
+        }
+      ],
+      "datasource": "$datasource"
+    },
+    {
+      "type": "stat",
+      "title": "Last Event Age",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 300 },
+              { "color": "red", "value": 600 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "time() - debezium_last_event_timestamp_seconds{connector=~\"$connector\"}",
+          "legendFormat": "Age"
+        }
+      ],
+      "datasource": "$datasource"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus"
+      },
+      {
+        "name": "connector",
+        "type": "query",
+        "datasource": "$datasource",
+        "query": "label_values(debezium_task_lag_seconds, connector)"
+      }
+    ]
+  }
+}

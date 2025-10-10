@@ -1,0 +1,164 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>AnnotationSpacing:OrderServiceTest.kt$OrderServiceTest$@AfterEach</ID>
+    <ID>AnnotationSpacing:OrderServiceTest.kt$OrderServiceTest$@BeforeEach</ID>
+    <ID>AnnotationSpacing:OrderServiceTest.kt$OrderServiceTest$@ExtendWith(MockitoExtension::class)</ID>
+    <ID>AnnotationSpacing:OrderServiceTest.kt$OrderServiceTest$@InjectMocks private lateinit</ID>
+    <ID>AnnotationSpacing:OrderServiceTest.kt$OrderServiceTest$@Mock private lateinit</ID>
+    <ID>AnnotationSpacing:OrderServiceTest.kt$OrderServiceTest$@Test</ID>
+    <ID>ArgumentListWrapping:OrderServiceTest.kt$OrderServiceTest$(any())</ID>
+    <ID>ArgumentListWrapping:OrderServiceTest.kt$OrderServiceTest$(com.example.orders.domain.OrderEntity(id = UUID.randomUUID(), customerId = "customer-123"))</ID>
+    <ID>ArgumentListWrapping:OrderServiceTest.kt$OrderServiceTest$(com.example.temporal.activity.PaymentActivity::class.java, com.example.temporal.activity.InventoryActivity::class.java, com.example.temporal.activity.RefundPaymentActivity::class.java)</ID>
+    <ID>ArgumentListWrapping:OrderServiceTest.kt$OrderServiceTest$(id = UUID.randomUUID(), customerId = "customer-123")</ID>
+    <ID>ArgumentListWrapping:OrderServiceTest.kt$OrderServiceTest$(orderRepository.save(any()))</ID>
+    <ID>FinalNewline:Order.kt$com.example.orders.domain.Order.kt</ID>
+    <ID>FinalNewline:OrderController.kt$com.example.orders.controller.OrderController.kt</ID>
+    <ID>FinalNewline:OrderEventListener.kt$com.example.payments.client.OrderEventListener.kt</ID>
+    <ID>FinalNewline:OrderRepository.kt$com.example.orders.repository.OrderRepository.kt</ID>
+    <ID>FinalNewline:OrderService.kt$com.example.orders.service.OrderService.kt</ID>
+    <ID>FinalNewline:OrderServiceConfiguration.kt$com.example.orders.config.OrderServiceConfiguration.kt</ID>
+    <ID>FinalNewline:OrderServiceTest.kt$com.example.orders.service.OrderServiceTest.kt</ID>
+    <ID>FinalNewline:OrdersServiceApplication.kt$com.example.orders.OrdersServiceApplication.kt</ID>
+    <ID>FinalNewline:Payment.kt$com.example.payments.domain.Payment.kt</ID>
+    <ID>FinalNewline:PaymentRepository.kt$com.example.payments.repository.PaymentRepository.kt</ID>
+    <ID>FinalNewline:PaymentService.kt$com.example.payments.service.PaymentService.kt</ID>
+    <ID>FinalNewline:PaymentsServiceApplication.kt$com.example.payments.PaymentsServiceApplication.kt</ID>
+    <ID>FinalNewline:build.gradle.kts$.build.gradle.kts</ID>
+    <ID>FinalNewline:schema-check.gradle.kts$.schema-check.gradle.kts</ID>
+    <ID>FinalNewline:version-check.gradle.kts$.version-check.gradle.kts</ID>
+    <ID>FunctionOnlyReturningConstant:OutboxRelayService.kt$OutboxRelayService$private fun extractKey(message: OutboxMessage): String?</ID>
+    <ID>ImportOrdering:OrderEventListener.kt$import com.example.outbox.entity.OutboxMessage import com.example.outbox.repository.OutboxRepository import com.example.payments.domain.Payment import com.example.payments.domain.PaymentStatus import com.example.payments.repository.PaymentRepository import com.example.payments.service.ProcessPaymentRequest import com.example.payments.service.PaymentService import org.slf4j.LoggerFactory import org.springframework.kafka.annotation.KafkaListener import org.springframework.kafka.support.KafkaHeaders import org.springframework.messaging.handler.annotation.Header import org.springframework.messaging.handler.annotation.Payload import org.springframework.stereotype.Component import org.springframework.transaction.annotation.Transactional import java.math.BigDecimal import java.time.Instant import java.util.*</ID>
+    <ID>ImportOrdering:OrderServiceTest.kt$import com.example.orders.domain.OrderRepository import com.example.persistence.outbox.OutboxRepository import com.example.saga.SagaMetricsRecorder import com.example.saga.SagaStateService import com.example.temporal.OrderFulfillmentWorkflow import io.temporal.client.WorkflowClient import io.temporal.client.WorkflowStub import io.temporal.testing.TestWorkflowEnvironment import io.temporal.worker.Worker import org.junit.jupiter.api.AfterEach import org.junit.jupiter.api.BeforeEach import org.junit.jupiter.api.Test import org.junit.jupiter.api.extension.ExtendWith import org.mockito.InjectMocks import org.mockito.Mock import org.mockito.junit.jupiter.MockitoExtension import org.mockito.kotlin.any import org.mockito.kotlin.doThrow import org.mockito.kotlin.verify import org.mockito.kotlin.whenever import java.util.UUID</ID>
+    <ID>ImportOrdering:PaymentServiceTest.kt$import com.example.payments.PaymentsServiceApplication import com.example.payments.application.PaymentProcessingOutcome import com.example.payments.application.port.out.RefundRequest import com.example.payments.domain.PaymentRepository import com.example.payments.domain.PaymentStatus import com.example.payments.domain.ProcessedEventRepository import com.example.payments.domain.RefundRepository import com.example.payments.domain.RefundStatus import com.example.payments.application.port.out.RefundGateway import com.example.payments.application.port.out.RefundResult import com.example.persistence.outbox.OutboxRepository import com.example.saga.InvalidSagaStateTransitionException import com.example.saga.SagaNames import com.example.saga.SagaStateRepository import com.example.saga.SagaStateService import com.example.saga.SagaStatus import com.example.saga.SagaStepFormatter import com.example.saga.SagaStepNames import io.micrometer.core.instrument.MeterRegistry import io.micrometer.core.instrument.Tag import kotlinx.serialization.json.Json import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import org.assertj.core.api.Assertions.assertThat import org.assertj.core.api.Assertions.assertThatThrownBy import org.junit.jupiter.api.BeforeEach import org.junit.jupiter.api.Test import org.springframework.beans.factory.annotation.Autowired import org.springframework.boot.test.context.SpringBootTest import org.springframework.boot.test.mock.mockito.MockBean import org.springframework.test.annotation.DirtiesContext import org.springframework.test.context.ActiveProfiles import org.springframework.transaction.annotation.Transactional import java.math.BigDecimal import java.time.Instant import java.util.UUID import org.mockito.ArgumentMatchers.any import org.mockito.BDDMockito.given</ID>
+    <ID>InvalidPackageDeclaration:OrderFulfillmentWorkflow.kt$package com.example.temporalpilot.workflow</ID>
+    <ID>LongMethod:InventoryReservationListenerTest.kt$InventoryReservationListenerTest$@Test fun `listener should reserve inventory once per payment event`()</ID>
+    <ID>LongMethod:InventoryService.kt$InventoryService$fun reserveInventory(reserveInventoryRequest: ReserveInventoryRequest): ReservationResult</ID>
+    <ID>LongMethod:NotificationListenerTest.kt$NotificationListenerTest$@Test fun `listener should send notification once per reservation`()</ID>
+    <ID>LongMethod:NotificationService.kt$NotificationService$@Transactional(noRollbackFor = [NotificationDispatchException::class]) fun send(command: SendNotificationCommand): UUID</ID>
+    <ID>LongMethod:PaymentService.kt$PaymentService$private fun initiateRefund( orderId: UUID, reason: String?, occurredAt: Instant, )</ID>
+    <ID>LongParameterList:Notification.kt$Notification$( @Column(name = "recipient_email", nullable = false) val recipientEmail: String, @Column(name = "recipient_phone") val recipientPhone: String? = null, @Column(name = "subject", nullable = false) val subject: String, @Column(name = "content", nullable = false, columnDefinition = "TEXT") val content: String, @Enumerated(EnumType.STRING) @Column(name = "channel", nullable = false) val channel: NotificationChannel, @Enumerated(EnumType.STRING) @Column(name = "status", nullable = false) var status: NotificationStatus = NotificationStatus.PENDING, @Column(name = "external_notification_id") var externalNotificationId: String? = null, @Column(name = "sent_at") var sentAt: Instant? = null, @Column(name = "delivery_attempts", nullable = false) var deliveryAttempts: Int = 0, @Column(name = "last_attempt_at") var lastAttemptAt: Instant? = null, @Column(name = "created_at", nullable = false) val createdAt: Instant = Instant.now(), @Column(name = "updated_at", nullable = false) var updatedAt: Instant = Instant.now(), )</ID>
+    <ID>LongParameterList:OutboxMessage.kt$OutboxMessage$( @Column(name = "aggregate_id", nullable = false) val aggregateId: String, @Column(name = "aggregate_type", nullable = false) val aggregateType: String, @Column(name = "event_type", nullable = false) val eventType: String, @Column(name = "payload", nullable = false, columnDefinition = "TEXT") val payload: String, @Column(name = "headers", columnDefinition = "TEXT") val headers: String? = null, @Column(name = "status", nullable = false) var status: OutboxStatus = OutboxStatus.PENDING, @Column(name = "occurred_at", nullable = false) val occurredAt: Instant = Instant.now(), @Column(name = "published_at") var publishedAt: Instant? = null, )</ID>
+    <ID>LongParameterList:Payment.kt$Payment$( @Column(name = "order_id", nullable = false) val orderId: String, @Column(name = "customer_id", nullable = false) val customerId: String, @Column(name = "amount", nullable = false) val amount: BigDecimal, @Column(name = "currency", nullable = false) val currency: String = "USD", @Column(name = "payment_method", nullable = false) val paymentMethod: String, @Enumerated(EnumType.STRING) @Column(name = "status", nullable = false) var status: PaymentStatus = PaymentStatus.PENDING, @Column(name = "external_payment_id") var externalPaymentId: String? = null, @Column(name = "processed_at") var processedAt: Instant? = null, @Column(name = "created_at", nullable = false) val createdAt: Instant = Instant.now(), @Column(name = "updated_at", nullable = false) var updatedAt: Instant = Instant.now() )</ID>
+    <ID>LongParameterList:PaymentService.kt$PaymentService$( private val paymentRepository: PaymentRepository, private val outboxRepository: OutboxRepository, private val sagaStateService: SagaStateService, private val sagaMetrics: SagaMetricsRecorder, private val processedEventRepository: ProcessedEventRepository, private val refundRepository: RefundRepository, private val refundGateway: RefundGateway, private val paymentGateway: PaymentGateway, )</ID>
+    <ID>MagicNumber:InventoryGrpcConfig.kt$InventoryGrpcProperties$5</ID>
+    <ID>MagicNumber:NotificationService.kt$NotificationService$100</ID>
+    <ID>MagicNumber:OrderController.kt$OrderController$100</ID>
+    <ID>MagicNumber:PaymentGatewayConfig.kt$PaymentGatewayProperties.Http$2</ID>
+    <ID>MagicNumber:PaymentGatewayConfig.kt$PaymentGatewayProperties.Http$5</ID>
+    <ID>MagicNumber:PaymentGatewayConfig.kt$RefundGatewayProperties.Http$2</ID>
+    <ID>MagicNumber:PaymentGatewayConfig.kt$RefundGatewayProperties.Http$5</ID>
+    <ID>MaxLineLength:InventoryItem.kt$InventoryItem$"Cannot deduct more than reserved quantity for product $productId. Reserved: $reservedQuantity, Requested: $quantity"</ID>
+    <ID>MaxLineLength:InventoryItem.kt$InventoryItem$"Cannot release more than reserved quantity for product $productId. Reserved: $reservedQuantity, Requested: $quantity"</ID>
+    <ID>MaxLineLength:NotificationService.kt$NotificationService$"Completed retry of failed notifications. Processed ${failedNotifications.numberOfElements} notifications"</ID>
+    <ID>MaxLineLength:OrderServiceTest.kt$OrderServiceTest$val activities = mock(com.example.temporal.activity.PaymentActivity::class.java, com.example.temporal.activity.InventoryActivity::class.java, com.example.temporal.activity.RefundPaymentActivity::class.java)</ID>
+    <ID>MaxLineLength:OrderServiceTest.kt$OrderServiceTest$whenever(orderRepository.save(any())).thenReturn(com.example.orders.domain.OrderEntity(id = UUID.randomUUID(), customerId = "customer-123"))</ID>
+    <ID>MaximumLineLength:InventoryItem.kt$InventoryItem$ </ID>
+    <ID>MaximumLineLength:NotificationService.kt$NotificationService$ </ID>
+    <ID>MaximumLineLength:OrderServiceTest.kt$OrderServiceTest$ </ID>
+    <ID>ModifierListSpacing:OrderServiceTest.kt$OrderServiceTest$@AfterEach</ID>
+    <ID>ModifierListSpacing:OrderServiceTest.kt$OrderServiceTest$@BeforeEach</ID>
+    <ID>ModifierListSpacing:OrderServiceTest.kt$OrderServiceTest$@ExtendWith(MockitoExtension::class)</ID>
+    <ID>ModifierListSpacing:OrderServiceTest.kt$OrderServiceTest$@InjectMocks private lateinit</ID>
+    <ID>ModifierListSpacing:OrderServiceTest.kt$OrderServiceTest$@Mock private lateinit</ID>
+    <ID>ModifierListSpacing:OrderServiceTest.kt$OrderServiceTest$@Test</ID>
+    <ID>NestedBlockDepth:HttpPaymentGateway.kt$HttpPaymentGateway$override fun charge(request: PaymentChargeRequest): PaymentChargeResult</ID>
+    <ID>NestedBlockDepth:NotificationService.kt$NotificationService$@Scheduled(fixedDelayString = "\${notification.retry.delay:300000}") // Default 5 minutes fun retryFailedNotifications()</ID>
+    <ID>NewLineAtEndOfFile:Order.kt$com.example.orders.domain.Order.kt</ID>
+    <ID>NewLineAtEndOfFile:OrderController.kt$com.example.orders.controller.OrderController.kt</ID>
+    <ID>NewLineAtEndOfFile:OrderEventListener.kt$com.example.payments.client.OrderEventListener.kt</ID>
+    <ID>NewLineAtEndOfFile:OrderRepository.kt$com.example.orders.repository.OrderRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:OrderService.kt$com.example.orders.service.OrderService.kt</ID>
+    <ID>NewLineAtEndOfFile:OrderServiceConfiguration.kt$com.example.orders.config.OrderServiceConfiguration.kt</ID>
+    <ID>NewLineAtEndOfFile:OrderServiceTest.kt$com.example.orders.service.OrderServiceTest.kt</ID>
+    <ID>NewLineAtEndOfFile:OrdersServiceApplication.kt$com.example.orders.OrdersServiceApplication.kt</ID>
+    <ID>NewLineAtEndOfFile:Payment.kt$com.example.payments.domain.Payment.kt</ID>
+    <ID>NewLineAtEndOfFile:PaymentRepository.kt$com.example.payments.repository.PaymentRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:PaymentService.kt$com.example.payments.service.PaymentService.kt</ID>
+    <ID>NewLineAtEndOfFile:PaymentsServiceApplication.kt$com.example.payments.PaymentsServiceApplication.kt</ID>
+    <ID>NewLineAtEndOfFile:build.gradle.kts$.build.gradle.kts</ID>
+    <ID>NewLineAtEndOfFile:schema-check.gradle.kts$.schema-check.gradle.kts</ID>
+    <ID>NewLineAtEndOfFile:version-check.gradle.kts$.version-check.gradle.kts</ID>
+    <ID>NoBlankLineBeforeRbrace:OrderEventListener.kt$OrderEventListener$ </ID>
+    <ID>NoBlankLineBeforeRbrace:OrderServiceTest.kt$OrderServiceTest$ </ID>
+    <ID>NoConsecutiveBlankLines:OrderServiceTest.kt$ </ID>
+    <ID>NoConsecutiveBlankLines:OrderServiceTest.kt$OrderServiceTest$ </ID>
+    <ID>NoEmptyFirstLineInMethodBlock:OrderServiceTest.kt$OrderServiceTest$ </ID>
+    <ID>NoTrailingSpaces:Order.kt$Order$ </ID>
+    <ID>NoTrailingSpaces:Order.kt$OrderItem$ </ID>
+    <ID>NoTrailingSpaces:OrderController.kt$CreateOrderItemDto$ </ID>
+    <ID>NoTrailingSpaces:OrderController.kt$CreateOrderRequestDto$ </ID>
+    <ID>NoTrailingSpaces:OrderController.kt$OrderController$ </ID>
+    <ID>NoTrailingSpaces:OrderEventListener.kt$OrderEventListener$ </ID>
+    <ID>NoTrailingSpaces:OrderRepository.kt$OrderRepository$ </ID>
+    <ID>NoTrailingSpaces:OrderService.kt$OrderService$ </ID>
+    <ID>NoTrailingSpaces:OrderServiceConfiguration.kt$OrderServiceConfiguration$ </ID>
+    <ID>NoTrailingSpaces:OrderServiceTest.kt$OrderServiceTest$ </ID>
+    <ID>NoTrailingSpaces:Payment.kt$Payment$ </ID>
+    <ID>NoTrailingSpaces:PaymentRepository.kt$PaymentRepository$ </ID>
+    <ID>NoTrailingSpaces:PaymentService.kt$PaymentService$ </ID>
+    <ID>NoTrailingSpaces:build.gradle.kts$ </ID>
+    <ID>NoTrailingSpaces:schema-check.gradle.kts$ </ID>
+    <ID>NoTrailingSpaces:version-check.gradle.kts$ </ID>
+    <ID>NoUnusedImports:HttpRefundGateway.kt$com.example.payments.adapter.outbound.gateway.HttpRefundGateway.kt</ID>
+    <ID>NoUnusedImports:OrderController.kt$com.example.orders.controller.OrderController.kt</ID>
+    <ID>NoUnusedImports:OrderEventListener.kt$com.example.payments.client.OrderEventListener.kt</ID>
+    <ID>NoUnusedImports:OrderService.kt$com.example.orders.service.OrderService.kt</ID>
+    <ID>NoUnusedImports:OrderServiceConfiguration.kt$com.example.orders.config.OrderServiceConfiguration.kt</ID>
+    <ID>NoUnusedImports:OutboxRelayConfiguration.kt$com.example.outbox.config.OutboxRelayConfiguration.kt</ID>
+    <ID>NoUnusedImports:PaymentService.kt$com.example.payments.application.PaymentService.kt</ID>
+    <ID>NoUnusedImports:PaymentServiceTest.kt$com.example.payments.application.PaymentServiceTest.kt</ID>
+    <ID>NoUnusedImports:TemporalPilotApplication.kt$com.example.temporalpilot.TemporalPilotApplication.kt</ID>
+    <ID>NoWildcardImports:Order.kt$import jakarta.persistence.*</ID>
+    <ID>NoWildcardImports:OrderController.kt$import org.springframework.web.bind.annotation.*</ID>
+    <ID>NoWildcardImports:Payment.kt$import jakarta.persistence.*</ID>
+    <ID>PropertyWrapping:OrderServiceTest.kt$OrderServiceTest$val activities = mock(com.example.temporal.activity.PaymentActivity::class.java, com.example.temporal.activity.InventoryActivity::class.java, com.example.temporal.activity.RefundPaymentActivity::class.java)</ID>
+    <ID>ReturnCount:HttpPaymentGateway.kt$HttpPaymentGateway$override fun charge(request: PaymentChargeRequest): PaymentChargeResult</ID>
+    <ID>ReturnCount:HttpRefundGateway.kt$HttpRefundGateway$override fun refund(request: RefundRequest): RefundResult</ID>
+    <ID>ReturnCount:InMemoryPaymentGateway.kt$InMemoryPaymentGateway$override fun charge(request: PaymentChargeRequest): PaymentChargeResult</ID>
+    <ID>ReturnCount:InventoryService.kt$InventoryService$fun reserveInventory(reserveInventoryRequest: ReserveInventoryRequest): ReservationResult</ID>
+    <ID>ReturnCount:OrderService.kt$OrderService$fun cancelOrder(orderId: UUID): Order?</ID>
+    <ID>ReturnCount:PaymentService.kt$PaymentService$@Transactional fun handle(command: ProcessPaymentCommand): PaymentProcessingOutcome</ID>
+    <ID>ReturnCount:PaymentService.kt$PaymentService$fun cancelPayment(paymentId: UUID): Payment?</ID>
+    <ID>ReturnCount:PaymentService.kt$PaymentService$private fun initiateRefund( orderId: UUID, reason: String?, occurredAt: Instant, )</ID>
+    <ID>SpreadOperator:InventoryServiceApplication.kt$(*args)</ID>
+    <ID>SpreadOperator:NotificationServiceApplication.kt$(*args)</ID>
+    <ID>SpreadOperator:OrdersServiceApplication.kt$(*args)</ID>
+    <ID>SpreadOperator:PaymentsServiceApplication.kt$(*args)</ID>
+    <ID>SpreadOperator:TemporalPilotApplication.kt$(*args)</ID>
+    <ID>SwallowedException:OrderServiceTest.kt$OrderServiceTest$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:HttpPaymentGateway.kt$HttpPaymentGateway$ex: Exception</ID>
+    <ID>TooGenericExceptionCaught:HttpRefundGateway.kt$HttpRefundGateway$ex: Exception</ID>
+    <ID>TooGenericExceptionCaught:InventoryService.kt$InventoryService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:NotificationService.kt$NotificationService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:OrderEventListener.kt$OrderEventListener$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:OrderFulfillmentWorkflowImpl.kt$OrderFulfillmentWorkflowImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:OutboxRelayService.kt$OutboxRelayService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ScheduledOutboxProcessor.kt$ScheduledOutboxProcessor$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:StockReconciliationGrpcService.kt$StockReconciliationGrpcService$ex: Exception</ID>
+    <ID>UnusedParameter:NotificationService.kt$NotificationService$notification: Notification</ID>
+    <ID>UnusedParameter:OrderEventListener.kt$OrderEventListener$@Header(KafkaHeaders.RECEIVED_KEY) key: String?</ID>
+    <ID>UnusedParameter:OrderEventListener.kt$OrderEventListener$@Header(KafkaHeaders.RECEIVED_KEY) messageKey: String?</ID>
+    <ID>UnusedParameter:OrderEventListener.kt$OrderEventListener$@Header(KafkaHeaders.RECEIVED_TIMESTAMP) timestamp: Long</ID>
+    <ID>UnusedParameter:OutboxRelayService.kt$OutboxRelayService$message: OutboxMessage</ID>
+    <ID>UnusedPrivateProperty:InventoryService.kt$InventoryService$val updatedItem = inventoryRepository.save(inventoryItem)</ID>
+    <ID>UnusedPrivateProperty:OrderEventListener.kt$OrderEventListener$private val outboxRepository: OutboxRepository</ID>
+    <ID>UnusedPrivateProperty:OrderServiceTest.kt$OrderServiceTest$@Mock private lateinit var outboxRepository: OutboxRepository</ID>
+    <ID>UnusedPrivateProperty:OrderServiceTest.kt$OrderServiceTest$@Mock private lateinit var sagaMetrics: SagaMetricsRecorder</ID>
+    <ID>UnusedPrivateProperty:OrderServiceTest.kt$OrderServiceTest$@Mock private lateinit var sagaStateService: SagaStateService</ID>
+    <ID>UnusedPrivateProperty:OrderServiceTest.kt$OrderServiceTest$@MockK private lateinit var sagaService: SagaService</ID>
+    <ID>UnusedPrivateProperty:OutboxRelayService.kt$OutboxRelayService$private val kafkaTransactionManager: KafkaTransactionManager&lt;String, Any&gt;</ID>
+    <ID>UnusedPrivateProperty:OutboxRelayService.kt$OutboxRelayService$private val transactionTemplate: TransactionTemplate</ID>
+    <ID>UseCheckOrError:InventoryService.kt$InventoryService$throw IllegalStateException("Stock not configured for sku=${command.sku}")</ID>
+    <ID>UseCheckOrError:InventoryService.kt$InventoryService$throw IllegalStateException("Stock not configured for sku=${reservation.sku}")</ID>
+    <ID>UseCheckOrError:InventoryStockEntity.kt$InventoryStockEntity$throw IllegalStateException("Insufficient stock for sku=$sku")</ID>
+    <ID>UseCheckOrError:PaymentService.kt$PaymentService$throw IllegalStateException("Payment id should be available after save")</ID>
+    <ID>UseCheckOrError:PaymentService.kt$PaymentService$throw IllegalStateException("refund id missing")</ID>
+    <ID>UseCheckOrError:StockReconciliationGrpcServiceTest.kt$StockReconciliationGrpcServiceTest.RecordingReconciliationUseCase$throw IllegalStateException("simulated failure")</ID>
+    <ID>WildcardImport:Order.kt$import jakarta.persistence.*</ID>
+    <ID>WildcardImport:OrderController.kt$import org.springframework.web.bind.annotation.*</ID>
+    <ID>WildcardImport:Payment.kt$import jakarta.persistence.*</ID>
+    <ID>Wrapping:OrderServiceTest.kt$OrderServiceTest$(</ID>
+  </CurrentIssues>
+</SmellBaseline>

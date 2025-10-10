@@ -1,0 +1,56 @@
+{
+  "type": "record",
+  "name": "InventoryEvent",
+  "namespace": "com.example.events",
+  "doc": "Event representing inventory-related actions in the system",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Unique identifier for this event"
+    },
+    {
+      "name": "inventoryId",
+      "type": "string",
+      "doc": "Identifier of the inventory item this event relates to"
+    },
+    {
+      "name": "productId",
+      "type": "string",
+      "doc": "Identifier of the product being tracked"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "doc": "Type of the event (e.g., StockReserved, StockDeducted, StockReleased)"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "When the event occurred"
+    },
+    {
+      "name": "quantity",
+      "type": "int",
+      "doc": "Number of items affected by this event"
+    },
+    {
+      "name": "location",
+      "type": "string",
+      "default": "DEFAULT_WAREHOUSE",
+      "doc": "Location of the inventory"
+    },
+    {
+      "name": "payload",
+      "type": "string",
+      "doc": "JSON payload containing event-specific data"
+    },
+    {
+      "name": "version",
+      "type": "int",
+      "default": 1,
+      "doc": "Schema version for backward compatibility"
+    }
+  ]
+}

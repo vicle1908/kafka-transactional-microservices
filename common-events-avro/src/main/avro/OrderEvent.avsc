@@ -1,0 +1,45 @@
+{
+  "type": "record",
+  "name": "OrderEvent",
+  "namespace": "com.example.events",
+  "doc": "Event representing order-related actions in the system",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Unique identifier for this event"
+    },
+    {
+      "name": "orderId",
+      "type": "string",
+      "doc": "Identifier of the order this event relates to"
+    },
+    {
+      "name": "customerId",
+      "type": "string",
+      "doc": "Identifier of the customer who placed the order"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "doc": "Type of the event (e.g., OrderCreated, OrderConfirmed, OrderCancelled)"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "When the event occurred"
+    },
+    {
+      "name": "payload",
+      "type": "string",
+      "doc": "JSON payload containing event-specific data"
+    },
+    {
+      "name": "version",
+      "type": "int",
+      "default": 1,
+      "doc": "Schema version for backward compatibility"
+    }
+  ]
+}

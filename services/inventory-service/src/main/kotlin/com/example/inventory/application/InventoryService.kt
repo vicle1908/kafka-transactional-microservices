@@ -1,0 +1,198 @@
+package com.example.inventory.application
+
+import com.example.events.avro.InventoryReservedEvent
+import com.example.inventory.domain.InventoryReservationEntity
+import com.example.inventory.domain.InventoryReservationRepository
+import com.example.inventory.domain.InventoryReservationStatus
+import com.example.inventory.domain.InventoryStockRepository
+import com.example.persistence.outbox.OutboxMessage
+import com.example.persistence.outbox.OutboxRepository
+import com.example.saga.SagaMetricsRecorder
+import com.example.saga.SagaNames
+import com.example.saga.SagaStateService
+import com.example.saga.SagaStatus
+import com.example.saga.SagaStepFormatter
+import com.example.saga.SagaStepNames
+import com.example.saga.SagaTransitionOptions
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.apache.avro.io.EncoderFactory
+import org.apache.avro.specific.SpecificDatumWriter
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
+import java.time.Instant
+import java.util.UUID
+
+@Service
+class InventoryService(
+    private val reservationRepository: InventoryReservationRepository,
+    private val stockRepository: InventoryStockRepository,
+    private val outboxRepository: OutboxRepository,
+    private val sagaStateService: SagaStateService,
+    private val sagaMetrics: SagaMetricsRecorder,
+) {
+    @Transactional
+    fun reserve(command: ReserveInventoryCommand): UUID {
+        validate(command)
+        val occurredAt = Instant.now()
+
+        val stock =
+            stockRepository.lockBySku(command.sku)
+                ?: throw IllegalStateException("Stock not configured for sku=${command.sku}")
+        stock.reserve(command.quantity)
+
+        val reservation =
+            InventoryReservationEntity(
+                orderId = command.orderId,
+                sku = command.sku,
+                quantity = command.quantity,
+                status = InventoryReservationStatus.RESERVED,
+                reservedAt = occurredAt,
+                updatedAt = occurredAt,
+            )
+        val saved = reservationRepository.save(reservation)
+        stockRepository.save(stock)
+
+        val event =
+            InventoryReservedEvent
+                .newBuilder()
+                .setEventId(UUID.randomUUID())
+                .setAggregateId(saved.id!!)
+                .setOccurredAt(occurredAt)
+                .setPayload(serializePayload(saved))
+                .build()
+
+        val payload = encodeEvent(event)
+
+        val outbox =
+            OutboxMessage(
+                aggregateType = "InventoryReservation",
+                aggregateId = saved.id!!.toString(),
+                eventType = "InventoryReserved",
+                payload = payload,
+                headers = null,
+                occurredAt = occurredAt,
+            )
+        outboxRepository.save(outbox)
+
+        sagaStateService.transitionByCorrelation(
+            sagaType = SagaNames.ORDER_FULFILLMENT,
+            correlationId = command.orderId.toString(),
+            newState = SagaStatus.IN_PROGRESS,
+            options =
+                SagaTransitionOptions(
+                    expectedState = SagaStatus.IN_PROGRESS,
+                    dataTransformer = { existing ->
+                        SagaStepFormatter.append(existing, SagaStepNames.INVENTORY_RESERVED, occurredAt)
+                    },
+                    occurredAt = occurredAt,
+                ),
+        )
+        sagaMetrics.recordStep(
+            sagaType = SagaNames.ORDER_FULFILLMENT,
+            step = SagaStepNames.INVENTORY_RESERVED,
+            state = SagaStatus.IN_PROGRESS,
+        )
+
+        return saved.id!!
+    }
+
+    @Transactional
+    fun release(
+        orderId: UUID,
+        reason: String?,
+    ) {
+        val occurredAt = Instant.now()
+
+        val reservations = reservationRepository.findAllByOrderId(orderId)
+        reservations.forEach { reservation ->
+            val stock =
+                stockRepository.lockBySku(reservation.sku)
+                    ?: throw IllegalStateException("Stock not configured for sku=${reservation.sku}")
+            stock.release(reservation.quantity)
+            stockRepository.save(stock)
+        }
+
+        sagaStateService.transitionByCorrelation(
+            sagaType = SagaNames.ORDER_FULFILLMENT,
+            correlationId = orderId.toString(),
+            newState = SagaStatus.COMPENSATING,
+            options =
+                SagaTransitionOptions(
+                    expectedState = SagaStatus.IN_PROGRESS,
+                    dataTransformer = { existing ->
+                        SagaStepFormatter.append(existing, SagaStepNames.INVENTORY_RELEASED, occurredAt)
+                    },
+                    occurredAt = occurredAt,
+                ),
+        )
+        sagaStateService.transitionByCorrelation(
+            sagaType = SagaNames.ORDER_FULFILLMENT,
+            correlationId = orderId.toString(),
+            newState = SagaStatus.FAILED,
+            options =
+                SagaTransitionOptions(
+                    expectedState = SagaStatus.COMPENSATING,
+                    dataTransformer = { existing ->
+                        val failureLabel = buildReleaseLabel(reason)
+                        SagaStepFormatter.append(existing, failureLabel, occurredAt)
+                    },
+                    occurredAt = occurredAt,
+                ),
+        )
+        sagaMetrics.recordStep(
+            sagaType = SagaNames.ORDER_FULFILLMENT,
+            step = SagaStepNames.INVENTORY_RELEASED,
+            state = SagaStatus.FAILED,
+        )
+    }
+
+    private fun validate(command: ReserveInventoryCommand) {
+        require(command.sku.isNotBlank()) { "sku must not be blank" }
+        require(command.quantity > 0) { "quantity must be positive" }
+    }
+
+    private fun serializePayload(reservation: InventoryReservationEntity): String {
+        val payload =
+            InventoryReservedPayload(
+                reservationId = reservation.id!!.toString(),
+                orderId = reservation.orderId.toString(),
+                sku = reservation.sku,
+                quantity = reservation.quantity,
+                status = reservation.status.name,
+            )
+        return json.encodeToString(payload)
+    }
+
+    private fun encodeEvent(event: InventoryReservedEvent): String {
+        val writer = SpecificDatumWriter(InventoryReservedEvent::class.java)
+        val output = ByteArrayOutputStream()
+        val encoder = EncoderFactory.get().jsonEncoder(InventoryReservedEvent.getClassSchema(), output)
+        writer.write(event, encoder)
+        encoder.flush()
+        return output.toString(StandardCharsets.UTF_8)
+    }
+
+    @Serializable
+    private data class InventoryReservedPayload(
+        val reservationId: String,
+        val orderId: String,
+        val sku: String,
+        val quantity: Int,
+        val status: String,
+    )
+
+    private companion object {
+        val json = Json.Default
+
+        private fun buildReleaseLabel(reason: String?): String =
+            if (reason.isNullOrBlank()) {
+                SagaStepNames.INVENTORY_RELEASED
+            } else {
+                "${SagaStepNames.INVENTORY_RELEASED}:$reason"
+            }
+    }
+}

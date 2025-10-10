@@ -1,0 +1,327 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Outbox Relay and Debezium Monitoring",
+    "tags": ["kafka", "outbox", "debezium", "transactions"],
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "5s",
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Outbox Table Depth",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "outbox_pending_messages",
+            "legendFormat": "Pending Messages",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Count",
+            "show": true,
+            "format": "short"
+          }
+        ],
+        "alert": {
+          "name": "High Outbox Depth Alert",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [1000],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Outbox Depth Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 2,
+        "title": "Kafka Consumer Lag",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "kafka_consumer_group_lag",
+            "legendFormat": "{{topic}} - {{group}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Lag",
+            "show": true,
+            "format": "short"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Transaction Commit Rate",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(kafka_transactions_committed_total[5m])",
+            "legendFormat": "Commits/sec",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Rate (per second)",
+            "show": true,
+            "format": "short"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Relay Performance",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "relay_kafka_commit_latency_seconds",
+            "legendFormat": "Commit Latency (seconds)",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (seconds)",
+            "show": true,
+            "format": "short"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "End-to-End Latency",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "end_to_end_processing_latency_seconds",
+            "legendFormat": "Processing Time (seconds)",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (seconds)",
+            "show": true,
+            "format": "short"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Debezium Connector Health",
+        "type": "stat",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "debezium_connector_status_running",
+            "legendFormat": "Running Connectors",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 1
+                },
+                {
+                  "color": "green",
+                  "value": 2
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Debezium Offset Lag",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "debezium_offset_lag_records",
+            "legendFormat": "{{connector}} - Lag",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Records",
+            "show": true,
+            "format": "short"
+          }
+        ],
+        "alert": {
+          "name": "High Debezium Lag Alert",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [10000],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Debezium Lag Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 8,
+        "title": "Connector Error Rates",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "rate(debezium_connector_errors_total[5m])",
+            "legendFormat": "{{connector}} - Errors/sec",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Rate (per second)",
+            "show": true,
+            "format": "short"
+          }
+        ],
+        "alert": {
+          "name": "High Connector Error Rate Alert",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.05],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Connector Error Rate Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "value": "Prometheus"
+          }
+        }
+      ]
+    }
+  }
+}

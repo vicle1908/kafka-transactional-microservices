@@ -1,0 +1,27 @@
+{
+  "name": "codex",
+  "command": "codex",
+  "additional_args": [
+    "exec",
+    "--cd",
+    "/Users/vinhlekhanh/Library/Mobile Documents/com~apple~CloudDocs/project/microservices",
+    "--skip-git-repo-check",
+    "--json",
+    "--dangerously-bypass-approvals-and-sandbox"
+  ],
+  "env": {},
+  "roles": {
+    "default": {
+      "prompt_path": "systemprompts/clink/default.txt",
+      "role_args": []
+    },
+    "planner": {
+      "prompt_path": "systemprompts/clink/default_planner.txt",
+      "role_args": []
+    },
+    "codereviewer": {
+      "prompt_path": "systemprompts/clink/codex_codereviewer.txt",
+      "role_args": []
+    }
+  }
+}

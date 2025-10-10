@@ -1,0 +1,110 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly Monday 2 AM scan
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/deps.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # Dependency vulnerability scanning with OWASP Dependency Check
+      - name: OWASP Dependency Check
+        uses: dependency-check/DependencyCheckAction@main
+        with:
+          project: 'Kafka Transactional Microservices'
+          path: '.'
+          format: 'ALL'
+          out: 'reports'
+          args: >
+            --disableAssembly
+            --disableRetireJS
+            --disableNodeJS
+            --disableNodeAudit
+            --disableNuspec
+            --disableNexus
+            --disableCmake
+            --disableCocoapodsAnalyzer
+            --disableSwiftPackageManagerAnalyzer
+
+      - name: Upload dependency scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-scan-results
+          path: reports/
+
+      # Run SpotBugs if configured
+      - name: Run SpotBugs analysis
+        run: |
+          if ./gradlew tasks | grep -q "spotbugs"; then
+            ./gradlew spotbugsMain spotbugsTest --configuration-cache
+          else
+            echo "SpotBugs plugin not configured"
+          fi
+
+      # Run Error Prone if configured
+      - name: Run Error Prone analysis
+        run: |
+          if ./gradlew tasks | grep -q "errorprone"; then
+            ./gradlew compileJava compileTestJava --configuration-cache
+          else
+            echo "Error Prone plugin not configured"
+          fi
+
+      # Run Trivy vulnerability scan
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          exit-code: '0'  # Don't fail the build on vulns
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-scan-results
+          path: trivy-results.sarif
+
+      # SAST scan with CodeQL
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java-kotlin
+          queries: +security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:java-kotlin"

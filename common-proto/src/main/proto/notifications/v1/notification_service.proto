@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package notifications.v1;
+
+option java_package = "com.example.notifications.proto";
+option java_multiple_files = true;
+
+message Recipient {
+  string email = 1;
+  string phone = 2;
+  string name = 3;
+}
+
+message NotificationContent {
+  string subject = 1;
+  string body = 2;
+  map<string, string> variables = 3;
+}
+
+message SendNotificationRequest {
+  string request_id = 1;
+  repeated Recipient recipients = 2;
+  NotificationContent content = 3;
+  string notification_type = 4;
+  map<string, string> metadata = 5;
+}
+
+message NotificationStatus {
+  string notification_id = 1;
+  string status = 2;
+  string message = 3;
+  int64 sent_at = 4;
+}
+
+message SendNotificationResponse {
+  string notification_id = 1;
+  string status = 2;
+  string message = 3;
+  int64 sent_at = 4;
+}
+
+message GetNotificationRequest {
+  string notification_id = 1;
+}
+
+message GetNotificationResponse {
+  string notification_id = 1;
+  repeated Recipient recipients = 2;
+  NotificationContent content = 3;
+  string notification_type = 4;
+  map<string, string> metadata = 5;
+  string status = 6;
+  int64 sent_at = 7;
+  int64 created_at = 8;
+}
+
+service NotificationService {
+  rpc SendNotification (SendNotificationRequest) returns (SendNotificationResponse);
+  rpc GetNotification (GetNotificationRequest) returns (GetNotificationResponse);
+}

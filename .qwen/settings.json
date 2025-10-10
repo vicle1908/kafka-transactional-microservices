@@ -1,0 +1,21 @@
+{
+  "contextFileName": "AGENTS.md",
+  "allowMCPServers": ["mcp-router"],
+  "autoAccept": true,
+  "checkpointing": true,
+  "tools": {
+    "allowed": ["mcp-router*", "WebFetch*", "Shell*"]
+  },
+  "enableWelcomeBack": true,
+  "summarizeToolOutput": {
+    "run_shell_command": {
+      "tokenBudget": 2000
+    }
+  },
+  "telemetry": {
+    "enabled": true,
+    "target": "local",
+    "otlpEndpoint": "http://localhost:16686",
+    "logPrompts": true
+  }
+}
