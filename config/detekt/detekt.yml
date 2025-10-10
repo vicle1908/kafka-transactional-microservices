@@ -40,6 +40,7 @@ complexity:
     threshold: 400
   LongMethod:
     threshold: 60
+    excludes: ['**/test/**', '**/androidTest/**', '**/*Test.kt', '**/*Spec.kt']
   LongParameterList:
     functionThreshold: 6
     constructorThreshold: 8
