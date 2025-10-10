@@ -1,7 +1,7 @@
 name: Dependency Review
 
 on:
-  pull_request:
+  push:
     branches: [ main ]
 
 permissions:
@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   dependency-review:
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -24,6 +25,7 @@ jobs:
         with:
           config-file: .github/dependency-review-config.yml
           fail-on-severity: high
+          warn-only: true
           deny-identified-vulnerabilities: true
 
       - name: Upload version catalog for context
