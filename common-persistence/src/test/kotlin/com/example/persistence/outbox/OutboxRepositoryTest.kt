@@ -54,6 +54,4 @@ class OutboxRepositoryTest {
         assertThat(found).isPresent
         assertThat(found.get().aggregateType).isEqualTo("Order")
     }
-
-    companion object {}
 }
