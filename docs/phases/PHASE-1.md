@@ -20,7 +20,7 @@
 || P1.2 | Provision shared Kafka cluster with pure KRaft mode (no ZooKeeper) and configure ACLs | Platform Team | Completed (Plan) | See `docs/notes/phase-1-shared-cluster.md`. |
 || P1.3 | Enable broker settings (min.insync.replicas, idempotence defaults, transaction log config) | Platform Team | Completed | Config captured in `infra/kafka/values.yaml`. |
 || P1.4 | Deploy AKHQ or Kafdrop for topic inspection | Platform Team | Completed | AKHQ defined in compose stack. |
-|| P1.5 | Create GitHub Actions/GitLab pipelines for build/test and image publish | DevOps Team | Completed | `.github/workflows/ci.yml` and `.github/workflows/container-publish.yml` committed. |
+|| P1.5 | Create GitHub Actions/GitLab pipelines for build/test and image publish | DevOps Team | **ENHANCED** | **CI/CD HARDENING COMPLETE**: Security framework, performance optimization, quality assurance (PR #1). |
 || P1.6 | Add IaC validation job (Terraform/Helm lint) to pipeline | DevOps Team | Completed | `ci/scripts/validate-iac.sh` integrated. |
 || P1.7 | Install Istio ambient profile in non-prod cluster | Platform Team | Completed (Plan) | Deployment steps documented in `infra/istio/README.md`. |
 || P1.8 | Update runbooks for infra bootstrap and service mesh | Platform Team | Completed | `docs/runbooks/platform.md` and `docs/runbooks/service-mesh.md` updated. |
@@ -64,3 +64,4 @@
 
 - 2025-10-07 | Compose stack, CI pipelines, Istio deployment notes, and runbooks prepared.
 - 2025-10-10 | Implemented comprehensive health checks for all services in Docker Compose files (development, test, and production environments).
+- 2025-10-10 | **CI/CD HARDENING COMPLETE**: Security framework (permissions, wrapper validation, pinned actions), performance optimization (gradle/actions integration, caching), quality assurance (all detekt/ktlint violations resolved), workflow coverage hardened. PR #1 ready for merge.

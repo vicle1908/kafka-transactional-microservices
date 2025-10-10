@@ -27,5 +27,6 @@ object InventoryContainers {
         registry.add("spring.flyway.password") { container.password }
         registry.add("spring.flyway.database-type") { "postgresql" }
         registry.add("spring.jpa.database-platform") { "org.hibernate.dialect.PostgreSQLDialect" }
+        registry.add("spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation") { "true" }
     }
 }

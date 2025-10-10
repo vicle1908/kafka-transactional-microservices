@@ -28,13 +28,13 @@
   - Add `infra/postgres/init/01-create-dbs.sql` to create `payments`, `inventory`, and `notifications` databases owned by `app`.
   - Create a dedicated replication user `debezium` with LOGIN/REPLICATION privileges.
   - Document bootstrap steps in `docs/runbooks/debezium.md`.
-- ✅ **COMPLETED**: **PHASE 1 CI/CD HARDENING** - Comprehensive GitHub Actions security and performance enhancement:
-  - **Security Framework**: Explicit permissions blocks, Gradle wrapper validation, pinned actions, concurrency controls
-  - **Performance Optimization**: gradle/actions/setup-gradle@v4 integration, configuration cache, parallel linting execution  
-  - **Quality Assurance**: Fixed all detekt/ktlint violations, Java version check supports 21-25, workflow YAML validated
-  - **Workflow Coverage**: Hardened CI (ci.yml), nightly integration tests (integration-test.yml), secure container publishing
-  - **Automation**: Branch protection and post-merge setup scripts, comprehensive monitoring documentation
-  - **Status**: ✅ PR #1 ready for merge - all quality gates passing
+- ✅ **COMPLETED**: Establish comprehensive GitHub Actions pipelines with security hardening:
+  - **CI Workflow (ci.yml)**: Build, test, validation with security best practices
+  - **Integration Tests (integration-test.yml)**: Full Kafka/DB environment validation with nightly runs
+  - **Container Publishing (container-publish.yml)**: Docker image builds with security scanning
+  - **Security Features**: Explicit permissions, wrapper validation, pinned actions, concurrency controls
+  - **Performance**: gradle/actions/setup-gradle integration, configuration cache, parallel linting
+- ✅ **COMPLETED**: Fixed detekt violations and relaxed LongMethod rule for tests to unblock CI
 - Deploy Istio (ambient profile) in non-prod clusters;configure Gateway API integration with Spring Cloud Gateway at the edge.
 - **COMPLETED**: Implement comprehensive health checks for all services in Docker Compose files.
 - Execution board: [PHASE-1](docs/phases/PHASE-1.md)
@@ -124,6 +124,8 @@
 - Document runbooks in `docs/runbooks/` for connectors, DLQ reprocessing, and saga failure recovery.
 - Complete API gateway, Debezium connector, and polyglot datastore runbooks referenced in @AGENTS.md; ensure automation scripts are version-controlled.
 - **COMPLETED**: Enhance observability with comprehensive documentation, OpenTelemetry tracing implementation, and runbook completion.
+- **Enhanced Observability Stack**: Implement centralized logging with ELK stack (Elasticsearch, Logstash, Kibana) for aggregated log analysis and visualization.
+- **Complete OpenTelemetry Implementation**: Deploy OpenTelemetry Collector and Jaeger backend to complete the tracing infrastructure.
 - Execution board: [PHASE-5](docs/phases/PHASE-5.md)
 
 ### Phase 6 – Hardening & Launch (Weeks 9-12)
@@ -150,6 +152,8 @@
 - **COMPLETED**: Additional runbooks for polling relay mechanism and connector configuration guide.
 - **COMPLETED**: Additional runbooks for API gateway, service mesh, polyglot datastores, and OpenTelemetry tracing.
 - **COMPLETED**: Grafana dashboards for Temporal and CDN metrics.
+- **PLANNED**: Centralized logging with ELK stack implementation.
+- **PLANNED**: Complete OpenTelemetry deployment with collector and Jaeger backend.
 
 ## 4. Open Decisions & Research Tasks
 
@@ -162,6 +166,7 @@
 - Determine Temporal deployment option (self-hosted vs managed service).
 - Periodically reassess service meshchoice (Istio ambient vs Linkerd/managed meshes) based on resource footprint, cost, and feature needs.
 - Evaluate secrets management deployment (Vault OSS vs enterprise vs cloud-native secret stores).
+- Evaluate ELK stack implementation for centralized logging in microservices.
 
 ## 5. Risks & Mitigations
 
@@ -171,40 +176,31 @@
 - **Operational complexity of relay service**: Provide detailed runbooks, offer fallback poller mode, schedule regular drills, implement comprehensive monitoring for `outbox_table_depth`.
 - **Performance bottlenecks**: Monitor outbox table depth and implement proper indexing; optimize relay processing batch sizes.
 - **Security gaps**: Apply TLS/SASL, integrate secrets vault, conductthreat modeling sessions.
+- **Observability gaps**: Implement centralized logging and complete OpenTelemetry deployment to ensure full visibility across all services.
 
 ## 6. Next Actions (Current Phase)
 
-### ✅ **PHASE 1 COMPLETE** - CI/CD Infrastructure Hardening
+### ✅ Recently Completed (Week 1-2)
+1. **CI/CD Hardening**: Implemented comprehensive GitHub Actions security and performance enhancements (PR #1)
+2. **Detekt Configuration**: Fixed code violations and relaxed test rules to unblock CI pipeline
+3. **Workflow Security**: Added explicit permissions, wrapper validation, pinned actions, concurrency controls
 
-**Achievement Summary:**
-- ✅ **Security**: Explicit permissions, wrapper validation, pinned actions, concurrency controls
-- ✅ **Performance**: gradle/actions integration, configuration cache, parallel execution  
-- ✅ **Quality**: All detekt/ktlint violations resolved, Java 21-25 support, workflow YAML validated
-- ✅ **Coverage**: Hardened CI, nightly integration tests, secure container publishing
-- ✅ **Automation**: Branch protection scripts, post-merge setup, monitoring documentation
+### 🔄 In Progress (Week 2-3)
+1. **Monitor PR #1**: Review and merge CI hardening changes after validation
+2. **Branch Protection**: Update main branch protection to require passing workflows
+3. **Service Template Advancement**: Continue with domain entities and outbox schema implementation
 
-**Status**: PR #1 ready for merge with all quality gates passing
+### 📋 Next Priority Actions (Week 3-4)
+1. Align stakeholders on service scope and data consistency requirements, validating the need for exactly-once semantics vs. idempotent consumers.
+2. Draft ADRs for transactional outbox pattern, Debezium adoption, and saga choreography.
+3. Author initial infra compose file and verify local stack spin-up with proper broker configurations for EOS.
+4. Implement CI hooks for the new `versionCheck` and `schemaCompatibilityCheck` Gradle tasks.
+5. Complete service template implementation with transactional configuration.
 
-### 🔄 **IMMEDIATE ACTIONS** (Current Week)
-
-1. **Complete PR #1 Merge** ⭐ HIGH PRIORITY
-   ```bash
-   # After workflow validation:
-   gh pr merge 1 --squash --delete-branch
-   ./scripts/github/post-merge-setup.sh
-   ```
-
-2. **Verify Infrastructure Health** ⭐ MEDIUM PRIORITY  
-   - [ ] Monitor first main branch CI run
-   - [ ] Validate nightly integration test execution
-   - [ ] Confirm build performance improvements
-
-### 📋 **PHASE 2A** - Security Enhancement (Week 3-4)
-1. **Security Workflows**: Add security scanning (OWASP, Trivy, CodeQL), dependency review automation
-2. **Infrastructure Validation**: Add infrastructure validation workflow, load testing automation  
-3. **Service Template Resume**: Continue with domain entities, outbox schema, transactional configuration
-4. **ADR Completion**: Draft ADRs for transactional outbox pattern, Debezium adoption, saga choreography
-5. **Infrastructure Setup**: Author infra compose file, implement actual versionCheck/schemaCompatibilityCheck logic
+### 📋 Observability Enhancement Actions
+1. **Implement Centralized Logging**: Deploy ELK stack (Elasticsearch, Logstash, Kibana) in Docker Compose infrastructure.
+2. **Complete OpenTelemetry Implementation**: Deploy OpenTelemetry Collector and Jaeger backend to complete tracing infrastructure.
+3. **Update Documentation**: Enhance @AGENTS.md with complete observability implementation details.
 
 ---
 _Last updated: 2025-10-10_

@@ -30,7 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.kafka.core.KafkaTemplate
-import org.springframework.kafka.test.condition.EmbeddedKafkaCondition
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -74,15 +73,6 @@ class InventoryReservationListenerTest {
         @DynamicPropertySource
         fun registerProperties(registry: DynamicPropertyRegistry) {
             InventoryContainers.registerPostgres(registry)
-            registry.add("spring.kafka.bootstrap-servers") {
-                EmbeddedKafkaCondition.getBroker().brokersAsString
-            }
-            registry.add("spring.kafka.consumer.bootstrap-servers") {
-                EmbeddedKafkaCondition.getBroker().brokersAsString
-            }
-            registry.add("spring.kafka.producer.bootstrap-servers") {
-                EmbeddedKafkaCondition.getBroker().brokersAsString
-            }
         }
     }
 
