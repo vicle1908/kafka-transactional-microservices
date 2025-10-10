@@ -2,6 +2,7 @@ package com.example.payments.application
 
 import com.example.events.avro.OrderCreatedEvent
 import com.example.outbox.repository.OutboxRepository
+import com.example.payments.PaymentServiceIntegrationTestSupport
 import com.example.payments.PaymentsServiceApplication
 import com.example.payments.domain.PaymentRepository
 import com.example.payments.domain.ProcessedEventRepository
@@ -24,6 +25,7 @@ import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.test.context.EmbeddedKafka
@@ -35,9 +37,10 @@ import java.util.UUID
 @SpringBootTest(classes = [PaymentsServiceApplication::class])
 @EmbeddedKafka(partitions = 1, controlledShutdown = true, topics = [PaymentOrderListener.ORDERS_CREATED_TOPIC])
 @ActiveProfiles("test")
-class PaymentOrderListenerTest {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class PaymentOrderListenerTest : PaymentServiceIntegrationTestSupport() {
     @Autowired
-    private lateinit var kafkaTemplate: KafkaTemplate<String, String>
+    private lateinit var kafkaTemplate: KafkaTemplate<String, Any>
 
     @Autowired
     private lateinit var paymentRepository: PaymentRepository

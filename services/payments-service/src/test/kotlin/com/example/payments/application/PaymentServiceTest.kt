@@ -1,16 +1,17 @@
 package com.example.payments.application
 
 import com.example.outbox.repository.OutboxRepository
+import com.example.payments.PaymentServiceIntegrationTestSupport
 import com.example.payments.PaymentsServiceApplication
 import com.example.payments.application.PaymentProcessingOutcome
-import com.example.payments.application.port.out.RefundGateway
-import com.example.payments.application.port.out.RefundRequest
 import com.example.payments.application.port.out.RefundResult
+import com.example.payments.application.port.out.RefundResult.Failed
 import com.example.payments.domain.PaymentRepository
 import com.example.payments.domain.PaymentStatus
 import com.example.payments.domain.ProcessedEventRepository
 import com.example.payments.domain.RefundRepository
 import com.example.payments.domain.RefundStatus
+import com.example.payments.support.StubRefundGateway
 import com.example.saga.InvalidSagaStateTransitionException
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository
@@ -27,15 +28,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers.any
-import org.mockito.BDDMockito.given
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
-import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
@@ -44,8 +43,9 @@ import java.util.UUID
     properties = ["spring.kafka.listener.auto-startup=false"],
 )
 @ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class PaymentServiceTest {
+class PaymentServiceTest : PaymentServiceIntegrationTestSupport() {
     @Autowired
     private lateinit var paymentService: PaymentService
 
@@ -70,8 +70,8 @@ class PaymentServiceTest {
     @Autowired
     private lateinit var refundRepository: RefundRepository
 
-    @MockBean
-    private lateinit var refundGateway: RefundGateway
+    @Autowired
+    private lateinit var refundGateway: StubRefundGateway
 
     private val json = Json { ignoreUnknownKeys = false }
 
@@ -82,7 +82,7 @@ class PaymentServiceTest {
         outboxRepository.deleteAll()
         sagaStateRepository.deleteAll()
         processedEventRepository.deleteAll()
-        given(refundGateway.refund(anyRefundRequest())).willReturn(RefundResult.Completed)
+        refundGateway.reset()
     }
 
     @Test
@@ -322,7 +322,7 @@ class PaymentServiceTest {
                 ),
             ) as PaymentProcessingOutcome.Completed
 
-        given(refundGateway.refund(anyRefundRequest())).willReturn(RefundResult.Failed("gateway-failure"))
+        refundGateway.enqueue(Failed("gateway-failure"))
 
         paymentService.compensate(orderId, "customer-cancelled")
 
@@ -387,7 +387,4 @@ class PaymentServiceTest {
             )
         return counter.count()
     }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun anyRefundRequest(): RefundRequest = any(RefundRequest::class.java) as RefundRequest
 }
