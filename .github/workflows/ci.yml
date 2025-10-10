@@ -15,8 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
-      - name: List workflow files
-        run: ls -l .github/workflows
       - name: Set up JDK 25
         uses: actions/setup-java@${{ needs.versions.outputs.actions_setup_java_version }}
         with:

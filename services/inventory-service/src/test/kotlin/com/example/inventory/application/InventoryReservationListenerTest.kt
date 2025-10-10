@@ -29,6 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.kafka.test.condition.EmbeddedKafkaCondition
+import java.util.function.Supplier
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -69,9 +70,9 @@ class InventoryReservationListenerTest {
         @JvmStatic
         @DynamicPropertySource
         fun kafkaProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.kafka.bootstrap-servers") {
-                EmbeddedKafkaCondition.getBroker().brokersAsString
-            }
+            registry.add("spring.kafka.bootstrap-servers", Supplier<Any> {
+                EmbeddedKafkaCondition.getBroker().brokersAsString()
+            })
         }
     }
 
