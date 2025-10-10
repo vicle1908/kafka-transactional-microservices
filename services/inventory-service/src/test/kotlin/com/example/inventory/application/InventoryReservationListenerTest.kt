@@ -7,6 +7,7 @@ import com.example.inventory.domain.InventoryStockEntity
 import com.example.inventory.domain.InventoryStockRepository
 import com.example.inventory.domain.ProcessedEventRepository
 import com.example.inventory.testsupport.InventoryContainers
+import com.example.inventory.testsupport.InventoryFlywayTestConfig
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository
 import com.example.saga.SagaStateService
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.test.condition.EmbeddedKafkaCondition
 import org.springframework.kafka.test.context.EmbeddedKafka
@@ -45,6 +47,7 @@ import java.util.UUID
     bootstrapServersProperty = "spring.kafka.bootstrap-servers",
 )
 @ActiveProfiles("test")
+@Import(InventoryFlywayTestConfig::class)
 class InventoryReservationListenerTest {
     @Autowired
     private lateinit var kafkaTemplate: KafkaTemplate<String, Any>
@@ -67,26 +70,19 @@ class InventoryReservationListenerTest {
     private val json = Json { ignoreUnknownKeys = false }
 
     companion object {
-        private val postgres = InventoryContainers.postgres
-
-        init {
-            if (!postgres.isRunning) {
-                postgres.start()
-            }
-        }
-
         @JvmStatic
         @DynamicPropertySource
         fun registerProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url") { postgres.jdbcUrl }
-            registry.add("spring.datasource.username") { postgres.username }
-            registry.add("spring.datasource.password") { postgres.password }
-            registry.add("spring.flyway.url") { postgres.jdbcUrl }
-            registry.add("spring.flyway.user") { postgres.username }
-            registry.add("spring.flyway.password") { postgres.password }
-            registry.add("spring.kafka.bootstrap-servers") { EmbeddedKafkaCondition.getBroker().brokersAsString }
-            registry.add("spring.kafka.consumer.bootstrap-servers") { EmbeddedKafkaCondition.getBroker().brokersAsString }
-            registry.add("spring.kafka.producer.bootstrap-servers") { EmbeddedKafkaCondition.getBroker().brokersAsString }
+            InventoryContainers.registerPostgres(registry)
+            registry.add("spring.kafka.bootstrap-servers") {
+                EmbeddedKafkaCondition.getBroker().brokersAsString
+            }
+            registry.add("spring.kafka.consumer.bootstrap-servers") {
+                EmbeddedKafkaCondition.getBroker().brokersAsString
+            }
+            registry.add("spring.kafka.producer.bootstrap-servers") {
+                EmbeddedKafkaCondition.getBroker().brokersAsString
+            }
         }
     }
 

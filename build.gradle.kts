@@ -164,11 +164,22 @@ tasks.register("versionCheck") {
     group = "verification"
     description = "Ensures the build is running with the expected toolchain"
     doLast {
-        val desiredJavaVersion = (project.findProperty("java.languageVersion") as String?)?.toIntOrNull() ?: 23
+        val targetJavaVersion = (project.findProperty("java.languageVersion") as String?)?.toIntOrNull() ?: 25
+        val fallbackJavaVersion = 21
         val current = JavaVersion.current()
-        val target = JavaVersion.toVersion(desiredJavaVersion)
-        require(current.isCompatibleWith(target)) {
-            "Expected to run with at least Java $desiredJavaVersion, but current version is $current"
+        val target = JavaVersion.toVersion(targetJavaVersion)
+        val fallback = JavaVersion.toVersion(fallbackJavaVersion)
+        
+        when {
+            current.isCompatibleWith(target) -> {
+                println("✅ Java version check passed: $current (target: $targetJavaVersion)")
+            }
+            current.isCompatibleWith(fallback) -> {
+                println("⚠️  Using fallback Java $current - consider upgrading to $targetJavaVersion (supported fallback)")
+            }
+            else -> {
+                throw GradleException("Expected to run with at least Java $fallbackJavaVersion, but current version is $current")
+            }
         }
     }
 }

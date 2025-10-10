@@ -13,6 +13,7 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.kafka)
     implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
     implementation(libs.postgresql)
     implementation(libs.kotlin.reflect)
     implementation(libs.avro)

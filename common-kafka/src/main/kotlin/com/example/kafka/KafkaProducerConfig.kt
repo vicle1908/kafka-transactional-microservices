@@ -15,22 +15,20 @@ import org.springframework.kafka.transaction.KafkaTransactionManager
 
 @Configuration
 class KafkaProducerConfig {
-
     companion object {
         private const val MAX_IN_FLIGHT_REQUESTS = 5
     }
+
     @Bean
     @ConditionalOnMissingBean(ProducerFactory::class)
-    fun producerFactory(
-        kafkaProperties: KafkaProperties,
-    ): ProducerFactory<String, Any> {
+    fun producerFactory(kafkaProperties: KafkaProperties): ProducerFactory<String, Any> {
         val props = kafkaProperties.buildProducerProperties()
         props.putIfAbsent(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java)
         props.putIfAbsent(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer::class.java)
         props[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] = true
         props[ProducerConfig.ACKS_CONFIG] = "all"
         props[ProducerConfig.RETRIES_CONFIG] = Integer.MAX_VALUE
-        props[ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION] = 5
+        props[ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION] = MAX_IN_FLIGHT_REQUESTS
 
         val transactionIdPrefix =
             kafkaProperties.producer.transactionIdPrefix?.takeIf { it.isNotBlank() } ?: "payments-tx-"
@@ -58,7 +56,7 @@ class KafkaProducerConfig {
                     ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to true,
                     ProducerConfig.ACKS_CONFIG to "all",
                     ProducerConfig.RETRIES_CONFIG to Integer.MAX_VALUE.toString(),
-                    ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION to "5",
+                    ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION to MAX_IN_FLIGHT_REQUESTS.toString(),
                 ),
             )
         }

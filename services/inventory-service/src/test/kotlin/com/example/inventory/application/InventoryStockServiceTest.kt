@@ -2,23 +2,35 @@ package com.example.inventory.application
 
 import com.example.inventory.InventoryServiceApplication
 import com.example.inventory.domain.InventoryStockRepository
+import com.example.inventory.testsupport.InventoryContainers
+import com.example.inventory.testsupport.InventoryFlywayTestConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.annotation.DirtiesContext
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 
 @SpringBootTest(classes = [InventoryServiceApplication::class])
 @ActiveProfiles("test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@Import(InventoryFlywayTestConfig::class)
 class InventoryStockServiceTest {
     @Autowired
     private lateinit var inventoryStockService: InventoryStockService
 
     @Autowired
     private lateinit var stockRepository: InventoryStockRepository
+
+    companion object {
+        @JvmStatic
+        @DynamicPropertySource
+        fun register(registry: DynamicPropertyRegistry) {
+            InventoryContainers.registerPostgres(registry)
+        }
+    }
 
     @BeforeEach
     fun clean() {

@@ -102,7 +102,7 @@
   - Outbox Event Router routes to `outbox.${routedByValue}` with key=`aggregate_id`
   - `transforms.outbox.table.fields.additional.placement` excludes payload to avoid schema duplication
   - Connector-side `topic.creation.default.*` is enabled for local dev so outbox topics are created when producing
-- Outbox table is “lean Debezium-only” (no status column). If enabling a custom outbox relay, add `status` via a migration.
+- Outbox table is "lean Debezium-only" (no status column). If enabling a custom outbox relay, add `status` via a migration.
 - Standardized workflows:
   - Start local stack: `make up`
   - Run migrations: `make migrate`
@@ -175,6 +175,70 @@
 - Observability-first: enforce OpenTelemetry instrumentation, centralize logs/metrics, and maintain dashboards/alerts for latency, errors, saturation, and business SLIs.
 - Resilience engineering: run regular chaos drills (broker restarts, mesh failures, cache outages) and record findings in runbooks.
 
+## Observability Implementation
+
+### Current State
+
+The project has a partial observability implementation with the following components:
+
+1. **Metrics Collection**:
+   - Prometheus for metrics collection
+   - Micrometer for instrumentation in services
+   - Grafana for dashboard visualization
+   - Pre-built dashboards for various components
+
+2. **Distributed Tracing**:
+   - OpenTelemetry SDK integrated in services
+   - Common observability module with OpenTelemetry dependencies
+   - Dedicated OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`)
+   - Configuration for OpenTelemetry collector and Jaeger backend
+
+3. **Health Checks**:
+   - Health check implementations for services
+   - Dedicated health check runbook
+
+### Missing Components
+
+1. **Centralized Logging**:
+   - Currently missing centralized logging solution
+   - Need to implement ELK (Elasticsearch, Logstash, Kibana) stack for:
+     - Centralized log aggregation from all services
+     - Advanced log search capabilities
+     - Real-time log visualization
+     - Structured log analysis
+
+2. **Complete OpenTelemetry Implementation**:
+   - Missing OpenTelemetry collector configuration in docker-compose
+   - Missing Jaeger backend for trace visualization
+   - Need to implement tracing across service boundaries, especially with Kafka
+
+### Implementation Plan
+
+#### Phase 1: Implement Centralized Logging with ELK Stack
+
+1. Add ELK stack components to `infra/compose.yml`:
+   - Elasticsearch for log storage
+   - Logstash for log processing
+   - Kibana for log visualization
+
+2. Configure log shipping from services:
+   - Add Filebeat to each service container
+   - Configure log format standardization
+
+3. Create Kibana dashboards for:
+   - Service logs
+   - Error patterns
+   - Performance logs
+
+#### Phase 2: Complete OpenTelemetry Implementation
+
+1. Add OpenTelemetry Collector and Jaeger to `infra/compose.yml`
+2. Implement cross-service tracing:
+   - HTTP request tracing
+   - Kafka message tracing
+   - Database query tracing
+3. Enhance existing dashboards with trace data
+
 ## Data Consistency Workflow
 
 - Within each command handler, persist domain aggregates and append an outbox row inside one transaction; mark unsent events with `status='NEW'`.
@@ -244,6 +308,8 @@
 - Add the `schemaCompatibilityCheck` Gradle task and wire it into CI pipelines alongside ktlint/detekt and the future SpotBugs/ErrorProne gates.
 - Finish API gateway, Debezium connector, and polyglot datastore runbooks referenced in Operational Automation; link them from `docs/runbooks/`.
 - Implement OpenTelemetry tracing across all services and create observability dashboards
+- Implement centralized logging with ELK stack
+- Complete OpenTelemetry implementation with collector and Jaeger backend
 
 ## Documentation Hygiene
 
@@ -262,6 +328,7 @@
 - Evaluate OpenTelemetry tracing implementations and best practices for distributed systems
 - Research advanced Grafana dashboard patterns for microservices monitoring
 - Investigate service mesh integration with observability platforms.
+- Research ELK stack implementation for centralized logging in microservices
 - Key references:
     - Spring Kafka exactly-once & transactions documentation.
     - Spring Cloud Stream blog on EOS patterns with JPA transactions.
@@ -270,4 +337,4 @@
     - Debezium outbox pattern implementations (anarefin/high-availability-debezium, YunusEmreNalbant/transactional-outbox-pattern-with-debezium, chfern/debezium-outbox-pgkafka).
     - OpenTelemetry documentation and implementation guides.
     - Istio service mesh documentation for ambient mode.
-
+    - ELK stack documentation for centralized logging.
