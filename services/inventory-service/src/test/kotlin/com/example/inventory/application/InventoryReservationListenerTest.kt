@@ -30,7 +30,6 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.test.condition.EmbeddedKafkaCondition
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.context.ActiveProfiles
-import com.example.inventory.support.EmbeddedKafkaProperties
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
