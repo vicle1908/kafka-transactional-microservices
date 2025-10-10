@@ -87,6 +87,27 @@ Security & Secrets
 
 See also: docs/dev/env-reference.md for a complete list of supported environment variables and defaults.
 
+## Git Hooks
+
+This project uses Git hooks to enforce code quality checks before allowing commits and pushes. The hooks are automatically installed when you run any Gradle task.
+
+### Pre-commit Hook
+
+The pre-commit hook runs a quick ktlint check to ensure code formatting is correct before allowing a commit.
+
+### Pre-push Hook
+
+The pre-push hook runs a comprehensive set of checks to ensure code quality before allowing a push:
+- Gradle build and test
+- Detekt static analysis
+- Ktlint check
+- Version check
+- Schema compatibility check
+
+These checks mirror the CI pipeline to prevent broken code from being pushed to the repository.
+
+See [Git Hooks Documentation](file:///Users/vinhlekhanh/Library/Mobile%20Documents/com~apple~CloudDocs/project/microservices/docs/dev/git-hooks.md) for more details.
+
 ## Building & Testing
 
 ### Run all checks (includes ktlint, detekt, Jacoco)

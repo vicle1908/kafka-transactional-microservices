@@ -32,7 +32,6 @@ dependencies {
     testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.kafka)
-    testImplementation(libs.h2)
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.temporal.testing)
 

@@ -128,6 +128,7 @@
 - **Complete OpenTelemetry Implementation**: Deploy OpenTelemetry Collector and Jaeger backend to complete the tracing infrastructure.
 - **Structured Logging Implementation**: Created StructuredLogger utility in common-observability module for consistent JSON-formatted log messages that can be easily parsed by ELK stack.
 - **Kibana Dashboard Configuration**: Created service logs dashboard configuration for Kibana to enable log visualization and monitoring.
+- **Git Hooks Implementation**: Implemented Git hooks to enforce Gradle tasks before allowing commits and pushes, ensuring code quality is maintained locally.
 - Execution board: [PHASE-5](docs/phases/PHASE-5.md)
 
 ### Phase 6 – Hardening & Launch (Weeks 9-12)
@@ -157,6 +158,7 @@
 - **COMPLETED**: Centralized logging with ELK stack implementation.
 - **COMPLETED**: Complete OpenTelemetry deployment with collector and Jaeger backend.
 - **COMPLETED**: Structured logging implementation with StructuredLogger utility.
+- **COMPLETED**: Git hooks implementation for local code quality enforcement.
 
 ## 4. Open Decisions & Research Tasks
 

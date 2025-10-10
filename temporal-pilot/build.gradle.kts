@@ -12,7 +12,7 @@ dependencies {
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.opentelemetry.api)
     implementation(libs.opentelemetry.opentracing.shim)
-    implementation(libs.temporal.opentracing)
+
 
     testImplementation(libs.temporal.testing)
 }

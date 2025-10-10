@@ -11,7 +11,8 @@ dependencies {
     implementation(libs.kotlin.reflect)
     api(libs.spring.boot.starter.actuator)
     testImplementation(libs.spring.boot.starter.test)
-    testImplementation(libs.h2)
+    testImplementation(libs.flyway.database.postgresql)
+    testImplementation(libs.postgresql)
 
     // Dependencies from other common modules
     implementation(project(":common-persistence"))
