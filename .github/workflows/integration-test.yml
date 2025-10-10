@@ -84,45 +84,48 @@ jobs:
           - kafka
           - schema-registry
 
-          steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Validate Gradle wrapper
-              uses: gradle/actions/wrapper-validation@v3
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v3
 
-            - name: Set up JDK 25
-              uses: actions/setup-java@v4
-              with:
-                distribution: 'temurin'
-                java-version: '25'
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
 
-            - name: Setup Gradle
-              uses: gradle/actions/setup-gradle@v4
-              with:
-                cache-disabled: false
-                gradle-home-cache-cleanup: true
-            - name: Wait for services to be ready
-              run: |
-                echo "Waiting for services to be ready..."
-                sleep 30
-                curl -f http://localhost:8083/
-            - name: Run integration tests with EOS validation
-              run: |
-                echo "Running integration tests with full Kafka/DB environment..."
-                ./gradlew --no-daemon --stacktrace --configuration-cache :common-persistence:integrationTest \
-                          -Dspring.profiles.active=test \
-                          -Dspring.datasource.url=jdbc:postgresql://localhost:5432/test
-                ./gradlew --no-daemon --stacktrace --configuration-cache :common-kafka:integrationTest \
-                          -Dspring.profiles.active=test \
-                          -Dkafka.bootstrap.servers=localhost:9092
-                ./gradlew --no-daemon --stacktrace --configuration-cache :orders-service:integrationTest \
-                          -Dspring.profiles.active=test \
-                          -Dspring.datasource.url=jdbc:postgresql://localhost:5432/test \
-                          -Dkafka.bootstrap.servers=localhost:9092
-            - name: Upload test results
-              if: failure()
-              uses: actions/upload-artifact@v4
-              with:
-                name: integration-test-results
-                path: '**/build/reports/**'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: false
+          gradle-home-cache-cleanup: true
+          
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to be ready..."
+          sleep 30
+          curl -f http://localhost:8083/
+          
+      - name: Run integration tests with EOS validation
+        run: |
+          echo "Running integration tests with full Kafka/DB environment..."
+          ./gradlew --no-daemon --stacktrace --configuration-cache :common-persistence:integrationTest \
+                    -Dspring.profiles.active=test \
+                    -Dspring.datasource.url=jdbc:postgresql://localhost:5432/test
+          ./gradlew --no-daemon --stacktrace --configuration-cache :common-kafka:integrationTest \
+                    -Dspring.profiles.active=test \
+                    -Dkafka.bootstrap.servers=localhost:9092
+          ./gradlew --no-daemon --stacktrace --configuration-cache :orders-service:integrationTest \
+                    -Dspring.profiles.active=test \
+                    -Dspring.datasource.url=jdbc:postgresql://localhost:5432/test \
+                    -Dkafka.bootstrap.servers=localhost:9092
+                    
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: '**/build/reports/**'
