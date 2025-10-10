@@ -4,7 +4,6 @@ import com.example.outbox.repository.OutboxRepository
 import com.example.payments.PaymentServiceIntegrationTestSupport
 import com.example.payments.PaymentsServiceApplication
 import com.example.payments.application.PaymentProcessingOutcome
-import com.example.payments.application.port.out.RefundResult
 import com.example.payments.application.port.out.RefundResult.Failed
 import com.example.payments.domain.PaymentRepository
 import com.example.payments.domain.PaymentStatus
@@ -31,10 +30,11 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
@@ -45,6 +45,7 @@ import java.util.UUID
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@EmbeddedKafka(partitions = 1, controlledShutdown = true)
 class PaymentServiceTest : PaymentServiceIntegrationTestSupport() {
     @Autowired
     private lateinit var paymentService: PaymentService
@@ -338,7 +339,7 @@ class PaymentServiceTest : PaymentServiceIntegrationTestSupport() {
         assertThat(refundFailedEvents).hasSize(1)
         val payload = json.parseToJsonElement(refundFailedEvents.first().payload).jsonObject
         val body = json.parseToJsonElement(payload["payload"]!!.jsonPrimitive.content).jsonObject
-        assertThat(body["reason"]!!.jsonPrimitive.content).contains("gateway-failure")
+        assertThat(body["failureReason"]!!.jsonPrimitive.content).contains("gateway-failure")
         assertThat(body["status"]!!.jsonPrimitive.content).isEqualTo("REFUNDING")
     }
 

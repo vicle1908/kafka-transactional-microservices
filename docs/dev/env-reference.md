@@ -24,6 +24,8 @@ Global app variables (.env, root)
 - SCHEMA_REGISTRY_URL: Confluent Schema Registry endpoint (e.g., <http://localhost:8081>)
 - DEBEZIUM_CONNECT_URL: Debezium Connect REST endpoint (e.g., <http://localhost:8083>)
 - REDIS_HOST, REDIS_PORT: Redis connection for services (if used)
+- REDIS_USERNAME, REDIS_PASSWORD: Optional credentials for non-local environments
+- REDIS_SSL: Set to true to enable TLS (common-cache will configure Lettuce with SSL)
 - OTEL_ENABLED: enable/disable tracing export (default false)
 - OTEL_SERVICE_NAME: logical service name for telemetry (default my-kafka-microservice)
 - OTEL_ENDPOINT: OTLP exporter endpoint (host:port, gRPC 4317 / HTTP 4318); services prepend http:// when needed

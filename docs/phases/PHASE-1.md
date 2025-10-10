@@ -24,7 +24,7 @@
 || P1.6 | Add IaC validation job (Terraform/Helm lint) to pipeline | DevOps Team | Completed | `ci/scripts/validate-iac.sh` integrated. |
 || P1.7 | Install Istio ambient profile in non-prod cluster | Platform Team | Completed (Plan) | Deployment steps documented in `infra/istio/README.md`. |
 || P1.8 | Update runbooks for infra bootstrap and service mesh | Platform Team | Completed | `docs/runbooks/platform.md` and `docs/runbooks/service-mesh.md` updated. |
-|| P1.DB1 | Configure Postgres for logical replication (wal_level=logical, max_wal_senders, max_replication_slots) | Platform Team | Planned | Use `command:` flags in compose. |
+||| P1.DB1 | Configure Postgres for logical replication (wal_level=logical, max_wal_senders, max_replication_slots) | Platform Team | Completed | Configured via `command:` flags in `infra/compose.yml`. |
 || P1.DB2 | Create multiple databases (payments, inventory, notifications) + replication role | Platform Team | Planned | Add `infra/postgres/init/01-create-dbs.sql`; create `debezium` user. |
 || P1.DB3 | Document DB bootstrap & Debezium prerequisites | Platform Team | Planned | Update `docs/runbooks/debezium.md`. |
 
@@ -64,4 +64,5 @@
 
 - 2025-10-07 | Compose stack, CI pipelines, Istio deployment notes, and runbooks prepared.
 - 2025-10-10 | Implemented comprehensive health checks for all services in Docker Compose files (development, test, and production environments).
-- 2025-10-10 | **CI/CD HARDENING COMPLETE**: Security framework (permissions, wrapper validation, pinned actions), performance optimization (gradle/actions integration, caching), quality assurance (all detekt/ktlint violations resolved), workflow coverage hardened. PR #1 ready for merge.
+- 2025-10-10 | **CI/CD HARDENING COMPLETE**: Security framework (permissions, wrapper validation, pinned actions, concurrency), performance optimization (gradle/actions integration, caching), quality assurance (all detekt/ktlint violations resolved), workflow coverage hardened. PR #1 ready for merge.
+- 2025-10-10 | Environment bootstrap helpers present: root `.envrc` and `scripts/export-env.sh`; `.env.example` remains planned as documented in Task Board.

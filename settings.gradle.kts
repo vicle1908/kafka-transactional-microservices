@@ -29,6 +29,7 @@ include(
     "common-temporal",
     "common-outbox-relay",
     "common-observability",
+    "common-cache",
     "temporal-pilot",
     "services:orders-service",
     "services:payments-service",

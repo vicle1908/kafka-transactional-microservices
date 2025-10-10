@@ -5,8 +5,6 @@ CREATE TABLE IF NOT EXISTS outbox (
     event_type TEXT NOT NULL,
     payload TEXT NOT NULL,
     headers TEXT,
-    status TEXT NOT NULL DEFAULT 'PENDING',
-occurred_at TIMESTAMP NOT NULL,
-  published_at TIMESTAMP
-    version BIGINT NOT NULL DEFAULT 0
+    occurred_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    published_at TIMESTAMP WITH TIME ZONE
 );

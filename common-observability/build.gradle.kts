@@ -14,6 +14,7 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-sdk-trace")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     implementation("io.micrometer:micrometer-registry-prometheus:1.13.0")
+    implementation(libs.kotlinx.serialization.json)
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

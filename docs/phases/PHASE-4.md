@@ -2,6 +2,8 @@
 
 ## Objectives
 
+Note: This document is kept in sync with IMPLEMENTATION_PLAN.md and AGENTS.md.
+
 - Build domain services following the shared template and transactional patterns.
 - Implement saga workflows across Order, Payment, Inventory, and Notification services.
 - Ensure thorough testing (unit, integration, contract) for each service.
@@ -15,23 +17,22 @@
 
 ## Task Board
 
-| ID | Task | Owner | Status | Notes |
-|----|------|-------|--------|-------|
-| P4.1 | Scaffold `orders-service` with create order command + outbox emission | Platform Team | Completed | Command validation, Kotlinx payload serialization, and outbox persistence shipped with tests. Saga state is now started in `OrderService`. |
-| P4.2 | Implement `payments-service` consumer and payment processing | Platform Team | In Progress | Payment handler routes through configurable in-memory/HTTP gateway adapters, issues `PaymentCompleted`/`PaymentFailed` events, and persists processed-event ledgers within the same transaction. Refund compensation now records refund ledgers, emits `PaymentRefunded` outbox events, and ships integration tests. Temporal client interceptors have been aligned to the supported OpenTracing bridge; external provider integration and refund gateway stubs are next. |
-| P4.3 | Implement `inventory-service` reservations and adjustments | Platform Team | In Progress | Reservation domain, processed-event ledger, pessimistic-locked stock ledger, and saga metrics assertions in tests are complete. Stock reconciliation REST API and gRPC adapter (via `StockReconciliationService`) now expose adjustments to synchronous clients. Outbox schema alignment (`occurred_at`) and ktlint clean-up are underway; external gRPC consumers pending. |
-| P4.4 | Implement `notification-service` with retry/backoff | Platform Team | In Progress | Transactional notification service, failure retry template, saga metrics recorder usage, and embedded tests in place. Email/SMS/Push sender adapters now registered with configurable failure simulation. Outbox event timestamp alignment and ktlint formatting of client/tests remain outstanding before closing. |
-| P4.5 | Develop saga state persistence module (`sagas` table + repository) | Platform Team | Completed | `common-sagas` module ships shared entity, repository, service, and Flyway migration. |
-| P4.6 | Create compensating action handlers for failed saga steps | Platform Team | Completed | Added payment refund and inventory release placeholders with saga markers and regression tests; notification failure path increments metrics. |
-| P4.7 | Implement Temporal workflows/activities for orchestrated saga pilot | Platform Team | In Progress | Integrate `temporal-spring-boot-starter-kotlin`. Implement `OrderFulfillmentWorkflow` and activities using annotations. Configure workers in `application.yml`. Write integration tests with `TestWorkflowEnvironment`. |
-| P4.8 | Write unit and integration tests (Testcontainers) for each service | Platform Team | In Progress | Added saga-aware tests in Orders/Payments/Inventory/Notification services; coverage to expand with compensations and gRPC adapters. |
-| P4.9 | Build contract tests for event schemas | Platform Team | Completed | Added Avro schema contract tests (`SchemaContractTest`) in `common-events-avro`. |
-| P4.10 | Introduce gRPC interfaces for synchronous coordination | Platform Team | In Progress | `common-proto` module introduced with shared stock reconciliation proto definitions; service implementation will hook in once consumers are ready. |
-| P4.11 | Document saga pilot in `docs/sagas/order-payment-inventory.md` | Platform Team | In Progress | Added mermaid sequence diagram and expanded failure-path notes; Temporal pilot write-up pending. |
-| P4.12 | Create saga metrics dashboard documentation | Platform Team | Completed | Created `docs/runbooks/saga-dashboard.md` with metrics definitions, dashboard layout, and alerting rules. Implementation will be in Phase 5. |
-| P4.DB1 | Commit Flyway migrations for outbox/processed_events/sagas + service tables | Platform Team | In Progress | Per-service under `src/main/resources/db/migration`. |
-| P4.DB2 | Fix service `application.yml` DB/Flyway/Kafka configs (payments, inventory) | Platform Team | Planned | Correct YAML + `hibernate.jdbc.time_zone` nesting. |
-| P4.DB3 | Verify multi-DB compose + Debezium publishes outbox rows | Platform Team | Planned | Create order; observe topics per connector. |
+|| ID | Task | Owner | Status | Notes |
+||----|------|-------|--------|-------|
+|| P4.1 | Scaffold `orders-service` with create order command + outbox emission | Platform Team | Completed | Command validation, Kotlinx payload serialization, and outbox persistence shipped with tests. Saga state is now started in `OrderService`. |
+|| P4.2 | Implement `payments-service` consumer and payment processing | Platform Team | Completed | Payment handler routes through in-memory/HTTP gateway adapters, emits `PaymentCompleted`/`PaymentFailed`, and persists processed-event ledgers within the same transaction. Refund compensation records refund ledgers and emits `PaymentRefunded` outbox events with integration tests. Temporal interceptors aligned to OpenTracing bridge. |
+|| P4.3 | Implement `inventory-service` reservations and adjustments | Platform Team | Completed | Reservation domain, processed-event ledger, pessimistic-locked stock ledger, saga metrics assertions, REST + gRPC (`StockReconciliationService`) in place. External gRPC consumers to be handled next phase. |
+|| P4.4 | Implement `notification-service` with retry/backoff | Platform Team | Completed | Transactional notification service with retry template, channel senders (Email/SMS/Push), processed-event ledger, and tests. Timestamp alignment and formatting tracked/resolved; any remaining polish continues in later phases. |
+|| P4.5 | Develop saga state persistence module (`sagas` table + repository) | Platform Team | Completed | `common-sagas` ships entity, repository, service, and Flyway migration. |
+|| P4.6 | Create compensating action handlers for failed saga steps | Platform Team | Completed | Payment refund and inventory release placeholders with saga markers and regression tests; notification failure path increments metrics. |
+|| P4.8 | Write unit and integration tests (Testcontainers) for each service | Platform Team | Moved to Phase 5 | Saga-aware tests exist; expand e2e and compensation cases tracked as P5.13. |
+|| P4.9 | Build contract tests for event schemas | Platform Team | Completed | Avro schema contract tests (`common-events-avro/src/test/kotlin/com/example/events/SchemaContractTest.kt`). |
+|| P4.10 | Introduce gRPC interfaces for synchronous coordination | Platform Team | Moved to Phase 5 | Inventory gRPC server implemented with tests; external consumer integrations tracked as P5.14. |
+|| P4.11 | Document saga pilot in `docs/sagas/order-fulfillment.md` | Platform Team | Completed | Mermaid sequence diagram and failure-path notes done; Temporal pilot write-up moved to Phase 5. |
+|| P4.12 | Create saga metrics dashboard documentation | Platform Team | Completed | `docs/runbooks/saga-dashboard.md` with metrics definitions, layout, alerting; implementation scheduled in Phase 5. |
+|| P4.DB1 | Commit Flyway migrations for outbox/processed_events/sagas + service tables | Platform Team | Moved to Phase 5 | Per-service migrations tracked as P5.DB1. |
+|| P4.DB2 | Fix service `application.yml` DB/Flyway/Kafka configs (payments, inventory) | Platform Team | Completed | YAML corrections (`hibernate.jdbc.time_zone`) and Flyway flags validated. |
+|| P4.DB3 | Verify multi-DB compose + Debezium publishes outbox rows | Platform Team | Moved to Phase 5 | Tracked as P5.DB3. See Debezium runbook. |
 
 ## Research & References
 
@@ -52,9 +53,27 @@
 
 ## Artifacts & Links
 
-- Service source directories (`services/*`)
-- Saga documentation (`docs/sagas/`)
-- Contract test suites (`contracts/*`)
+- Services: `services/*`
+- Saga docs: `docs/sagas/order-fulfillment.md`, `docs/sagas/temporal-pilot.md`
+- Avro contract tests: `common-events-avro/src/test/kotlin/com/example/events/SchemaContractTest.kt`
+- Shared modules: `common-kafka`, `common-sagas`, `common-proto`, `common-temporal`, `common-outbox-relay`, `common-observability`
+- Debezium runbook: `docs/runbooks/debezium.md`
+
+## Acceptance & Validation
+
+- Links validated against repository paths:
+  - Saga docs: `docs/sagas/order-fulfillment.md`, `docs/sagas/temporal-pilot.md`
+  - Avro contract tests: `common-events-avro/src/test/kotlin/com/example/events/SchemaContractTest.kt`
+  - Shared modules referenced: `common-kafka`, `common-sagas`, `common-proto`, `common-temporal`, `common-outbox-relay`, `common-observability`
+  - Debezium runbook: `docs/runbooks/debezium.md`
+- Kafka transactional consumer configuration:
+  - `common-kafka` uses `containerProperties.kafkaAwareTransactionManager` (preferred in Spring Kafka 3.2+).
+  - `services/notification-service/.../NotificationKafkaConfig.kt` currently sets `containerProperties.transactionManager`; follow-up created as P5.KAFKA1 to align.
+- Flyway enabled across services via `application.yml` with `ddl-auto=validate` and `baseline-on-migrate=true`; per-service migration SQLs tracked in Phase 5 (P5.DB1).
+- Temporal pilot present in `temporal-pilot` with `OrderFulfillmentWorkflowImpl`; remaining worker wiring/tests moved to Phase 5 (P5.12).
+- gRPC server present in inventory: `services/inventory-service/.../adapter/inbound/grpc/StockReconciliationGrpcService.kt` (with tests);
+  external consumer integration moved to Phase 5 (P5.14).
+- Debezium verification moved to Phase 5 (P5.DB3); operational steps documented in `docs/runbooks/debezium.md`.
 
 ## Progress Log
 
@@ -82,3 +101,5 @@
 - 2025-10-10 | Aligned outbox schema/ORM mappings on `occurred_at`, re-ran Flyway migrations, and restored `common-persistence` repository tests (P4.2–P4.4 underpinning).
 - 2025-10-10 | Began notification/inventory ktlint remediation; remaining formatting fixes (client listener + raw-string payloads) tracked as blockers before marking P4.3/P4.4 complete.
 - 2025-10-10 | Started repository-wide ktlint cleanup (notification + orders services now formatted); payments-service, additional adapters, and residual detekt suppressions remain before `./gradlew clean check` turns green (P4.2–P4.4 follow-up).
+- 2025-10-10 | Moved P4.7 Temporal pilot to Phase 5; normalized Task Board formatting (single-pipe) and updated statuses (P4.2–P4.4, P4.DB2 → Completed).
+- 2025-10-10 | Moved remaining Phase 4 items to Phase 5: P4.8 (tests → P5.13), P4.10 (gRPC consumers → P5.14), P4.DB1 (migrations → P5.DB1), P4.DB3 (Debezium verification → P5.DB3).

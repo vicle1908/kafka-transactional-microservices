@@ -35,6 +35,8 @@ This document lists the current, candidate, and fallback versions for all major 
 | common-proto | grpc-stub | 1.68.0 | gRPC service stubs |
 | common-temporal | temporal-sdk | 1.25.0 | Workflow orchestration |
 | common-temporal | temporal-spring-boot-starter | 4.0.0 | Spring integration for Temporal |
+| common-cache | spring-boot-starter-data-redis | 3.5.6 | Redis client integration |
+| common-cache | spring-boot-starter-cache | 3.5.6 | Spring Cache abstraction |
 
 ## Service Dependencies
 

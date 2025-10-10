@@ -22,6 +22,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.avro.io.EncoderFactory
 import org.apache.avro.specific.SpecificDatumWriter
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.ByteArrayOutputStream
@@ -36,6 +37,7 @@ class OrderService(
     private val sagaStateService: SagaStateService,
     private val sagaMetrics: SagaMetricsRecorder,
     private val workflowClient: WorkflowClient,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional
     fun handle(command: CreateOrderCommand): UUID {
@@ -92,6 +94,9 @@ class OrderService(
                 .build()
         val workflow = workflowClient.newWorkflowStub(OrderFulfillmentWorkflow::class.java, workflowOptions)
         workflow.start(saved.id!!)
+
+        // Publish change event for after-commit cache eviction
+        eventPublisher.publishEvent(OrderChangedEvent(saved.id!!))
 
         return saved.id!!
     }

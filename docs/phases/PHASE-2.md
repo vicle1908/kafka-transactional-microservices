@@ -26,6 +26,7 @@
 | P2.7 | Write developer onboarding guide covering setup, tests, linting | Developer Experience | Completed | `docs/dev/getting-started.md` created. |
 | P2.8 | Update @AGENTS.md with template outcomes | Architecture Team | Completed | Baseline updated with Kotlin-first approach and doc hygiene guidance. |
 | P2.9 | Design Redis caching layer blueprint (cache-aside policies, invalidation) | Architecture Team | Completed | See `docs/architecture/caching.md`. |
+| P2.12 | Implement common-cache auto-configuration and wire services | Platform Team | In Progress | Module `common-cache` added; services depend on it; runbook at `docs/runbooks/cache.md`; TLS/auth env supported (REDIS_USERNAME/REDIS_PASSWORD/REDIS_SSL); serializers set (String keys, JSON values with JavaTimeModule); initial caches: orders:by-id (OrderDto), inventory:stock:by-sku (InventoryStockDto); eviction wired via after-commit events; TTL override (3m) for `inventory:stock:by-sku`; cache metrics exposed across all services. |
 | P2.10 | Implement ktlint/detekt/jacoco quality gates and `.editorconfig` | Developer Experience | Completed | Gradle `check` runs ktlint + detekt + Jacoco; config lives under `config/detekt/` and root `.editorconfig`; configuration cache + parallel execution enabled in `gradle.properties`. |
 | P2.11 | Create `common-temporal` module for shared workflow definitions | Platform Team | Completed | To house shared workflow interfaces, activities, and DTOs. |
 

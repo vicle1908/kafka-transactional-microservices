@@ -6,6 +6,7 @@ import com.example.payments.PaymentServiceIntegrationTestSupport
 import com.example.payments.PaymentsServiceApplication
 import com.example.payments.domain.PaymentRepository
 import com.example.payments.domain.ProcessedEventRepository
+import com.example.payments.support.StubRefundGateway
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository
 import com.example.saga.SagaStateService
@@ -57,6 +58,9 @@ class PaymentOrderListenerTest : PaymentServiceIntegrationTestSupport() {
     @Autowired
     private lateinit var sagaStateRepository: SagaStateRepository
 
+    @Autowired
+    private lateinit var refundGateway: StubRefundGateway
+
     private val json = Json { ignoreUnknownKeys = false }
 
     @BeforeEach
@@ -65,6 +69,7 @@ class PaymentOrderListenerTest : PaymentServiceIntegrationTestSupport() {
         processedEventRepository.deleteAll()
         sagaStateRepository.deleteAll()
         outboxRepository.deleteAll()
+        refundGateway.reset()
     }
 
     @Test

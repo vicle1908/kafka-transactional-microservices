@@ -51,6 +51,19 @@ temporal:
     - task-queue: InventoryTaskQueue
 
 # OpenTelemetry configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    enable:
+      cache: true
+
+# OpenTelemetry configuration
 otel:
   service:
     name: inventory-service

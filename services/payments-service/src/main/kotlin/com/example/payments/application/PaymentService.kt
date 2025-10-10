@@ -4,6 +4,7 @@ import com.example.events.avro.PaymentCompletedEvent
 import com.example.events.avro.PaymentFailedEvent
 import com.example.events.avro.PaymentRefundFailedEvent
 import com.example.events.avro.PaymentRefundedEvent
+import com.example.observability.StructuredLogger
 import com.example.outbox.entity.OutboxMessage
 import com.example.outbox.entity.OutboxStatus
 import com.example.outbox.repository.OutboxRepository
@@ -44,6 +45,7 @@ import java.time.Instant
 import java.util.UUID
 
 @Service
+@Suppress("LargeClass")
 class PaymentService(
     private val paymentRepository: PaymentRepository,
     private val outboxRepository: OutboxRepository,
@@ -54,11 +56,25 @@ class PaymentService(
     private val refundGateway: RefundGateway,
     private val paymentGateway: PaymentGateway,
 ) {
+    private val logger = StructuredLogger.getLogger(PaymentService::class.java)
+
     @Transactional
+    @Suppress("LongMethod", "ReturnCount")
     fun handle(command: ProcessPaymentCommand): PaymentProcessingOutcome {
+        logger.info(
+            "Processing payment",
+            "orderId" to command.orderId,
+            "amount" to command.amount,
+            "eventId" to command.eventId,
+        )
+
         validate(command)
         val eventId = command.eventId
         if (eventId != null && processedEventRepository.existsById(eventId)) {
+            logger.debug(
+                "Event already processed, skipping",
+                "eventId" to eventId,
+            )
             val existing =
                 paymentRepository.findTopByOrderIdOrderByProcessedAtDesc(command.orderId)
                     ?: return PaymentProcessingOutcome.AlreadyProcessed(null)
@@ -76,7 +92,21 @@ class PaymentService(
             )
         paymentRepository.save(payment)
 
+        logger.info(
+            "Payment entity created",
+            "paymentId" to payment.id,
+            "orderId" to command.orderId,
+            "amount" to command.amount,
+        )
+
         val persistedId = payment.id ?: throw IllegalStateException("Payment id should be available after save")
+
+        logger.info(
+            "Initiating payment charge",
+            "paymentId" to persistedId,
+            "orderId" to command.orderId,
+            "amount" to command.amount,
+        )
 
         val chargeResult =
             paymentGateway.charge(
@@ -87,6 +117,16 @@ class PaymentService(
                     metadata = command.metadata,
                 ),
             )
+
+        logger.info(
+            "Payment charge result received",
+            "paymentId" to persistedId,
+            "chargeResult" to
+                when (chargeResult) {
+                    is Approved -> "approved"
+                    is Declined -> "declined"
+                },
+        )
 
         val outcome =
             when (chargeResult) {
@@ -103,6 +143,17 @@ class PaymentService(
             )
         }
 
+        logger.info(
+            "Payment processing completed",
+            "paymentId" to payment.id,
+            "outcome" to
+                when (outcome) {
+                    is PaymentProcessingOutcome.Completed -> "completed"
+                    is PaymentProcessingOutcome.Failed -> "failed"
+                    is PaymentProcessingOutcome.AlreadyProcessed -> "already_processed"
+                },
+        )
+
         return outcome
     }
 
@@ -111,8 +162,20 @@ class PaymentService(
         orderId: UUID,
         reason: String?,
     ) {
+        logger.info(
+            "Starting payment compensation",
+            "orderId" to orderId,
+            "reason" to reason,
+        )
+
         val occurredAt = Instant.now()
         initiateRefund(orderId, reason, occurredAt)
+
+        logger.info(
+            "Updating saga state for compensation",
+            "orderId" to orderId,
+        )
+
         sagaStateService.transitionByCorrelation(
             sagaType = SagaNames.ORDER_FULFILLMENT,
             correlationId = orderId.toString(),
@@ -144,6 +207,11 @@ class PaymentService(
             sagaType = SagaNames.ORDER_FULFILLMENT,
             step = SagaStepNames.PAYMENT_COMPENSATED,
             state = SagaStatus.FAILED,
+        )
+
+        logger.info(
+            "Payment compensation completed",
+            "orderId" to orderId,
         )
     }
 
