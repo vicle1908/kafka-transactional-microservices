@@ -18,7 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling
     basePackages = [
         "com.example.notification.domain",
         "com.example.outbox.repository",
-        "com.example.saga.repository",
+        "com.example.saga",
     ],
 )
 @EnableKafka

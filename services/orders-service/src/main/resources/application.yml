@@ -7,9 +7,9 @@ spring:
   application:
     name: orders-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/orders
-    username: app
-    password: app
+    url: ${ORDERS_DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${ORDERS_DB_NAME:orders}}
+    username: ${DB_USER:app}
+    password: ${DB_PASSWORD:app}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -26,14 +26,16 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    properties:
+      schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       enable-idempotence: true
       acks: all
       retries: 2147483647
-      transaction-id-prefix: orders-tx-
+      transaction-id-prefix: ${ORDERS_KAFKA_TX_PREFIX:orders-tx-}
     consumer:
       group-id: orders-service
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -61,3 +63,10 @@ management:
   endpoint:
     health:
       show-details: always
+
+# OpenTelemetry configuration
+otel:
+  service:
+    name: orders-service
+  endpoint: ${OTEL_ENDPOINT:localhost:4317}
+  enabled: ${OTEL_ENABLED:true}

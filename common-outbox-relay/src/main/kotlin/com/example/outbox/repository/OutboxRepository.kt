@@ -13,8 +13,8 @@ import java.util.UUID
 
 @Repository
 interface OutboxRepository : JpaRepository<OutboxMessage, UUID> {
-    @Query("SELECT o FROM OutboxMessage o WHERE o.status = :status ORDER BY o.createdAt ASC")
-    fun findByStatusOrderByCreatedAtAsc(
+    @Query("SELECT o FROM OutboxMessage o WHERE o.status = :status ORDER BY o.occurredAt ASC")
+    fun findByStatusOrderByOccurredAtAsc(
         @Param("status") status: OutboxStatus,
         pageable: Pageable,
     ): List<OutboxMessage>
@@ -46,8 +46,8 @@ interface OutboxRepository : JpaRepository<OutboxMessage, UUID> {
         @Param("status") status: OutboxStatus,
     ): Long
 
-    @Query("SELECT o FROM OutboxMessage o WHERE o.createdAt BETWEEN :startTime AND :endTime ORDER BY o.createdAt ASC")
-    fun findByCreatedAtBetweenOrderByCreatedAtAsc(
+    @Query("SELECT o FROM OutboxMessage o WHERE o.occurredAt BETWEEN :startTime AND :endTime ORDER BY o.occurredAt ASC")
+    fun findByOccurredAtBetweenOrderByOccurredAtAsc(
         @Param("startTime") startTime: Instant,
         @Param("endTime") endTime: Instant,
         pageable: Pageable,

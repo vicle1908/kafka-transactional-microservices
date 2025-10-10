@@ -4,8 +4,9 @@ import com.example.events.avro.NotificationSentEvent
 import com.example.notification.domain.NotificationEntity
 import com.example.notification.domain.NotificationRepository
 import com.example.notification.domain.NotificationStatus
-import com.example.persistence.outbox.OutboxMessage
-import com.example.persistence.outbox.OutboxRepository
+import com.example.outbox.entity.OutboxMessage
+import com.example.outbox.entity.OutboxStatus
+import com.example.outbox.repository.OutboxRepository
 import com.example.saga.SagaMetricsRecorder
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateService
@@ -74,11 +75,12 @@ class NotificationService(
 
             outboxRepository.save(
                 OutboxMessage(
-                    aggregateType = "Notification",
                     aggregateId = saved.id!!.toString(),
+                    aggregateType = "Notification",
                     eventType = "NotificationSent",
                     payload = encoded,
                     headers = null,
+                    status = OutboxStatus.PENDING,
                     occurredAt = occurredAt,
                 ),
             )

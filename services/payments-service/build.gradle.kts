@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":common-persistence"))
     implementation(project(":common-sagas"))
     implementation(project(":common-outbox-relay"))
+    implementation(project(":common-observability"))
 
     // Testing dependencies
     testImplementation(libs.spring.boot.starter.test)

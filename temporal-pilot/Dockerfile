@@ -1,7 +1,14 @@
 # Multi-stage build: use Gradle to build the application
 FROM gradle:8.10-jdk25 as builder
 WORKDIR /app
-COPY . .
+
+# Copy only the necessary files to build the temporal-pilot
+COPY build.gradle.kts settings.gradle.kts gradlew gradlew.bat gradle.properties /app/
+COPY gradle /app/gradle
+COPY common-temporal/src /app/common-temporal/src
+COPY temporal-pilot/src /app/temporal-pilot/src
+COPY temporal-pilot/build.gradle.kts /app/temporal-pilot/build.gradle.kts
+
 RUN gradle :temporal-pilot:bootJar --no-daemon
 
 # Runtime stage: use OpenJDK 25 for running the application

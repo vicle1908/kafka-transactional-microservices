@@ -25,8 +25,9 @@
   - Create a dedicated replication user `debezium` with LOGIN/REPLICATION privileges.
   - Document bootstrap steps in `docs/runbooks/debezium.md`.
 - Establish GitHub Actions/GitLab pipelines for build/test, Docker image publishing (container-publish.yml), and IaC module validation.
-- Add integration test workflow in GitHub Actions that spins up complete Kafka/DB environments to validate EOS.
+- Configure integration test workflow in GitHub Actions that spins up complete Kafka/DB environments to validate EOS.
 - Deploy Istio (ambient profile) in non-prod clusters;configure Gateway API integration with Spring Cloud Gateway at the edge.
+- **COMPLETED**: Implement comprehensive health checks for all services in Docker Compose files.
 - Execution board: [PHASE-1](docs/phases/PHASE-1.md)
 
 ### Phase 2 – Service Template & Shared Components (Weeks 3-4)
@@ -109,6 +110,7 @@
 - Implement retry strategies (Spring Retry, DLQ topics) and chaos drills (broker restart, DB failover) via GitHub Actions workflow (chaos-engineering.yml).
 - Document runbooks in `docs/runbooks/` for connectors, DLQ reprocessing, and saga failure recovery.
 - Complete API gateway, Debezium connector, and polyglot datastore runbooks referenced in @AGENTS.md; ensure automation scripts are version-controlled.
+- **IN PROGRESS**: Enhance observability with comprehensive documentation, OpenTelemetry tracing implementation, and runbook completion.
 - Execution board: [PHASE-5](docs/phases/PHASE-5.md)
 
 ### Phase 6 – Hardening & Launch (Weeks 9-12)
@@ -131,6 +133,7 @@
 - Redis caching blueprint and environment configuration.
 - CDN/edge caching configuration with monitoring dashboards.
 - **COMPLETED**: Additional runbooks for polling relay mechanism and connector configuration guide.
+- **COMPLETED**: Additional runbooks for API gateway, service mesh, polyglot datastores, and OpenTelemetry tracing.
 
 ## 4. Open Decisions & Research Tasks
 -Finalize choice between Debezium connectors vs lightweight polling for low-volume services based on operational complexity assessment.

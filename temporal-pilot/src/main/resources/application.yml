@@ -1,7 +1,30 @@
-spring.application.name=workflow-service
+spring:
+  application:
+    name: workflow-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  tracing:
+    enabled: ${OTEL_ENABLED:false}
+  otlp:
+    tracing:
+      endpoint: http://${OTEL_ENDPOINT:localhost:4317}
 
 temporal:
   connection:
-    target: 127.0.0.1:7233
+    target: ${TEMPORAL_TARGET:127.0.0.1:7233}
   workers:
     - task-queue: OrderFulfillmentWorkflowTaskQueue
+
+# OpenTelemetry configuration
+otel:
+  service:
+    name: temporal-pilot
+  endpoint: ${OTEL_ENDPOINT:localhost:4317}
+  enabled: ${OTEL_ENABLED:true}

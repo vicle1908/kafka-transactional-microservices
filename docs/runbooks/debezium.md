@@ -84,6 +84,37 @@ The polling relay provides health information through Spring Boot Actuator. It r
 - WARNING status when pending messages exceed 1000
 - DOWN status when pending messages exceed 5000
 
+## Monitoring and Observability
+
+### Grafana Dashboards
+The system includes two main Grafana dashboards for monitoring Debezium and outbox processing:
+
+1. **Outbox and Transaction Monitoring** (`infra/grafana/dashboards/outbox-monitoring.json`):
+   - Outbox Table Depth
+   - Kafka Consumer Lag
+   - Transaction Commit Rate
+   - Relay Performance
+   - End-to-End Latency
+   - Debezium Connector Health
+   - Polling Relay Metrics
+
+2. **Outbox Relay and Debezium Monitoring** (`infra/grafana/dashboards/outbox-debezium-monitoring.json`):
+   - Outbox Table Depth
+   - Kafka Consumer Group Lag
+   - Transaction Commit Rate
+   - Relay Performance
+   - End-to-End Latency
+   - Debezium Connector Health
+   - Debezium Offset Lag
+   - Connector Error Rates
+
+### Alerting Rules
+The following alerting rules are configured:
+
+1. **High Outbox Depth Alert**: Triggers when outbox table depth exceeds 1000 messages for 5 minutes
+2. **High Debezium Lag Alert**: Triggers when Debezium offset lag exceeds 10000 records
+3. **High Connector Error Rate Alert**: Triggers when connector error rate exceeds 0.05 errors per second
+
 ## References
 - Debezium Outbox Event Router docs
 - Schema Registry compatibility guide
@@ -91,3 +122,4 @@ The polling relay provides health information through Spring Boot Actuator. It r
 - Spring for Apache Kafka documentation on transaction management
 - Polling Relay Runbook (`docs/runbooks/polling-relay.md`)
 - Connector Configuration Guide (`docs/runbooks/connector-configuration-guide.md`)
+- Grafana Dashboards (`infra/grafana/dashboards/`)

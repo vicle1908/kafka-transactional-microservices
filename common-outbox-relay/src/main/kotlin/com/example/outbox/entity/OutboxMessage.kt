@@ -2,6 +2,8 @@ package com.example.outbox.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.Table
@@ -24,6 +26,7 @@ class OutboxMessage(
     val payload: String,
     @Column(name = "headers", columnDefinition = "TEXT")
     val headers: String? = null,
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     var status: OutboxStatus = OutboxStatus.PENDING,
     @Column(name = "occurred_at", nullable = false)

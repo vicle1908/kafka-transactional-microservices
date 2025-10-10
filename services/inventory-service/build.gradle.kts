@@ -20,6 +20,7 @@ dependencies {
     implementation(project(":common-proto"))
     implementation(project(":common-temporal"))
     implementation(libs.grpc.netty)
+    runtimeOnly(libs.grpc.netty.shaded)
 
     // Shared modules
     implementation(project(":common-events"))
@@ -28,6 +29,7 @@ dependencies {
     implementation(project(":common-persistence"))
     implementation(project(":common-sagas"))
     implementation(project(":common-outbox-relay"))
+    implementation(project(":common-observability"))
 
     // Testing dependencies
     testImplementation(libs.spring.boot.starter.test)
@@ -38,6 +40,8 @@ dependencies {
     testImplementation(libs.h2)
     testImplementation(project(":common-proto"))
     testImplementation(libs.grpc.netty)
+    testImplementation(libs.grpc.testing)
+    testRuntimeOnly(libs.grpc.netty.shaded)
 
     // Development dependencies
     developmentOnly(libs.spring.boot.devtools)

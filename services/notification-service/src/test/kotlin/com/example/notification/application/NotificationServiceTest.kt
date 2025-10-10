@@ -4,7 +4,7 @@ import com.example.notification.NotificationServiceApplication
 import com.example.notification.config.NotificationChannelProperties
 import com.example.notification.domain.NotificationRepository
 import com.example.notification.domain.NotificationStatus
-import com.example.persistence.outbox.OutboxRepository
+import com.example.outbox.repository.OutboxRepository
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository
 import com.example.saga.SagaStateService

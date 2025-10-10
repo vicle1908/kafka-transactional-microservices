@@ -22,6 +22,55 @@ This document describes the standard development workflow for the Kafka Transact
 4. Import the Gradle project into IntelliJ; enable the Kotlin code style shipped with the repo (see `.editorconfig`)
    - When collaborating via JetBrains MCP server, use tools such as `open_file_in_editor` for navigation and `get_file_problems` to surface IntelliJ inspections without leaving the shared environment
 
+## Environment configuration for local/dev
+
+This repository uses 12‑Factor, env‑driven configuration for local development.
+
+1) Create local env files (examples provided):
+   ```bash
+   cp .env.example .env
+   cp infra/.env.example infra/.env
+   ```
+
+2) Auto‑load env (choose one):
+   - Recommended (direnv):
+     ```bash
+     # one-time
+     direnv allow
+     ```
+   - Shell fallback (no direnv):
+     ```bash
+     # each new shell
+     source scripts/export-env.sh
+     ```
+
+3) Start local infrastructure with env file:
+   - From repo root:
+     ```bash
+     docker compose --env-file infra/.env -f infra/compose.yml up -d
+     ```
+   - Or from infra directory (auto-loads infra/.env):
+     ```bash
+     cd infra && docker compose up -d
+     ```
+
+4) Run services (config comes from env, with safe defaults):
+   ```bash
+   ./gradlew :services:orders-service:bootRun
+   # similarly for others
+   ```
+
+5) Optional: enable local tracing
+   ```bash
+   # in .env
+   OTEL_ENABLED=true
+   OTEL_ENDPOINT=localhost:4317
+   ```
+
+Security & Secrets
+- Do not commit .env files (already git-ignored). Use *.env.example to share non-secret defaults.
+- Staging/Prod secrets are sourced from Vault (see ADR‑0004 and docs/runbooks/vault.md). Local .env is for dev only.
+
 ## Building & Testing
 
 ### Run all checks (includes ktlint, detekt, Jacoco):

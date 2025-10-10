@@ -10,7 +10,7 @@ import com.example.payments.domain.PaymentStatus
 import com.example.payments.domain.ProcessedEventRepository
 import com.example.payments.domain.RefundRepository
 import com.example.payments.domain.RefundStatus
-import com.example.persistence.outbox.OutboxRepository
+import com.example.outbox.repository.OutboxRepository
 import com.example.saga.InvalidSagaStateTransitionException
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository

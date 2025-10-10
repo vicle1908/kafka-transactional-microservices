@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(project(":common-temporal"))
+    implementation(project(":common-observability"))
     implementation(libs.temporal.spring.boot.starter)
     implementation(libs.temporal.sdk)
 

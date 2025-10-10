@@ -17,7 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling
     basePackages = [
         "com.example.orders.repository",
         "com.example.outbox.repository",
-        "com.example.saga.repository",
+        "com.example.saga",
     ],
 )
 @EnableScheduling

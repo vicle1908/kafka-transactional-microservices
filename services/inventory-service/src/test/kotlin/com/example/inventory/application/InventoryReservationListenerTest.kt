@@ -28,7 +28,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.test.context.EmbeddedKafka
+import org.springframework.kafka.test.condition.EmbeddedKafkaCondition
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -38,11 +41,12 @@ import java.util.UUID
     partitions = 1,
     controlledShutdown = true,
     topics = [InventoryReservationListener.PAYMENTS_COMPLETED_TOPIC],
+    bootstrapServersProperty = "spring.kafka.bootstrap-servers",
 )
 @ActiveProfiles("test")
 class InventoryReservationListenerTest {
     @Autowired
-    private lateinit var kafkaTemplate: KafkaTemplate<String, String>
+    private lateinit var kafkaTemplate: KafkaTemplate<String, Any>
 
     @Autowired
     private lateinit var reservationRepository: InventoryReservationRepository
@@ -60,6 +64,16 @@ class InventoryReservationListenerTest {
     private lateinit var stockRepository: InventoryStockRepository
 
     private val json = Json { ignoreUnknownKeys = false }
+
+    companion object {
+        @JvmStatic
+        @DynamicPropertySource
+        fun kafkaProperties(registry: DynamicPropertyRegistry) {
+            registry.add("spring.kafka.bootstrap-servers") {
+                EmbeddedKafkaCondition.getBroker().brokersAsString
+            }
+        }
+    }
 
     @BeforeEach
     fun cleanRepositories() {

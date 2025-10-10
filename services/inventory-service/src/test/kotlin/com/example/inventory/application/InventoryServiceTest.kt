@@ -4,7 +4,7 @@ import com.example.inventory.InventoryServiceApplication
 import com.example.inventory.domain.InventoryReservationRepository
 import com.example.inventory.domain.InventoryStockEntity
 import com.example.inventory.domain.InventoryStockRepository
-import com.example.persistence.outbox.OutboxRepository
+import com.example.outbox.repository.OutboxRepository
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository
 import com.example.saga.SagaStateService

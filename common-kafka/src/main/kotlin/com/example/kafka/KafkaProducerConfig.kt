@@ -41,7 +41,7 @@ class KafkaProducerConfig {
         KafkaTemplate(producerFactory)
 
     @Bean
-    @ConditionalOnMissingBean(PlatformTransactionManager::class)
+    @ConditionalOnMissingBean(KafkaTransactionManager::class)
     fun kafkaTransactionManager(producerFactory: ProducerFactory<String, Any>): KafkaTransactionManager<String, Any> =
         KafkaTransactionManager(producerFactory)
 

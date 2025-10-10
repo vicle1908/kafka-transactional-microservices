@@ -1,7 +1,17 @@
 # Multi-stage build: use Gradle to build the application
 FROM gradle:8.10-jdk25 as builder
 WORKDIR /app
-COPY . .
+
+# Copy only the necessary files to build the payments-service
+COPY build.gradle.kts settings.gradle.kts gradlew gradlew.bat gradle.properties /app/
+COPY gradle /app/gradle
+COPY common-events/src /app/common-events/src
+COPY common-kafka/src /app/common-kafka/src
+COPY common-persistence/src /app/common-persistence/src
+COPY common-sagas/src /app/common-sagas/src
+COPY services/payments-service/src /app/services/payments-service/src
+COPY services/payments-service/build.gradle.kts /app/services/payments-service/build.gradle.kts
+
 RUN gradle :services:payments-service:bootJar --no-daemon
 
 # Runtime stage: use OpenJDK 25 for running the application

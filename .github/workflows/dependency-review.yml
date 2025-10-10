@@ -9,20 +9,24 @@ permissions:
   pull-requests: write
 
 jobs:
+  versions:
+    uses: ./.github/workflows/central-versions.yml
+
   dependency-review:
+    needs: versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@${{ needs.versions.outputs.actions_setup_java_version }}
         with:
           distribution: temurin
           java-version: '25'
 
       - name: Cache Gradle packages
-        uses: actions/cache@v4
+        uses: actions/cache@${{ needs.versions.outputs.actions_cache_version }}
         with:
           path: |
             ~/.gradle/caches
@@ -34,23 +38,50 @@ jobs:
       # Generate dependency report
       - name: Generate dependencies report
         run: |
-          ./gradlew dependencies --configuration compileClasspath > dependencies-compile.txt
-          ./gradlew dependencies --configuration runtimeClasspath > dependencies-runtime.txt
-          ./gradlew :common-events:dependencies > dependencies-common-events.txt
-          ./gradlew :common-kafka:dependencies > dependencies-common-kafka.txt
-          ./gradlew :common-persistence:dependencies > dependencies-common-persistence.txt
-          ./gradlew :common-sagas:dependencies > dependencies-common-sagas.txt
-          ./gradlew :common-events-avro:dependencies > dependencies-common-events-avro.txt
-          ./gradlew :common-proto:dependencies > dependencies-common-proto.txt
-          ./gradlew :common-temporal:dependencies > dependencies-common-temporal.txt
-          ./gradlew :services:orders-service:dependencies > dependencies-orders-service.txt
-          ./gradlew :services:payments-service:dependencies > dependencies-payments-service.txt
-          ./gradlew :services:inventory-service:dependencies > dependencies-inventory-service.txt
-          ./gradlew :services:notification-service:dependencies > dependencies-notification-service.txt
+          echo "# Dependency Report" > dependency-report.txt
+          echo "
+## Compile Classpath" >> dependency-report.txt
+          ./gradlew dependencies --configuration compileClasspath >> dependency-report.txt
+          echo "
+## Runtime Classpath" >> dependency-report.txt
+          ./gradlew dependencies --configuration runtimeClasspath >> dependency-report.txt
+          echo "
+## Common Events" >> dependency-report.txt
+          ./gradlew :common-events:dependencies >> dependency-report.txt
+          echo "
+## Common Kafka" >> dependency-report.txt
+          ./gradlew :common-kafka:dependencies >> dependency-report.txt
+          echo "
+## Common Persistence" >> dependency-report.txt
+          ./gradlew :common-persistence:dependencies >> dependency-report.txt
+          echo "
+## Common Sagas" >> dependency-report.txt
+          ./gradlew :common-sagas:dependencies >> dependency-report.txt
+          echo "
+## Common Events Avro" >> dependency-report.txt
+          ./gradlew :common-events-avro:dependencies >> dependency-report.txt
+          echo "
+## Common Proto" >> dependency-report.txt
+          ./gradlew :common-proto:dependencies >> dependency-report.txt
+          echo "
+## Common Temporal" >> dependency-report.txt
+          ./gradlew :common-temporal:dependencies >> dependency-report.txt
+          echo "
+## Orders Service" >> dependency-report.txt
+          ./gradlew :services:orders-service:dependencies >> dependency-report.txt
+          echo "
+## Payments Service" >> dependency-report.txt
+          ./gradlew :services:payments-service:dependencies >> dependency-report.txt
+          echo "
+## Inventory Service" >> dependency-report.txt
+          ./gradlew :services:inventory-service:dependencies >> dependency-report.txt
+          echo "
+## Notification Service" >> dependency-report.txt
+          ./gradlew :services:notification-service:dependencies >> dependency-report.txt
 
       # Dependency review action
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@${{ needs.versions.outputs.actions_dependency_review_action_version }}
         with:
           config-file: .github/dependency-review-config.yml
           fail-on-severity: high
@@ -60,9 +91,9 @@ jobs:
 
       # Upload dependency reports
       - name: Upload dependency reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@${{ needs.versions.outputs.actions_checkout_version }}
         with:
           name: dependency-reports
           path: |
-            dependencies-*.txt
+            dependency-report.txt
             gradle/deps.versions.toml

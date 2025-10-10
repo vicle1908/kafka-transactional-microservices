@@ -4,8 +4,9 @@ import com.example.events.avro.OrderCreatedEvent
 import com.example.orders.domain.OrderEntity
 import com.example.orders.domain.OrderRepository
 import com.example.orders.domain.OrderStatus
-import com.example.persistence.outbox.OutboxMessage
-import com.example.persistence.outbox.OutboxRepository
+import com.example.outbox.entity.OutboxMessage
+import com.example.outbox.entity.OutboxStatus
+import com.example.outbox.repository.OutboxRepository
 import com.example.saga.SagaMetricsRecorder
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateService
@@ -62,11 +63,12 @@ class OrderService(
 
         val outbox =
             OutboxMessage(
-                aggregateType = "Order",
                 aggregateId = saved.id!!.toString(),
+                aggregateType = "Order",
                 eventType = "OrderCreated",
                 payload = payload,
                 headers = null,
+                status = OutboxStatus.PENDING,
                 occurredAt = occurredAt,
             )
         outboxRepository.save(outbox)

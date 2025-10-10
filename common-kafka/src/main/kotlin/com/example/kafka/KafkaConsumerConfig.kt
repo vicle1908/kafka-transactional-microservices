@@ -3,6 +3,7 @@ package com.example.kafka
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.kafka.KafkaProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
@@ -16,15 +17,13 @@ import org.springframework.kafka.transaction.KafkaTransactionManager
 class KafkaConsumerConfig {
     @Bean
     @ConditionalOnMissingBean(ConsumerFactory::class)
-    fun consumerFactory(): ConsumerFactory<String, Any> {
-        val props =
-            mapOf(
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to JsonDeserializer::class.java,
-                ConsumerConfig.ISOLATION_LEVEL_CONFIG to "read_committed",
-                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to false,
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest",
-            )
+    fun consumerFactory(kafkaProperties: KafkaProperties): ConsumerFactory<String, Any> {
+        val props = kafkaProperties.buildConsumerProperties()
+        props.putIfAbsent(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java)
+        props.putIfAbsent(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer::class.java)
+        props[ConsumerConfig.ISOLATION_LEVEL_CONFIG] = "read_committed"
+        props[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = false
+        props.putIfAbsent(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
         return DefaultKafkaConsumerFactory(props)
     }
 

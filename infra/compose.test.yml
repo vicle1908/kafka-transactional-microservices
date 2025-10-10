@@ -89,12 +89,22 @@ services:
       INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       OFFSET_STORAGE_FILE_FILENAME: /tmp/connect.offsets
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis-test:
     image: redis:7-alpine
     container_name: redis-test
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
   akhq-test:
     image: tchiotludo/akhq:0.24.0
@@ -114,6 +124,11 @@ services:
                 schema.registry.url: http://schema-registry-test:8081
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   kafka-test-data:

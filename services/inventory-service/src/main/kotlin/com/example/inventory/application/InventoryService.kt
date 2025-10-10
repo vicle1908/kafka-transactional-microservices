@@ -5,8 +5,9 @@ import com.example.inventory.domain.InventoryReservationEntity
 import com.example.inventory.domain.InventoryReservationRepository
 import com.example.inventory.domain.InventoryReservationStatus
 import com.example.inventory.domain.InventoryStockRepository
-import com.example.persistence.outbox.OutboxMessage
-import com.example.persistence.outbox.OutboxRepository
+import com.example.outbox.entity.OutboxMessage
+import com.example.outbox.entity.OutboxStatus
+import com.example.outbox.repository.OutboxRepository
 import com.example.saga.SagaMetricsRecorder
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateService
@@ -69,11 +70,12 @@ class InventoryService(
 
         val outbox =
             OutboxMessage(
-                aggregateType = "InventoryReservation",
                 aggregateId = saved.id!!.toString(),
+                aggregateType = "InventoryReservation",
                 eventType = "InventoryReserved",
                 payload = payload,
                 headers = null,
+                status = OutboxStatus.PENDING,
                 occurredAt = occurredAt,
             )
         outboxRepository.save(outbox)

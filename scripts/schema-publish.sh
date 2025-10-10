@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 SCHEMA_REGISTRY_URL="${SCHEMA_REGISTRY_URL:-http://localhost:8081}"
+echo "Using Schema Registry: ${SCHEMA_REGISTRY_URL}"
 SCHEMAS_DIR="$PROJECT_ROOT/common-events-avro/src/main/avro"
 
 HELP_TEXT="Usage: $0 [OPTIONS]

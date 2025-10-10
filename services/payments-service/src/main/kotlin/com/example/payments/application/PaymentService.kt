@@ -20,8 +20,9 @@ import com.example.payments.domain.ProcessedEventRepository
 import com.example.payments.domain.RefundEntity
 import com.example.payments.domain.RefundRepository
 import com.example.payments.domain.RefundStatus
-import com.example.persistence.outbox.OutboxMessage
-import com.example.persistence.outbox.OutboxRepository
+import com.example.outbox.entity.OutboxMessage
+import com.example.outbox.entity.OutboxStatus
+import com.example.outbox.repository.OutboxRepository
 import com.example.saga.SagaMetricsRecorder
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateService
@@ -350,11 +351,12 @@ class PaymentService(
     ) {
         outboxRepository.save(
             OutboxMessage(
-                aggregateType = aggregateType,
                 aggregateId = aggregateId,
+                aggregateType = aggregateType,
                 eventType = eventType,
                 payload = payload,
                 headers = null,
+                status = OutboxStatus.PENDING,
                 occurredAt = occurredAt,
             ),
         )

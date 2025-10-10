@@ -41,7 +41,7 @@ class OutboxRelayService(
 
         while (hasMoreMessages) {
             val pendingMessages =
-                outboxRepository.findByStatusOrderByCreatedAtAsc(
+                outboxRepository.findByStatusOrderByOccurredAtAsc(
                     OutboxStatus.PENDING,
                     PageRequest.of(0, batchSize),
                 )
@@ -98,7 +98,7 @@ class OutboxRelayService(
 
         while (hasMoreMessages) {
             val messages =
-                outboxRepository.findByCreatedAtBetweenOrderByCreatedAtAsc(
+                outboxRepository.findByOccurredAtBetweenOrderByOccurredAtAsc(
                     startTime,
                     endTime,
                     PageRequest.of(offset / batchSize, batchSize),

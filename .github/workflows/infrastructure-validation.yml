@@ -15,11 +15,15 @@ on:
       - '.github/workflows/**'
 
 jobs:
+  versions:
+    uses: ./.github/workflows/central-versions.yml
+
   docker-compose-validation:
+    needs: versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
 
       - name: Validate Docker Compose files
         run: |
@@ -47,13 +51,14 @@ jobs:
           docker-compose -f infra/compose.prod.yml config
 
   infrastructure-security:
+    needs: versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
 
       - name: Run Dockerfile security scan with Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@${{ needs.versions.outputs.aquasecurity_trivy_action_version }}
         with:
           scan-type: 'config'
           scan-ref: 'infra'
@@ -61,20 +66,21 @@ jobs:
           output: 'trivy-config-results.sarif'
 
       - name: Upload Trivy config results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@${{ needs.versions.outputs.actions_checkout_version }}
         if: always()
         with:
           name: trivy-config-results
           path: trivy-config-results.sarif
 
   terraform-validation:
+    needs: versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@${{ needs.versions.outputs.hashicorp_setup_terraform_version }}
         if: hashFiles('**/*.tf') != ''
 
       - name: Terraform fmt
@@ -88,16 +94,16 @@ jobs:
         working-directory: infra/terraform
 
   kubernetes-manifest-validation:
+    needs: versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
 
-      - name: Install kubeconform
-        run: |
-          curl -L https://github.com/yannh/kubeconform/releases/download/v0.6.4/kubeconform-linux-amd64.tar.gz | tar -xzf -
-          chmod +x kubeconform
-          sudo mv ./kubeconform /usr/local/bin/kubeconform
+      - name: Set up Kubeconform
+        uses: bmuschko/setup-kubeconform@${{ needs.versions.outputs.bmuschko_setup_kubeconform_version }}
+        with:
+          version: 'v0.6.4'
 
       - name: Validate Kubernetes manifests
         run: |
@@ -108,13 +114,14 @@ jobs:
           fi
 
   docker-security-scan:
+    needs: versions
     runs-on: ubuntu-latest
     strategy:
       matrix:
         service: [orders-service, payments-service, inventory-service, notification-service]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
 
       - name: Build Docker image for ${{ matrix.service }}
         run: |
@@ -127,7 +134,7 @@ jobs:
           fi
 
       - name: Run Trivy image scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@${{ needs.versions.outputs.aquasecurity_trivy_action_version }}
         with:
           scan-type: 'fs'
           scan-ref: 'infra'
