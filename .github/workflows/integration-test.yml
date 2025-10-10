@@ -45,37 +45,37 @@ jobs:
           KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
           KAFKA_MIN_INSYNC_REPLICAS: 1
           KAFKA_DEFAULT_REPLICATION_FACTOR: 1
-            schema-registry:
-              image: confluentinc/cp-schema-registry:7.7.0
-              env:
-                SCHEMA_REGISTRY_HOST_NAME: localhost
-                SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
-                SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://localhost:9092
-                SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: PLAINTEXT
-              options: --health-cmd "curl -f http://localhost:8081/subjects || exit 1" --health-interval 10s --health-timeout 5s --health-retries 5
-              ports:
-                - 8081:8081
-              depends_on:
-                - kafka
-            debezium:
-              image: debezium/connect:3.3
-              environment:
-                BOOTSTRAP_SERVERS: localhost:9092
-                GROUP_ID: 1
-                CONFIG_STORAGE_TOPIC: debezium_config
-                OFFSET_STORAGE_TOPIC: debezium_offsets
-                STATUS_STORAGE_TOPIC: debezium_status
-                KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-                VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
-                KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://localhost:8081
-                VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://localhost:8081
-                INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-                INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-              ports:
-                - 8083:8083
-              depends_on:
-                - kafka
-                - schema-registry
+      schema-registry:
+        image: confluentinc/cp-schema-registry:7.7.0
+        env:
+          SCHEMA_REGISTRY_HOST_NAME: localhost
+          SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+          SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://localhost:9092
+          SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: PLAINTEXT
+        options: --health-cmd "curl -f http://localhost:8081/subjects || exit 1" --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 8081:8081
+        depends_on:
+          - kafka
+      debezium:
+        image: debezium/connect:3.3
+        environment:
+          BOOTSTRAP_SERVERS: localhost:9092
+          GROUP_ID: 1
+          CONFIG_STORAGE_TOPIC: debezium_config
+          OFFSET_STORAGE_TOPIC: debezium_offsets
+          STATUS_STORAGE_TOPIC: debezium_status
+          KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+          VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+          KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://localhost:8081
+          VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://localhost:8081
+          INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+          INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+        ports:
+          - 8083:8083
+        depends_on:
+          - kafka
+          - schema-registry
       
           steps:
             - uses: actions/checkout@${{ needs.versions.outputs.actions_checkout_version }}
