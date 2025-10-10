@@ -28,7 +28,7 @@ The polling relay automatically processes pending messages every 5 seconds. This
 
 The scheduled processing can be configured with the following properties:
 
-```
+```properties
 # Enable/disable the polling relay
 outbox.relay.enabled=true
 
@@ -42,7 +42,7 @@ The polling relay provides REST API endpoints for manual operations:
 
 ### Process PendingMessages
 
-```
+```text
 POST /api/outbox/process
 ```
 
@@ -50,7 +50,7 @@ Triggers processing of all pending messages in the outbox table.
 
 ### Replay Specific Message
 
-```
+```text
 POST /api/outbox/replay/{messageId}
 ```
 
@@ -58,15 +58,15 @@ Replays a specific message by its ID.
 
 ### Replay Messages in Time Range
 
-```
-POST/api/outbox/replay-range?startTime=<start>&endTime=<end>
+```text
+POST /api/outbox/replay-range?startTime=<start>&endTime=<end>
 ```
 
 Replays all messages within a specified time range.
 
 ### Get Pending Message Count
 
-```
+```text
 GET /api/outbox/pending-count
 ```
 
@@ -141,7 +141,8 @@ curl -X POST http://<service-host>:<port>/api/outbox/process
 
 To replay a specific message:
 
-```bashcurl -X POST http://<service-host>:<port>/api/outbox/replay/<message-id>
+```bash
+curl -X POST http://<service-host>:<port>/api/outbox/replay/<message-id>
 ```
 
 ### Time Range Replay
@@ -184,7 +185,7 @@ The polling relay currently sends message payloads as strings. To enable Avro se
 implementation("org.apache.avro:avro:1.11.3")
 ```
 
-2. Configure the Kafka producer to use Avroserialization:
+1. Configure the Kafka producer to use Avro serialization:
 
 ```properties
 spring.kafka.producer.key-serializer=io.confluent.kafka.serializers.KafkaAvroSerializer
@@ -192,7 +193,7 @@ spring.kafka.producer.value-serializer=io.confluent.kafka.serializers.KafkaAvroS
 spring.kafka.properties.schema.registry.url=http://schema-registry:8081
 ```
 
-3. Update the payload conversion logic in `OutboxRelayService.convertPayload()` method to serialize your objects to Avro.
+1. Update the payload conversion logic in `OutboxRelayService.convertPayload()` method to serialize your objects to Avro.
 
 ## Customization
 

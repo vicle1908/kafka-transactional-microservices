@@ -57,7 +57,7 @@ We will use the polling relay mechanism as a fallback to Debezium for outbox eve
 
 The polling relay can be enabled/disabled with the property:
 
-```
+```properties
 outbox.relay.enabled=true
 ```
 

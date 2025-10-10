@@ -14,7 +14,7 @@ The order fulfillment saga captures the end-to-end choreography across the Order
 | 4a | `notification-service` | Consume `InventoryReservedEvent`, send confirmation, emit `NotificationSentEvent` | `NOTIFICATION_SENT` (saga completes) |
 | 4b.i | `inventory-service` | Compensation: release reserved inventory when upstream failure occurs | `INVENTORY_RELEASED` |
 | 4b.ii | `payments-service` | Compensation: mark payment refund and fail saga | `PAYMENT_COMPENSATED` |
-| 4b.iii | `notification-service` | On dispatch failure, mark notification failed; saga transitions to `FAILED` with `NOTIFICATION_FAILED:<reason>` |
+| 4b.iii | `notification-service` | On dispatch failure, mark notification failed; saga transitions to `FAILED` with `NOTIFICATION_FAILED:<reason>` | `NOTIFICATION_FAILED` |
 
 ## Saga Persistence
 

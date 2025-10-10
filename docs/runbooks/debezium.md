@@ -77,7 +77,7 @@ As a fallback to Debezium, services can use the polling relay mechanism implemen
 
 Enable the polling relay by setting the following property:
 
-```
+```properties
 outbox.relay.enabled=true
 ```
 

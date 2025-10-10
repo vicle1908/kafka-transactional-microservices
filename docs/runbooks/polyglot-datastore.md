@@ -18,7 +18,7 @@ The polyglot datastore architecture includes:
 
 ## PostgreSQL
 
-### Configuration
+### Configuration (PostgreSQL)
 
 PostgreSQL is configured with the following settings for optimal performance in a microservices environment:
 
@@ -43,7 +43,7 @@ postgres:
     - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
 ```
 
-### Key Settings
+### Key Settings (PostgreSQL)
 
 1. **wal_level=logical**: Enables logical replication for Debezium CDC
 2. **max_wal_senders=10**: Allows up to 10 concurrent replication connections
@@ -56,7 +56,7 @@ Initialization scripts are located in `./infra/postgres/init/`:
 - `01-create-dbs.sql`: Creates databases for each service
 - Additional scripts for schema setup and initial data
 
-### Common Operations
+### Common Operations (PostgreSQL)
 
 #### Creating a New Database
 
@@ -96,7 +96,7 @@ Key PostgreSQL metrics to monitor:
 - Disk space usage
 - Replication lag
 
-### Troubleshooting
+### Troubleshooting (PostgreSQL)
 
 #### Connection Issues
 
@@ -114,7 +114,7 @@ Key PostgreSQL metrics to monitor:
 2. Check PostgreSQL logs for connection errors
 3. Ensure network connectivity between applications and database
 
-#### Performance Issues
+#### Performance Issues (PostgreSQL)
 
 **Symptoms**: Slow query performance or high latency.
 
@@ -184,20 +184,20 @@ The Redis configuration file (`./infra/redis/redis.conf`) includes:
 
 1. **Adjust memory policy**:
 
-   ```
+   ```text
    maxmemory 256mb
    maxmemory-policy allkeys-lru
    ```
 
 2. **Configure persistence**:
 
-   ```
+   ```text
    save 900 1
    save 300 10
    save 60 10000
    ```
 
-### Monitoring
+### Monitoring (Redis)
 
 Key Redis metrics to monitor:
 
@@ -207,7 +207,7 @@ Key Redis metrics to monitor:
 - Commands per second
 - Network I/O
 
-### Troubleshooting
+### Troubleshooting (Redis)
 
 #### Memory Issues
 
@@ -357,7 +357,7 @@ Grafana dashboards are available for each datastore:
 
 ## Backup and Recovery
 
-### PostgreSQL
+### PostgreSQL (Backup and Recovery)
 
 1. **Logical Backups**:
 
@@ -370,7 +370,7 @@ Grafana dashboards are available for each datastore:
    - Maintain base backups
    - Test recovery procedures regularly
 
-### Redis
+### Redis (Backup and Recovery)
 
 1. **RDB Persistence**:
    - Automatic snapshots based on configuration
@@ -412,7 +412,7 @@ Grafana dashboards are available for each datastore:
    - Monitor for vulnerabilities
    - Update database software versions
 
-### Performance Tuning
+### Performance Tuning (Datastores)
 
 1. **Query Optimization**:
    - Analyze slow query logs

@@ -212,7 +212,7 @@ Role-based access control (RBAC) is implemented:
 - Fine-grained permissions can be configured
 - Audit logging is enabled for security-sensitive operations
 
-### Rate Limiting
+### Rate Limiting (Security)
 
 Rate limiting helps prevent abuse and DoS attacks:
 

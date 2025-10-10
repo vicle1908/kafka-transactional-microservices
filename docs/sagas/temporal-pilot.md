@@ -15,19 +15,19 @@ The saga will be implemented using a distributed worker model:
   - `inventory-service` will implement the `InventoryActivity`.
   - `notification-service` will implement the `NotificationActivity`.
 
-2. **Activities** (to be implemented):
+1. **Activities** (to be implemented):
    - `ProcessPaymentActivity` (idempotent, delegates to payments-service API/gRPC stub).
    - `ReserveInventoryActivity` (delegates to inventory stock API / future gRPC).
    - `SendNotificationActivity` (delegates to notification service channel dispatch).
-3. **Compensation**:
+2. **Compensation**:
    - On payment failure, emit `PaymentFailedEvent` and mark saga failed.
    - On inventory failure, trigger `inventoryService.release` and mark saga failed.
    - On notification failure, retry per policy, then mark `NOTIFICATION_FAILED`.
-4. **Retries & Timeouts**:
+3. **Retries & Timeouts**:
    - Payment: exponential backoff, max 3 attempts, 15s timeout.
    - Inventory: retry twice with jitter, 10s timeout.
    - Notification: reuse channel-level retry configuration.
-5. **Telemetry**:
+4. **Telemetry**:
    - Record Temporal metrics (queue size, workflow latency) and feed into Grafana dashboard in Phase 5.
 
 ## Deliverables

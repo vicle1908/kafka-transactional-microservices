@@ -1,4 +1,4 @@
-check# Debezium Connector Configuration Guide
+# Debezium Connector Configuration Guide
 
 ## Overview
 

@@ -64,7 +64,7 @@ The system provides multiple ways to replay outbox messages for recovery, testin
 
 Services expose REST endpoints for manual replay operations:
 
-```
+```text
 POST /api/outbox/process
 Replay all pending messages
 

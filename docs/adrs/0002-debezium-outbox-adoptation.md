@@ -122,7 +122,7 @@ We will use Debezium with the Outbox Event Router SMT (Single Message Transform)
 
 ## Alternatives Considered
 
-### Custom Polling Service
+### Custom Polling Service (Alternative)
 
 - Discarded for core services due to latency and throughput limitations
 - Retained for low-volume services where simplicity is preferred

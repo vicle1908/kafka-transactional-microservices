@@ -10,7 +10,7 @@ The clink tool enables spawning isolated AI subagents from within the current se
 
 ### Scenario: Designing a new saga pattern
 
-```
+```bash
 clink with gemini planner "Design a saga pattern for Order → Payment → Inventory workflow with compensation handlers"
 ```
 
@@ -24,7 +24,7 @@ clink with gemini planner "Design a saga pattern for Order → Payment → Inven
 
 ### Scenario: Reviewing transactional Kafka consumer implementation
 
-```
+```bash
 clink claude codereviewer "Review the Kafka transaction manager configuration in services/payments-service/src/main/kotlin/com/example/payment/config/KafkaConfig.kt"
 ```
 
@@ -38,7 +38,7 @@ clink claude codereviewer "Review the Kafka transaction manager configuration in
 
 ### Scenario: Security review of transactional boundaries
 
-```
+```bash
 clink with codex "Perform a security audit of the Kafka transaction configuration, focusing on potential race conditions and data consistency issues"
 ```
 
@@ -52,7 +52,7 @@ clink with codex "Perform a security audit of the Kafka transaction configuratio
 
 ### Scenario: Choosing between saga orchestration vs choreography
 
-```
+```bash
 clink consensus "Evaluate saga orchestration vs choreography for the Order → Payment → Inventory flow"
 ```
 
@@ -66,7 +66,7 @@ clink consensus "Evaluate saga orchestration vs choreography for the Order → P
 
 ### Scenario: Debugging dual-write race conditions
 
-```
+```bash
 # In main session debugging Order service
 clink gemini "Analyze potential race conditions in transactional outbox pattern where domain save and outbox entry happen in same transaction"
 ```
@@ -81,7 +81,7 @@ clink gemini "Analyze potential race conditions in transactional outbox pattern 
 
 ### Scenario: Validating Docker Compose for multi-service deployment
 
-```
+```bash
 clink claude "Review the infrastructure/compose.yml file for proper Kafka, PostgreSQL, and Debezium configuration alignment with microservices"
 ```
 
@@ -95,7 +95,7 @@ clink claude "Review the infrastructure/compose.yml file for proper Kafka, Postg
 
 ### Scenario: Analyzing transaction performance bottlenecks
 
-```
+```bash
 clink with codex "Analyze potential performance bottlenecks in Kafka transaction processing across the 4 microservices"
 ```
 
@@ -109,7 +109,7 @@ clink with codex "Analyze potential performance bottlenecks in Kafka transaction
 
 ### Scenario: Creating ADR for transactional outbox decision
 
-```
+```bash
 clink with gemini "Write an Architecture Decision Record for using transactional outbox pattern vs direct Kafka publishing"
 ```
 
@@ -123,7 +123,7 @@ clink with gemini "Write an Architecture Decision Record for using transactional
 
 ### Scenario: Designing integration tests for saga flows
 
-```
+```bash
 clink claude "Design comprehensive integration tests for Order → Payment → Inventory saga with compensation handling"
 ```
 
@@ -137,7 +137,7 @@ clink claude "Design comprehensive integration tests for Order → Payment → I
 
 ### Scenario: Planning Avro schema versioning strategy
 
-```
+```bash
 clink with codex "Plan a backward-compatible Avro schema evolution strategy for PaymentCompletedEvent and InventoryReservedEvent"
 ```
 
@@ -175,7 +175,7 @@ clink with codex "Plan a backward-compatible Avro schema evolution strategy for 
 
 ## Example Workflow Integration
 
-```
+```bash
 # Main development session
 1. Working on Order service transactional logic
 2. Encounter complex Kafka configuration issue

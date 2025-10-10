@@ -2,7 +2,7 @@
 
 ## Command Structure
 
-```
+```bash
 clink <cli_name> [role] <prompt>
 ```
 

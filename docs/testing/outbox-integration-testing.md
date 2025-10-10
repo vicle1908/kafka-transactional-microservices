@@ -36,7 +36,7 @@ curl -X POST \
   -d @infra/debezium/connectors/orders-outbox-connector.json
 ```
 
-2. Verify the connector is running:
+1. Verify the connector is running:
 
 ```bash
 curl http://localhost:8083/connectors/orders-outbox-connector/status
@@ -50,7 +50,7 @@ curl http://localhost:8083/connectors/orders-outbox-connector/status
 outbox.relay.enabled=true
 ```
 
-2. Start your service and verify the scheduled processing is working.
+1. Start your service and verify the scheduled processing is working.
 
 ## Integration Test Scenarios
 

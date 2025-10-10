@@ -205,7 +205,7 @@ For outbox pattern implementations, use the outbox replay procedures instead of 
 2. **Kafka Connect Settings**: Backup of Kafka Connect worker configurations
 3. **Database Settings**: Backup of database configurations and security settings
 
-### Recovery Procedures
+### Recovery Procedures (DR)
 
 1. **Connector Restoration**: Restore connectors from backup configurations
 2. **Offset Restoration**: Restore connector offsets from backups if available

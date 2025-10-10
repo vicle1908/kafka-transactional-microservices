@@ -4,7 +4,7 @@ This document provides a template for creating new services in the Kafka Transac
 
 ## Project Structure
 
-```text
+```
 service-name/
 ├── build.gradle.kts
 ├── src/
@@ -210,15 +210,8 @@ class ServiceService(
     private val serviceRepository: ServiceRepository,
     private val outboxRepository: OutboxRepository
 ) {
-    private val logger = StructuredLogger.getLogger(ServiceService::class.java)
     
     fun createService(createServiceRequest: CreateServiceRequest): ServiceEntity {
-        logger.info(
-            "Creating new service",
-            "requestName" to createServiceRequest.name,
-            "requestDescription" to createServiceRequest.description
-        )
-        
         // Business logic
         val entity = ServiceEntity(
             name = createServiceRequest.name,
@@ -227,12 +220,6 @@ class ServiceService(
         
         // Save entity
         val savedEntity = serviceRepository.save(entity)
-        
-        logger.info(
-            "Service entity saved",
-            "entityId" to savedEntity.id,
-            "entityName" to savedEntity.name
-        )
         
         // Create outbox message for events
         val outboxMessage = OutboxMessage(
@@ -246,51 +233,19 @@ class ServiceService(
         
         outboxRepository.save(outboxMessage)
         
-        logger.info(
-            "Outbox message created",
-            "aggregateId" to outboxMessage.aggregateId,
-            "eventType" to outboxMessage.eventType
-        )
-        
         return savedEntity
     }
     
     @Transactional(readOnly = true)
     fun getServiceById(serviceId: UUID): ServiceEntity? {
-        logger.debug(
-            "Retrieving service by ID",
-            "serviceId" to serviceId
-        )
-        
-        val entity = serviceRepository.findById(serviceId).orElse(null)
-        
-        if (entity != null) {
-            logger.debug(
-                "Service found",
-                "serviceId" to serviceId,
-                "serviceName" to entity.name
-            )
-        } else {
-            logger.warn(
-                "Service not found",
-                "serviceId" to serviceId
-            )
-        }
-        
-        return entity
+        return serviceRepository.findById(serviceId).orElse(null)
     }
 }
 ```
 
-Remember to add the import for StructuredLogger:
-
-```kotlin
-import com.example.observability.StructuredLogger
-```
-
 ### Controllers
 
-Controllers should handle HTTP requests and delegate to services. Include structured logging to capture request/response information:
+Controllers should handle HTTP requests and delegate to services:
 
 ```kotlin
 @RestController
@@ -299,16 +254,9 @@ Controllers should handle HTTP requests and delegate to services. Include struct
 class ServiceController(
     private val serviceService: ServiceService
 ) {
-    private val logger = StructuredLogger.getLogger(ServiceController::class.java)
     
     @PostMapping
     fun createService(@RequestBody @Valid createServiceRequest: CreateServiceRequestDto): ResponseEntity<ServiceResponse> {
-        logger.info(
-            "Received create service request",
-            "requestName" to createServiceRequest.name,
-            "requestDescription" to createServiceRequest.description
-        )
-        
         val request = CreateServiceRequest(
             name = createServiceRequest.name,
             description = createServiceRequest.description
@@ -317,47 +265,18 @@ class ServiceController(
         val entity = serviceService.createService(request)
         val response = ServiceResponse.fromEntity(entity)
         
-        logger.info(
-            "Service created successfully",
-            "entityId" to entity.id,
-            "entityName" to entity.name
-        )
-        
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
     
     @GetMapping("/{serviceId}")
     fun getServiceById(@PathVariable serviceId: UUID): ResponseEntity<ServiceResponse> {
-        logger.debug(
-            "Received get service request",
-            "serviceId" to serviceId
-        )
-        
         val entity = serviceService.getServiceById(serviceId)
+            ?: return ResponseEntity.notFound().build()
         
-        if (entity != null) {
-            val response = ServiceResponse.fromEntity(entity)
-            logger.debug(
-                "Service retrieved successfully", 
-                "serviceId" to serviceId,
-                "entityName" to entity.name
-            )
-            return ResponseEntity.ok(response)
-        } else {
-            logger.warn(
-                "Service not found",
-                "serviceId" to serviceId
-            )
-            return ResponseEntity.notFound().build()
-        }
+        val response = ServiceResponse.fromEntity(entity)
+        return ResponseEntity.ok(response)
     }
 }
-```
-
-Remember to add the import for StructuredLogger:
-
-```kotlin
-import com.example.observability.StructuredLogger
 ```
 
 ### Kafka Listeners
@@ -369,7 +288,7 @@ Kafka listeners should handle events from other services:
 class ServiceEventListener(
     private val serviceService: ServiceService
 ) {
-    private val logger = StructuredLogger.getLogger(ServiceEventListener::class.java)
+    private val logger = LoggerFactory.getLogger(ServiceEventListener::class.java)
     
     @KafkaListener(topics = ["orders"], groupId = "service-name")
     fun handleOrderEvent(
@@ -378,30 +297,13 @@ class ServiceEventListener(
         @Header(KafkaHeaders.RECEIVED_TIMESTAMP) timestamp: Long
     ) {
         try {
-            logger.info(
-                "Received order event",
-                "payload" to payload,
-                "key" to key,
-                "timestamp" to timestamp
-            )
+            logger.info("Received order event: $payload")
             // Process the event
         } catch (e: Exception) {
-            logger.error(
-                "Failed to process order event",
-                "payload" to payload,
-                "key" to key,
-                "timestamp" to timestamp,
-                "error" to e.message
-            )
+            logger.error("Failed to process order event: $payload", e)
         }
     }
 }
-```
-
-Remember to add the import for StructuredLogger:
-
-```kotlin
-import com.example.observability.StructuredLogger
 ```
 
 ## Configuration (env-driven; prefer placeholders with safe fallbacks)
@@ -463,6 +365,8 @@ management:
 ```
 
 See `docs/dev/env-reference.md` for the canonical list of variables and defaults. Copy `.env.example` to `.env` and use direnv or `source scripts/export-env.sh` to load them locally.
+      show-details: always
+```
 
 ## Database Migrations
 

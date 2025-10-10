@@ -22,15 +22,17 @@ plugins {
 
 val libsCatalog = extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
 
-val detektCli = configurations.maybeCreate("detektCli").apply {
-    isCanBeConsumed = false
-    isCanBeResolved = true
-}
+val detektCli =
+    configurations.maybeCreate("detektCli").apply {
+        isCanBeConsumed = false
+        isCanBeResolved = true
+    }
 
-val detektPlugins = configurations.maybeCreate("detektPlugins").apply {
-    isCanBeConsumed = false
-    isCanBeResolved = true
-}
+val detektPlugins =
+    configurations.maybeCreate("detektPlugins").apply {
+        isCanBeConsumed = false
+        isCanBeResolved = true
+    }
 
 dependencies {
     detektCli(libsCatalog.findLibrary("detekt-cli").get())
@@ -62,27 +64,33 @@ subprojects {
 
     configurations.all {
         resolutionStrategy.eachDependency {
-            when {
-                requested.group == "com.fasterxml.jackson.core" && requested.name == "jackson-core" ->
+            when (requested.group) {
+                "com.fasterxml.jackson.core" if requested.name == "jackson-core" ->
                     useVersion(libs.findVersion("jackson-core").get().requiredVersion)
-                requested.group == "org.apache.commons" && requested.name == "commons-compress" ->
+
+                "org.apache.commons" if requested.name == "commons-compress" ->
                     useVersion(libs.findVersion("commons-compress").get().requiredVersion)
-                requested.group == "io.grpc" && requested.name == "grpc-kotlin-stub" ->
+
+                "io.grpc" if requested.name == "grpc-kotlin-stub" ->
                     useVersion(libs.findVersion("grpc-kotlin").get().requiredVersion)
-                requested.group == "io.grpc" &&
-                    requested.name in setOf(
+
+                "io.grpc" if requested.name in
+                    setOf(
                         "grpc-stub",
                         "grpc-protobuf",
                         "grpc-netty",
                         "grpc-api",
                         "grpc-services",
-                    ) ->
-                    useVersion(libs.findVersion("grpc").get().requiredVersion)
-                requested.group == "org.junit.jupiter" ->
+                    )
+                -> useVersion(libs.findVersion("grpc").get().requiredVersion)
+
+                "org.junit.jupiter" ->
                     useVersion(libs.findVersion("junit").get().requiredVersion)
-                requested.group == "org.junit.platform" ->
+
+                "org.junit.platform" ->
                     useVersion(libs.findVersion("junit-platform-launcher").get().requiredVersion)
-                requested.group == "org.junit" && requested.name == "junit-bom" ->
+
+                "org.junit" if requested.name == "junit-bom" ->
                     useVersion(libs.findVersion("junit").get().requiredVersion)
             }
         }
@@ -133,11 +141,18 @@ subprojects {
             mavenBom("io.opentelemetry:opentelemetry-bom:${libs.findVersion("opentelemetry").get().requiredVersion}")
         }
         dependencies {
-            dependency("org.junit.platform:junit-platform-engine:${libs.findVersion("junit-platform-launcher").get().requiredVersion}")
-            dependency("org.junit.platform:junit-platform-commons:${libs.findVersion("junit-platform-launcher").get().requiredVersion}")
+            dependency(
+                "org.junit.platform:junit-platform-engine:${libs.findVersion(
+                    "junit-platform-launcher",
+                ).get().requiredVersion}",
+            )
+            dependency(
+                "org.junit.platform:junit-platform-commons:${libs.findVersion(
+                    "junit-platform-launcher",
+                ).get().requiredVersion}",
+            )
         }
     }
-
 
     dependencies {
         add("testImplementation", platform(libs.findLibrary("junit-bom").get()))
@@ -169,16 +184,20 @@ tasks.register("versionCheck") {
         val current = JavaVersion.current()
         val target = JavaVersion.toVersion(targetJavaVersion)
         val fallback = JavaVersion.toVersion(fallbackJavaVersion)
-        
+
         when {
             current.isCompatibleWith(target) -> {
                 println("✅ Java version check passed: $current (target: $targetJavaVersion)")
             }
             current.isCompatibleWith(fallback) -> {
-                println("⚠️  Using fallback Java $current - consider upgrading to $targetJavaVersion (supported fallback)")
+                println(
+                    "⚠️  Using fallback Java $current - consider upgrading to $targetJavaVersion (supported fallback)",
+                )
             }
             else -> {
-                throw GradleException("Expected to run with at least Java $fallbackJavaVersion, but current version is $current")
+                throw GradleException(
+                    "Expected to run with at least Java $fallbackJavaVersion, but current version is $current",
+                )
             }
         }
     }
@@ -197,31 +216,42 @@ tasks.register<JavaExec>("detektAll") {
     mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
     notCompatibleWithConfigurationCache("Detekt CLI arguments are constructed at execution time.")
     doFirst {
-        val detektInputs = listOf(
-            "buildSrc",
-            "common-events",
-            "common-events-avro",
-            "common-kafka",
-            "common-outbox-relay",
-            "common-persistence",
-            "common-proto",
-            "common-sagas",
-            "common-temporal",
-            "services",
-            "temporal-pilot"
-        )
+        val detektInputs =
+            listOf(
+                "buildSrc",
+                "common-events",
+                "common-events-avro",
+                "common-kafka",
+                "common-outbox-relay",
+                "common-persistence",
+                "common-proto",
+                "common-sagas",
+                "common-temporal",
+                "services",
+                "temporal-pilot",
+            )
         val inputsArgument = detektInputs.joinToString(",") { projectDir.resolve(it).absolutePath }
-        val reportsDir = layout.buildDirectory.dir("reports/detekt").get().asFile
+        val reportsDir =
+            layout.buildDirectory
+                .dir("reports/detekt")
+                .get()
+                .asFile
         reportsDir.mkdirs()
-        val arguments = mutableListOf(
-            "--input", inputsArgument,
-            "--config", project.file("config/detekt/detekt.yml").absolutePath,
-            "--build-upon-default-config",
-            "--parallel",
-            "--excludes", "**/build/generated/**",
-            "--report", "txt:${reportsDir.resolve("detekt.txt").absolutePath}",
-            "--report", "sarif:${reportsDir.resolve("detekt.sarif").absolutePath}"
-        )
+        val arguments =
+            mutableListOf(
+                "--input",
+                inputsArgument,
+                "--config",
+                project.file("config/detekt/detekt.yml").absolutePath,
+                "--build-upon-default-config",
+                "--parallel",
+                "--excludes",
+                "**/build/generated/**",
+                "--report",
+                "txt:${reportsDir.resolve("detekt.txt").absolutePath}",
+                "--report",
+                "sarif:${reportsDir.resolve("detekt.sarif").absolutePath}",
+            )
         val baselineFile = project.file("config/detekt/baseline.xml")
         if (baselineFile.exists()) {
             arguments += listOf("--baseline", baselineFile.absolutePath)
@@ -230,7 +260,7 @@ tasks.register<JavaExec>("detektAll") {
         if (pluginClasspath.isNotEmpty()) {
             arguments += listOf("--plugins", pluginClasspath.joinToString(",") { it.absolutePath })
         }
-        setArgs(arguments)
+        args = arguments
     }
 }
 
@@ -241,35 +271,41 @@ tasks.register<JavaExec>("detektBaseline") {
     mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
     notCompatibleWithConfigurationCache("Detekt baseline generation resolves arguments at execution time.")
     doFirst {
-        val detektInputs = listOf(
-            "buildSrc",
-            "common-events",
-            "common-events-avro",
-            "common-kafka",
-            "common-outbox-relay",
-            "common-persistence",
-            "common-proto",
-            "common-sagas",
-            "common-temporal",
-            "services",
-            "temporal-pilot"
-        )
+        val detektInputs =
+            listOf(
+                "buildSrc",
+                "common-events",
+                "common-events-avro",
+                "common-kafka",
+                "common-outbox-relay",
+                "common-persistence",
+                "common-proto",
+                "common-sagas",
+                "common-temporal",
+                "services",
+                "temporal-pilot",
+            )
         val inputsArgument = detektInputs.joinToString(",") { projectDir.resolve(it).absolutePath }
         val baselineFile = project.file("config/detekt/baseline.xml")
         baselineFile.parentFile.mkdirs()
         val pluginClasspath = detektPlugins.resolve()
-        val arguments = mutableListOf(
-            "--input", inputsArgument,
-            "--config", project.file("config/detekt/detekt.yml").absolutePath,
-            "--build-upon-default-config",
-            "--parallel",
-            "--excludes", "**/build/generated/**",
-            "--create-baseline",
-            "--baseline", baselineFile.absolutePath
-        )
+        val arguments =
+            mutableListOf(
+                "--input",
+                inputsArgument,
+                "--config",
+                project.file("config/detekt/detekt.yml").absolutePath,
+                "--build-upon-default-config",
+                "--parallel",
+                "--excludes",
+                "**/build/generated/**",
+                "--create-baseline",
+                "--baseline",
+                baselineFile.absolutePath,
+            )
         if (pluginClasspath.isNotEmpty()) {
             arguments += listOf("--plugins", pluginClasspath.joinToString(",") { it.absolutePath })
         }
-        setArgs(arguments)
+        args = arguments
     }
 }

@@ -88,7 +88,7 @@ fun `should process messages exactly once`() {
 
 If you encounter a `NoSuchMethodError` related to `transactionManager`, check that you're using the correct property:
 
-```
+```kotlin
 // Incorrect in Spring Kafka 3.2+
 factory.transactionManager = transactionManager
 
