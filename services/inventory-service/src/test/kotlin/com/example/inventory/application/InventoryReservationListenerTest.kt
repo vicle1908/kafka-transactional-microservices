@@ -72,7 +72,7 @@ class InventoryReservationListenerTest {
         fun kafkaProperties(registry: DynamicPropertyRegistry) {
             registry.add(
                 "spring.kafka.bootstrap-servers",
-                Supplier<Any> { EmbeddedKafkaCondition.getBroker().brokersAsString() },
+                EmbeddedKafkaProperties.bootstrapServersSupplier(),
             )
         }
     }
