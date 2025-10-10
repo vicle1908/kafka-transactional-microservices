@@ -23,6 +23,7 @@ Global app variables (.env, root)
 - DEBEZIUM_CONNECT_URL: Debezium Connect REST endpoint (e.g., http://localhost:8083)
 - REDIS_HOST, REDIS_PORT: Redis connection for services (if used)
 - OTEL_ENABLED: enable/disable tracing export (default false)
+- OTEL_SERVICE_NAME: logical service name for telemetry (default my-kafka-microservice)
 - OTEL_ENDPOINT: OTLP exporter endpoint (host:port, gRPC 4317 / HTTP 4318); services prepend http:// when needed
 - ORDERS_KAFKA_TX_PREFIX, PAYMENTS_KAFKA_TX_PREFIX, INVENTORY_KAFKA_TX_PREFIX, NOTIFICATION_KAFKA_TX_PREFIX: per‑service transactional producer prefixes
 - TEMPORAL_TARGET: Temporal server address for workflow engines (default 127.0.0.1:7233)

@@ -102,7 +102,7 @@ See also: docs/dev/env-reference.md for a complete list of supported environment
 
 ## Running the Microservices
 
-To run the full saga orchestration, you need to start all the individual services in separate terminal sessions.
+To run the full saga orchestration, you need to start all the individual services in separate terminal sessions. When triggering these commands from the agent environment, execute them via the Desktop Commander `execute_terminal_command` MCP tool so terminal interactions remain auditable.
 
 ### 1. Start the Workflow Worker
 ```bash

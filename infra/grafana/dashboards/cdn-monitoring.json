@@ -1,0 +1,312 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "CDN and Edge Performance Monitoring",
+    "tags": ["cdn", "edge", "performance", "microservices"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "5s",
+    "schemaVersion": 30,
+    "version": 1,
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Cache Hit Ratio",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "cdn_cache_hit_ratio",
+            "legendFormat": "Cache Hit Ratio",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Ratio",
+            "show": true
+          }
+        ],
+        "alert": {
+          "name": "Low Cache Hit Ratio Alert",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.8],
+                "type": "lt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "1m",
+          "handler": 1,
+          "name": "Low Cache Hit Ratio Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 2,
+        "title": "Response Time Distribution",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, rate(cdn_response_time_bucket[5m]))",
+            "legendFormat": "50th Percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(cdn_response_time_bucket[5m]))",
+            "legendFormat": "95th Percentile",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(cdn_response_time_bucket[5m]))",
+            "legendFormat": "99th Percentile",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Response Time (ms)",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Bandwidth Usage",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(cdn_bandwidth_bytes[5m])",
+            "legendFormat": "Bandwidth (bytes/sec)",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Bytes/sec",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Request Rate by Status",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(cdn_requests_total{status=~\"2..\"}[5m])",
+            "legendFormat": "2xx Success",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(cdn_requests_total{status=~\"4..\"}[5m])",
+            "legendFormat": "4xx Client Errors",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(cdn_requests_total{status=~\"5..\"}[5m])",
+            "legendFormat": "5xx Server Errors",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "show": true
+          }
+        ],
+        "alert": {
+          "name": "High Error Rate Alert",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.05],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["C", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Error Rate Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 5,
+        "title": "Top Requested Resources",
+        "type": "table",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "topk(10, sum by (resource) (rate(cdn_requests_total[5m])))",
+            "legendFormat": "{{resource}}",
+            "refId": "A"
+          }
+        ],
+        "columns": [
+          {
+            "text": "Resource",
+            "value": "resource"
+          },
+          {
+            "text": "Requests/sec",
+            "value": "Value"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Geographic Distribution",
+        "type": "geomap",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "cdn_requests_by_region",
+            "legendFormat": "{{region}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "WAF Blocked Requests",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "rate(cdn_waf_blocked_requests[5m])",
+            "legendFormat": "Blocked Requests",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "DDoS Mitigation Events",
+        "type": "stat",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "cdn_ddos_mitigation_events",
+            "legendFormat": "DDoS Events",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 1
+                },
+                {
+                  "color": "red",
+                  "value": 5
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "value": "Prometheus"
+          }
+        }
+      ]
+    }
+  }
+}

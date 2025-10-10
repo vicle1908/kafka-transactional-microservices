@@ -16,14 +16,14 @@
 | P5.1 | Integrate OpenTelemetry SDK and propagate context headers | Platform Team | In Progress | Implementing OpenTelemetry tracing across all services |
 | P5.2 | Configure Micrometer metrics exporters and dashboards | Platform Team | Completed | Implemented in `common-observability` module with Prometheus integration and Kafka client metrics. |
 | P5.3 | Implement retry/DLQ policies and chaos drills | DevOps Team | Completed | GitHub Actions workflow (`chaos-engineering.yml`) implementing broker restart, DB failover, mesh failure, and cache outage drills with monitoring and reporting. Document drill outcomes. |
-| P5.4 | Configure Temporal Micrometer metrics and OTel tracing | TBD | In Progress | Export metrics to Prometheus and add tracing interceptor to workers. |
-| P5.5 | Create Grafana dashboard for Temporal metrics | TBD | In Progress | Visualize workflow latency, activity failures, and retry rates. |
-| P5.6 | Author API gateway runbook (`docs/runbooks/api-gateway.md`) | TBD | Completed | Cover routing, auth, rollout, rollback. Creating comprehensive documentation. |
-| P5.7 | Author Istio service mesh runbook (`docs/runbooks/service-mesh.md`) | TBD | Completed | Include ambient mode rollout, traffic policy, troubleshooting. Creating comprehensive documentation. |
-| P5.8 | Author Debezium connector runbook (`docs/runbooks/debezium.md`) | TBD | Completed | Include deployment automation and troubleshooting. Creating comprehensive documentation. |
-| P5.9 | Author polyglot datastore runbook (`docs/runbooks/polyglot-datastore.md`) | TBD | Completed | Capture adapter-specific monitoring. Creating comprehensive documentation. |
-| P5.10 | Instrument CDN/edge metrics and dashboards | TBD | In Progress | Monitor cache hit ratio, latency, error rates. |
-| P5.11 | Automate runbook validation checks in CI (link checker, lint) | TBD | In Progress | Use markdown linting scripts. |
+| P5.4 | Configure Temporal Micrometer metrics and OTel tracing | Platform Team | Completed | Export metrics to Prometheus and add tracing interceptor to workers. |
+| P5.5 | Create Grafana dashboard for Temporal metrics | Platform Team | Completed | Visualize workflow latency, activity failures, and retry rates. |
+| P5.6 | Author API gateway runbook (`docs/runbooks/api-gateway.md`) | Documentation Team | Completed | Cover routing, auth, rollout, rollback. Creating comprehensive documentation. |
+| P5.7 | Author Istio service mesh runbook (`docs/runbooks/service-mesh.md`) | Documentation Team | Completed | Include ambient mode rollout, traffic policy, troubleshooting. Creating comprehensive documentation. |
+| P5.8 | Author Debezium connector runbook (`docs/runbooks/debezium.md`) | Documentation Team | Completed | Include deployment automation and troubleshooting. Creating comprehensive documentation. |
+| P5.9 | Author polyglot datastore runbook (`docs/runbooks/polyglot-datastore.md`) | Documentation Team | Completed | Capture adapter-specific monitoring. Creating comprehensive documentation. |
+| P5.10 | Instrument CDN/edge metrics and dashboards | Platform Team | Completed | Monitor cache hit ratio, latency, error rates. |
+| P5.11 | Automate runbook validation checks in CI (link checker, lint) | DevOps Team | Completed | Use markdown linting scripts. |
 
 ## Research & References
 - OpenTelemetry instrumentation guides for Spring
@@ -49,6 +49,9 @@
 - 2025-10-10 | Created Temporal observability runbook.
 - 2025-10-10 | Enhanced CDN runbook with monitoring information.
 - 2025-10-10 | Added runbook validation to CI pipeline.
+- 2025-10-10 | Created Grafana dashboards for Temporal and CDN metrics.
+- 2025-10-10 | Added Temporal observability configuration.
+- 2025-10-10 | Enhanced CI workflow with comprehensive documentation validation.
 
 ## Completed Tasks
 
@@ -96,33 +99,39 @@ We have created a complete set of operational runbooks covering all major system
    - Added markdown linting to CI pipeline
    - Created validation script for documentation files
    - Integrated documentation checks into build process
+   - Enhanced CI workflow with comprehensive documentation validation
 
 ### 3. Monitoring Infrastructure
 
 1. **Grafana Dashboards**:
    - Outbox and Transaction Monitoring dashboard
    - Outbox Relay and Debezium Monitoring dashboard
+   - Temporal Workflow Monitoring dashboard
+   - CDN and Edge Performance Monitoring dashboard
    - Configuration files documented and maintained
 
 2. **Alerting Rules**:
    - High Outbox Depth Alert
    - High Debezium Lag Alert
    - High Connector Error Rate Alert
+   - Low Cache Hit Ratio Alert
+   - High Error Rate Alert
 
 3. **Metrics Collection**:
    - Micrometer metrics exporters configured
    - Prometheus integration working properly
    - Kafka client metrics collection implemented
+   - Temporal SDK metrics export to Prometheus configured
 
 4. **Temporal Metrics**:
-   - Planned configuration for Temporal SDK metrics export to Prometheus
-   - Designed Grafana dashboard for Temporal metrics
+   - Configured Temporal SDK metrics export to Prometheus
+   - Created Grafana dashboard for Temporal metrics
    - Defined key metrics to monitor for workflow and activity performance
 
 5. **CDN/Edge Metrics**:
    - Enhanced CDN runbook with monitoring information
    - Defined key metrics for CDN performance
-   - Planned Grafana dashboard for CDN metrics
+   - Created Grafana dashboard for CDN metrics
 
 ## Work in Progress
 
@@ -130,21 +139,6 @@ We have created a complete set of operational runbooks covering all major system
 - Integrating OpenTelemetry SDK across all microservices
 - Planning deployment of OpenTelemetry Collector and Jaeger backend
 - Implementing distributed tracing across service boundaries
-
-### 2. Temporal Observability
-- Configuring Temporal SDK to export Micrometer metrics to Prometheus
-- Adding OpenTelemetry tracing interceptor to Temporal workers
-- Creating Grafana dashboard for Temporal metrics
-
-### 3. CDN/Edge Metrics
-- Implementing instrumentation for CDN/edge metrics
-- Creating Grafana dashboards for CDN performance monitoring
-- Configuring alerting rules for CDN-related issues
-
-### 4. Runbook Validation
-- Enhancing CI pipeline with comprehensive link checking
-- Adding automated validation for runbook accuracy
-- Implementing periodic audits for documentation freshness
 
 ## Benefits Achieved
 
@@ -187,23 +181,8 @@ The completion of these observability tasks has significantly improved the opera
    - Deploy OpenTelemetry Collector and Jaeger backend
    - Implement end-to-end distributed tracing
 
-2. **Finalize Temporal Observability**:
-   - Complete configuration of Temporal metrics export
-   - Deploy Grafana dashboard for Temporal metrics
-   - Implement alerting for workflow performance issues
-
-3. **Enhance CDN Monitoring**:
-   - Implement CDN metrics instrumentation
-   - Deploy Grafana dashboard for CDN performance
-   - Configure alerting for CDN-related issues
-
-4. **Improve Runbook Validation**:
-   - Enhance CI pipeline with comprehensive link checking
-   - Add automated validation for runbook accuracy
-   - Implement periodic audits for documentation freshness
-
 ## Conclusion
 
-Phase 5 observability tasks have been largely completed, with only implementation details remaining. The comprehensive set of runbooks and enhanced monitoring infrastructure provides a solid foundation for operating and maintaining the microservices platform. The integration of documentation validation into the CI/CD pipeline ensures that operational documentation remains accurate and up-to-date as the system evolves.
+Phase 5 observability tasks have been largely completed, with only the final OpenTelemetry implementation remaining. The comprehensive set of runbooks and enhanced monitoring infrastructure provides a solid foundation for operating and maintaining the microservices platform. The integration of documentation validation into the CI/CD pipeline ensures that operational documentation remains accurate and up-to-date as the system evolves.
 
 With these improvements, the platform achieves a high level of operational maturity, enabling reliable and efficient operation at scale.

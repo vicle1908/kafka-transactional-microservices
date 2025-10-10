@@ -1,5 +1,6 @@
 package com.example.payments.application
 
+import com.example.outbox.repository.OutboxRepository
 import com.example.payments.PaymentsServiceApplication
 import com.example.payments.application.PaymentProcessingOutcome
 import com.example.payments.application.port.out.RefundGateway
@@ -10,7 +11,6 @@ import com.example.payments.domain.PaymentStatus
 import com.example.payments.domain.ProcessedEventRepository
 import com.example.payments.domain.RefundRepository
 import com.example.payments.domain.RefundStatus
-import com.example.outbox.repository.OutboxRepository
 import com.example.saga.InvalidSagaStateTransitionException
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository

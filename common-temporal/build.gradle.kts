@@ -12,6 +12,8 @@ dependencies {
     implementation(libs.spring.boot.starter.web)
     implementation(libs.kotlin.reflect)
     implementation(project(":common-proto"))
+    implementation("io.micrometer:micrometer-core:1.13.0")
+    implementation("io.opentelemetry:opentelemetry-api:1.44.0")
 
     testImplementation(libs.temporal.testing)
     testImplementation(libs.spring.boot.starter.test)

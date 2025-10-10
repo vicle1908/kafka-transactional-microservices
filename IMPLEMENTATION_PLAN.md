@@ -1,13 +1,16 @@
-#Kafka Transactional Microservices – Implementation Plan
+# Kafka Transactional Microservices – Implementation Plan
 
 ## 1. Objectives
+
 - Deliver Kafka-backed microservices that guarantee atomic business state updates and message publication.
 - Standardize on the transactional outbox pattern with Debezium-based relays for cross-service messaging with exactly-once semantics.
 - Provide observability, resiliency, and operational runbooks to support production deployment.
 - Implement comprehensive integration testing to validate end-to-end transactional guarantees.
 
 ## 2. Phased Roadmap
+
 ### Phase 0 – Discovery & Architecture (Week 1)
+
 - Confirm candidate microservices (Order, Payment, Inventory, Notification) and their datastores.
 - Map critical flows requiring exactly-once vs at-least-once guarantees and justify complexity requirements.
 - Finalize tech stack: Spring Boot 3.5.6, Kotlin 2.2.20 on Java 25 (fallback to Java 23/21 where required), Kafka 4.1.0, PostgreSQL 18, Debezium 3.3.0.Final.
@@ -16,6 +19,7 @@
 - Execution board: [PHASE-0](docs/phases/PHASE-0.md)
 
 ### Phase 1 – Platform Foundation (Weeks 2-3)
+
 - Provision local and shared Kafka clusters with pure KRaft metadata mode (no ZooKeeper),Schema Registry and AKHQ/Kafdrop.
 - Configure brokers for transactions with proper replication (`min.insync.replicas >= 2`, transaction logs, idempotence defaults).
 - Set up Docker Compose for local infra under `infra/compose.yml` (Kafka, Postgres, Debezium, Schema Registry,Redis for caching).
@@ -31,6 +35,7 @@
 - Execution board: [PHASE-1](docs/phases/PHASE-1.md)
 
 ### Phase 2 – Service Template & Shared Components (Weeks 3-4)
+
 - Create Gradle multi-module baseline: `common-events`, `common-kafka`, `common-persistence`, `common-observability`.
 - Create `common-temporal` module for shared workflow interfaces, activities, and DTOs.
 - Database baseline with Flyway per service:
@@ -50,6 +55,7 @@
 - Execution board: [PHASE-2](docs/phases/PHASE-2.md)
 
 ### Phase 3 – Outbox Relay & Tooling (Week 4)
+
 - Spike polling relay vs Debezium CDC: measure latency, failure recovery, ops overhead, and justify the choice for operational complexity.
 - Implement message relay with proper transaction boundaries: Begin Kafka transaction → Process outbox records→ Commit Kafka transaction → Update DB status.
 - Adopt Debezium as default, retain lightweight poller for services without CDC (feature flagged).
@@ -70,6 +76,7 @@
 - Execution board: [PHASE-3](docs/phases/PHASE-3.md)
 
 ### Phase 4 – Service Implementations (Weeks 5-8)
+
 - Iteratively enable services following template:
   - `orders-service`: order creation, outbox emission, compensation hooks, saga state kickoff.
   - `payments-service`:consume OrderCreated, process payment, emit PaymentCompleted/Failed, append saga transitions.
@@ -100,6 +107,7 @@
 - Execution board: [PHASE-4](docs/phases/PHASE-4.md)
 
 ### Phase 5 – Observability & Resilience (Weeks 7-9)
+
 - Integrate OpenTelemetry for tracing across HTTP/Kafka boundaries; propagatecontext headers.
 - Configure Micrometer metrics exporters for Kafka transactions, outbox lag, consumer lag, DLQ counts.
 - **Temporal Observability**:
@@ -110,10 +118,11 @@
 - Implement retry strategies (Spring Retry, DLQ topics) and chaos drills (broker restart, DB failover) via GitHub Actions workflow (chaos-engineering.yml).
 - Document runbooks in `docs/runbooks/` for connectors, DLQ reprocessing, and saga failure recovery.
 - Complete API gateway, Debezium connector, and polyglot datastore runbooks referenced in @AGENTS.md; ensure automation scripts are version-controlled.
-- **IN PROGRESS**: Enhance observability with comprehensive documentation, OpenTelemetry tracing implementation, and runbook completion.
+- **COMPLETED**: Enhance observability with comprehensive documentation, OpenTelemetry tracing implementation, and runbook completion.
 - Execution board: [PHASE-5](docs/phases/PHASE-5.md)
 
 ### Phase 6 – Hardening & Launch (Weeks 9-12)
+
 - Conduct load tests simulating peak traffic with GitHub Actions workflow (load-test.yml); validate EOSbehavior under backpressure and high outbox table depth.
 - Perform disaster recovery exercises (restore DB snapshot, rebuild Debezium connector offsets, replay outbox).
 - Secure the platform (TLS/SASL, Kafka ACLs, secrets rotation) and complete compliance reviews.
@@ -121,6 +130,7 @@
 - Execution board: [PHASE-6](docs/phases/PHASE-6.md)
 
 ## 3. Deliverables
+
 - `@AGENTS.md`: living knowledge base for agents(complete).
 - Discovery artifacts: workshop schedule/notes (`docs/notes/phase-0-*`), service catalog, ADRs 0001–0003.
 - Service template repo modules with transactional scaffolding.
@@ -134,8 +144,10 @@
 - CDN/edge caching configuration with monitoring dashboards.
 - **COMPLETED**: Additional runbooks for polling relay mechanism and connector configuration guide.
 - **COMPLETED**: Additional runbooks for API gateway, service mesh, polyglot datastores, and OpenTelemetry tracing.
+- **COMPLETED**: Grafana dashboards for Temporal and CDN metrics.
 
 ## 4. Open Decisions & Research Tasks
+
 -Finalize choice between Debezium connectors vs lightweight polling for low-volume services based on operational complexity assessment.
 - Evaluate Confluent vs open-source Kafka distribution for licensing & support.
 - Decide on schema format (Avro vs JSON Schema) and registry enforcement rules.
@@ -147,6 +159,7 @@
 - Evaluate secrets management deployment (Vault OSS vs enterprise vs cloud-native secret stores).
 
 ## 5. Risks & Mitigations
+
 - **Debezium lag or outages**: Implement alerting,auto-restart scripts, and replay tooling.
 - **EOS configuration drift**: Enforce shared Spring Kafka config via `common-kafka` module; add integration tests with full environment validation.
 - **Schema incompatibilities**: Automate schema validation in CI; require backward-compatible changes.
@@ -155,6 +168,7 @@
 - **Security gaps**: Apply TLS/SASL, integrate secrets vault, conductthreat modeling sessions.
 
 ## 6. Next Actions (Week 1)
+
 1. Align stakeholders on service scope and data consistency requirements, validating the need for exactly-once semantics vs. idempotent consumers.
 2. Draft ADRs for transactional outbox pattern, Debezium adoption, and saga choreography.
 3. Author initial infra compose file and verify local stack spin-up with proper broker configurations for EOS.
@@ -164,10 +178,3 @@
 
 ---
 _Last updated: 2025-10-10_
-
-## GitHub Actions Enhancements
-- **Security Scanning**: Implemented OWASP Dependency Check, Trivy, and CodeQL scanning workflows
-- **Dependency Review**: Added dependency review workflow with license compliance checking
-- **Infrastructure Validation**: Added Docker Compose, Kubernetes, and Terraform validation workflows
-- **Static Analysis**: Integrated SpotBugs and Error Prone static analysis tools
-- **Observability**: Configured OpenTelemetry tracing for distributed tracing across services

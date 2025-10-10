@@ -15,6 +15,7 @@ tags:
 ## Core Policy
 
 - Prefer CLI for supported tasks; use MCP servers as fallback or when they offer clear advantages.
+- When a terminal command is required from the agent workflow, issue it through the Desktop Commander `execute_terminal_command` tool to keep session activity auditable while staying CLI-first.
 - Exception: Code indexing/search uses Claude Context MCP tools by user preference.
 - Desktop Commander MCP: Use for terminal/file operations that benefit from MCP integration.
 - JetBrains MCP: Use for IDE-specific operations that benefit from IntelliJ integration.

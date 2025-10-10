@@ -68,13 +68,14 @@ trigger: always_on
 
 ## Version & Compatibility Policy
 - Default to the latest stable GA releases: Java 25, Spring Boot 3.5.x, Spring for Apache Kafka 3.3.x, Kafka 4.1.x, Debezium 3.3.x, Gradle 9.1.x. Record the prior LTS versions in `docs/version-matrix.md` as fallbacks with downgrade guidance.
-- Maintain `docs/version-matrix.md` listing each service’s current, candidate, and fallback versions (JDK, Spring Boot, Kafka client, Debezium connector, Testcontainers) plus compatibility notes.
+- Maintain `docs/version-matrix.md` listing each service's current, candidate, and fallback versions (JDK, Spring Boot, Kafka client, Debezium connector, Testcontainers) plus compatibility notes.
 - Run a quarterly dependency review (see Research Backlog) to validate new maintenance drops; require smoke tests, upgrade playbooks, and rollback plans before updating production baselines.
 - Use CI checks (Gradle task `versionCheck`) to flag mismatched runtime versions across services; merge is blocked until the matrix is updated or the mismatch is resolved.
 
 ## Dev Workflow & Commands
 - Bootstrap infra with `docker compose up -d kafka postgres schema-registry debezium` (compose file will live under `infra/compose.yml`).
 - Run all service tests with `./gradlew clean test` and integration tests with `./gradlew :service-* :integration-test` once modules exist.
+- When you need to run shell commands, prefer the `execute_terminal_command` MCP tool so terminal interactions stay auditable and repeatable.
 - Start a sample service locally via `./gradlew :orders-service:bootRun` (ensure `.env` contains broker/bootstrap endpoints and DB creds).
 - Use `./gradlew flywayMigrate` to apply schema migrations before running services.
 - Lint/format with `./gradlew spotlessApply` (add plugin in the build once codebase is scaffolded).
@@ -122,7 +123,7 @@ trigger: always_on
 - Record clink usage patterns, limitations, and workarounds with `mcp-router__add-memory` to build institutional knowledge about CLI tool orchestration.
 
 ## Code Style & Quality
-- Adopt Spring’s 2025 Java code style (Google-derived): UTF-8, LF endings, tab indentation, 120-character line target, and no trailing whitespace. Configure IDEs to honor the repo `.editorconfig`, and use `./gradlew ktlintFormat` to auto-format Kotlin sources; CI enforces `ktlintCheck` and `detekt` on every change.
+- Adopt Spring's 2025 Java code style (Google-derived): UTF-8, LF endings, tab indentation, 120-character line target, and no trailing whitespace. Configure IDEs to honor the repo `.editorconfig`, and use `./gradlew ktlintFormat` to auto-format Kotlin sources; CI enforces `ktlintCheck` and `detekt` on every change.
 - Use constructor injection for Spring-managed components, keep controllers/services package-private unless cross-module visibility is required, and leverage Java records or Lombok-free value classes for immutability at the edges.
 - Separate domain, application, and adapter DTOs; map via MapStruct or dedicated translators to avoid leaking persistence or transport annotations into core logic.
 - Layer tests: domain/application tests run without Spring (JUnit 5 + AssertJ); adapter tests rely on Testcontainers for Kafka/Postgres, and consumer/producer contract tests validate event schemas in `common-events`.
@@ -133,6 +134,16 @@ trigger: always_on
 ## DevOps & Delivery Practices
 - Infrastructure-as-code (Terraform/Helm) governs Kubernetes, Istio, and gateway deployments; peer-review and lint all IaC changes in CI.
 - CI/CD pipelines (GitHub Actions/GitLab) automate lint, tests, security scans, container builds, schema compatibility checks, and progressive delivery with canaries.
+- **Enhanced Security Scanning**: Integrated OWASP Dependency Check, Trivy vulnerability scanner, and CodeQL static analysis with GitHub's security features.
+- **Dependency Management**: Added dependency review with license compliance checking and vulnerability scanning through GitHub's Dependency Review Action.
+- **Infrastructure Validation**: Implemented Docker Compose, Kubernetes, and Terraform configuration validation workflows.
+- **Static Analysis**: Integrated SpotBugs and Error Prone for enhanced code quality assurance.
+- **Observability**: Configured OpenTelemetry tracing for distributed tracing across services with context propagation.
+- **Enhanced Security Scanning**: Integrated OWASP Dependency Check, Trivy vulnerability scanner, and CodeQL static analysis with GitHub's security features.
+- **Dependency Management**: Added dependency review with license compliance checking and vulnerability scanning through GitHub's Dependency Review Action.
+- **Infrastructure Validation**: Implemented Docker Compose, Kubernetes, and Terraform configuration validation workflows.
+- **Static Analysis**: Integrated SpotBugs and Error Prone for enhanced code quality assurance.
+- **Observability**: Configured OpenTelemetry tracing for distributed tracing across services with context propagation.
 - Gradle builds must run with configuration cache and build cache enabled (`org.gradle.configuration-cache=true`, `org.gradle.caching=true`); CI invokes `./gradlew --configuration-cache` and developers should prefer the same for local workflows.
 - Run `./gradlew schemaCompatibilityCheck` to validate Avro schemas before publishing; CI executes the task alongside `check`.
 - Observability-first: enforce OpenTelemetry instrumentation, centralize logs/metrics, and maintain dashboards/alerts for latency, errors, saturation, and business SLIs.
@@ -159,7 +170,6 @@ trigger: always_on
 - Provide compensating helpers (`paymentsService.compensate`, `inventoryService.release`) that transition sagas to `COMPENSATING`/`FAILED` with clear step annotations (`payment-compensated`, `inventory-released`) while downstream actions (refunds, stock release) are stubbed for future integrations.
 - Adopt Temporal (self-hosted or cloud) as the orchestrator for complex, multi-domain sagas. The implementation uses a distributed worker model:
     - A dedicated workflow service (`temporal-pilot`) hosts the workflow logic, ensuring the orchestrator is isolated from other service deployments.
-    - The saga is initiated by a client in the `orders-service`.
     - Each participating microservice (`payments-service`, `inventory-service`, etc.) runs its own worker to process activities on a dedicated task queue.
 - Emit compensating commands/events from the application layer or Temporal activities when a step fails; include correlation identifiers and reason codes so downstream services can reconcile partial changes.
 - Provide idempotent handlers by combining processed-event ledgers with business keys (e.g., `order_id`); return early if the saga step has already completed.
@@ -184,6 +194,10 @@ trigger: always_on
 - Maintain Debezium connector runbook (`docs/runbooks/debezium.md`) covering schema export (`./gradlew exportAvroSchemas`), registry publication, and replay tooling (`scripts/outbox-replay.sh`).
 - Automate Debezium connector lifecycle using Infrastructure-as-Code (Terraform/Helm) alongside smoke tests that validate lag and schema mappings after each deployment.
 - For services using non-relational stores or polyglot runtimes, include adapter-specific health checks and replication monitoring in their runbooks; reference the shared version matrix to confirm driver compatibility.
+- Maintain comprehensive observability runbooks for all monitoring components:
+    - Service Mesh runbook (`docs/runbooks/service-mesh.md`) covering Istio configuration and troubleshooting
+    - Polyglot Datastore runbook (`docs/runbooks/polyglot-datastore.md`) covering database operations and maintenance
+    - OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`) covering distributed tracing implementation
 
 ## Security & Compliance
 - Enforce TLS and SASL for Kafka brokers; manage ACLs so services only access their topics.
@@ -196,28 +210,28 @@ trigger: always_on
 - Build an end-to-end saga pilot (Order → Payment → Inventory) and commit accompanying documentation under `docs/sagas/` with sample code and contract tests.
 - Add the `schemaCompatibilityCheck` Gradle task and wire it into CI pipelines alongside ktlint/detekt and the future SpotBugs/ErrorProne gates.
 - Finish API gateway, Debezium connector, and polyglot datastore runbooks referenced in Operational Automation; link them from `docs/runbooks/`.
+- Implement OpenTelemetry tracing across all services and create observability dashboards
 
 ## Documentation Hygiene
 - Keep @IMPLEMENTATION_PLAN.md synchronized with roadmap changes; link additional subsystem guides using `@docs/<name>.md`.
 - Record schema evolution decisions in `docs/schemas/CHANGELOG.md`; require backward-compatible changes unless otherwise approved.
 - Maintain `docs/architecture/service-catalog.md`, `docs/notes/phase-0-*.md`, and ADRs in `docs/adrs/` as the source of truth for discovery outcomes.
 - Ensure `docs/dev/getting-started.md` stays current with tooling and workflow changes.
-- Keep `docs/dev/build-system.md` updated when adding new modules, composite builds, or build logic conventions.
+- Keep runbooks up-to-date with implementation changes and regularly review for accuracy
 
 ## Research Backlog & References
 - Review Debezium high-availability sample for relay failover patterns (see GitHub repo linked below).
 - Follow Spring Kafka EOS guidance to avoid regression in transactional containers.
 - Track Confluent Platform release notes for broker-side transaction updates and licensing changes.
 - Schedule a quarterly version review using `mcp-router__brave_web_search` (with `freshness='pm'`) and `mcp-router__tavily_extract` to capture changelog highlights for Spring Boot, Kafka, Debezium, and Gradle.
-- Track Zen MCP server updates for expanded clink CLI support and improved argument forwarding.
+- Evaluate OpenTelemetry tracing implementations and best practices for distributed systems
+- Research advanced Grafana dashboard patterns for microservices monitoring
+- Investigate service mesh integration with observability platforms
 - Key references:
     - Spring Kafka exactly-once & transactions documentation.
     - Spring Cloud Stream blog on EOS patterns with JPA transactions.
     - Confluent Platform 8.0 release notes (KRaft-first transactions & licensing updates).
     - Debezium 3.3 release notes (EOS support and connector updates).
     - Debezium outbox pattern implementations (anarefin/high-availability-debezium, YunusEmreNalbant/transactional-outbox-pattern-with-debezium, chfern/debezium-outbox-pgkafka).
-
-## Qwen Added Memories
-- Kafka Transactional Microservices Infrastructure Audit - Production compose file (infra/compose.prod.yml) includes ZooKeeper which is noted as for documentation/testing. Production should use pure KRaft mode without ZooKeeper for modern Kafka 4.1.0 deployments.
-- Current dependency versions as of 2025-10-10: Kotlin 2.2.20, Spring Boot 3.5.6, Apache Kafka 4.1.0, Spring Kafka 3.3.10, Flyway 11.14.0, Detekt 1.23.8, OpenTelemetry 1.54.1, Testcontainers 1.21.3, PostgreSQL 42.7.8. Latest available versions: Kotlin 2.3.0-Beta1, Spring Boot 4.0.0-M3, Kafka 4.1.0 (current), Flyway 11.14.0, Detekt 1.23.8 (current).
-- Completed final verification that all dependencies are using latest stable versions as of October 10, 2025: Kotlin 2.2.20, Spring Boot 3.5.6, Apache Kafka 4.1.0, Flyway 11.14.0, OpenTelemetry 1.54.1, Testcontainers 1.21.3. All documentation properly reflects pure KRaft mode without ZooKeeper dependency. Version matrix and all references updated to reflect current versions.
+    - OpenTelemetry documentation and implementation guides
+    - Istio service mesh documentation for ambient mode

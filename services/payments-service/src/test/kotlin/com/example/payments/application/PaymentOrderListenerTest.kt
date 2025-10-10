@@ -1,10 +1,10 @@
 package com.example.payments.application
 
 import com.example.events.avro.OrderCreatedEvent
+import com.example.outbox.repository.OutboxRepository
 import com.example.payments.PaymentsServiceApplication
 import com.example.payments.domain.PaymentRepository
 import com.example.payments.domain.ProcessedEventRepository
-import com.example.outbox.repository.OutboxRepository
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository
 import com.example.saga.SagaStateService

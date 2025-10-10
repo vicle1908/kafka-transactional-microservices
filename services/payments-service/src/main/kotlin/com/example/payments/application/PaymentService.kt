@@ -4,6 +4,9 @@ import com.example.events.avro.PaymentCompletedEvent
 import com.example.events.avro.PaymentFailedEvent
 import com.example.events.avro.PaymentRefundFailedEvent
 import com.example.events.avro.PaymentRefundedEvent
+import com.example.outbox.entity.OutboxMessage
+import com.example.outbox.entity.OutboxStatus
+import com.example.outbox.repository.OutboxRepository
 import com.example.payments.application.port.out.PaymentChargeRequest
 import com.example.payments.application.port.out.PaymentChargeResult
 import com.example.payments.application.port.out.PaymentChargeResult.Approved
@@ -20,9 +23,6 @@ import com.example.payments.domain.ProcessedEventRepository
 import com.example.payments.domain.RefundEntity
 import com.example.payments.domain.RefundRepository
 import com.example.payments.domain.RefundStatus
-import com.example.outbox.entity.OutboxMessage
-import com.example.outbox.entity.OutboxStatus
-import com.example.outbox.repository.OutboxRepository
 import com.example.saga.SagaMetricsRecorder
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateService

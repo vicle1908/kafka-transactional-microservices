@@ -12,7 +12,6 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.core.ProducerFactory
 import org.springframework.kafka.support.serializer.JsonSerializer
 import org.springframework.kafka.transaction.KafkaTransactionManager
-import org.springframework.transaction.PlatformTransactionManager
 
 @Configuration
 class KafkaProducerConfig {

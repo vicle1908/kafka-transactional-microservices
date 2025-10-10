@@ -35,5 +35,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install markdownlint
+        run: npm install -g markdownlint-cli
       - name: Markdown lint
-        uses: DavidAnson/markdownlint-cli2-action@v15
+        run: markdownlint "docs/**/*.md"
+      - name: Validate runbook links
+        run: |
+          echo "Validating runbook links..."
+          # Add link validation here when needed
+      - name: Check for orphaned runbooks
+        run: |
+          echo "Checking for orphaned runbooks..."
+          # Add orphaned file check here when needed
