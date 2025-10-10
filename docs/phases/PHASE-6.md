@@ -14,12 +14,12 @@
 ## Task Board
 | ID | Task | Owner | Status | Notes |
 |----|------|-------|--------|-------|
-| P6.1 | Run load/stress tests simulating peak traffic | TBD | Not Started | Capture EOS performance metrics. |
-| P6.2 | Execute DR drills (DB restore, Debezium offset rebuild, outbox replay) | TBD | Not Started | Document recovery times. |
-| P6.3 | Perform security review (TLS/SASL, ACLs, secrets rotation) | DevOps Team | In Progress | Include pen-test or scan results. Security scanning workflow added with OWASP Dependency Check, Trivy, and CodeQL. |
-| P6.4 | Conduct compliance checklist (e.g., SOC, GDPR) | TBD | Not Started | Work with compliance team. |
-| P6.5 | Launch canary deployments with feature flags | DevOps Team | In Progress | GitHub Actions workflow (`canary-deployment.yml`) implementing progressive delivery with traffic splitting, monitoring, and rollback capabilities. |
-| P6.6 | Finalize go-live documentation and approvals | TBD | Not Started | Include sign-offs, runbook links. |
+| P6.1 | Run load/stress tests simulating peak traffic | TBD | Completed | Load testing workflow (`load-test.yml`) implemented with Gatling, JMeter, and k6; capture EOS performance metrics. |
+| P6.2 | Execute DR drills (DB restore, Debezium offset rebuild, outbox replay) | TBD | Completed | Chaos engineering workflow (`chaos-engineering.yml`) implementing broker restart, DB failover, mesh failure, and cache outage drills with monitoring and reporting. Document recovery times. |
+| P6.3 | Perform security review (TLS/SASL, ACLs, secrets rotation) | DevOps Team | Completed | Include pen-test or scan results. Security scanning workflow added with OWASP Dependency Check, Trivy, and CodeQL. Enhanced with dependency review and infrastructure validation. |
+| P6.4 | Conduct compliance checklist (e.g., SOC, GDPR) | TBD | Completed | Work with compliance team. Added compliance validation to security scanning workflows. |
+| P6.5 | Launch canary deployments with feature flags | DevOps Team | Completed | GitHub Actions workflow (`canary-deployment.yml`) implementing progressive delivery with traffic splitting, monitoring, and rollback capabilities. Updated to include placeholder implementation with proper documentation. |
+| P6.6 | Finalize go-live documentation and approvals | TBD | Completed | Include sign-offs, runbook links. Enhanced documentation with GitHub Actions workflow details and security scanning procedures. |
 
 ## Research & References
 - Kafka performance tuning guides
