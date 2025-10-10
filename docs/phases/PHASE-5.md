@@ -1,16 +1,19 @@
 # Phase 5 – Observability & Resilience
 
 ## Objectives
+
 - Instrument services for tracing, metrics, and logging aligned with platform standards.
 - Implement resilience patterns (retries, DLQs, chaos drills) and document runbooks.
 - Finalize operational automation for API gateway, Debezium connectors, and polyglot datastores.
 
 ## Deliverables
+
 - OpenTelemetry tracing configured end to end (HTTP + Kafka).
 - Grafana dashboards and alert rules for transactions, lag, DLQs, saga failures.
 - Completed runbooks: API gateway, Debezium connectors, polyglot datastore adapters.
 
 ## Task Board
+
 | ID | Task | Owner | Status | Notes |
 |----|------|-------|--------|-------|
 | P5.1 | Integrate OpenTelemetry SDK and propagate context headers | Platform Team | Completed | Implemented OpenTelemetry tracing configuration with context propagation across HTTP/Kafka boundaries; verified spans for service interactions. |
@@ -26,24 +29,29 @@
 | P5.11 | Automate runbook validation checks in CI (link checker, lint) | DevOps Team | Completed | Use markdown linting scripts. |
 
 ## Research & References
+
 - OpenTelemetry instrumentation guides for Spring
 - Kafka resilience patterns and chaos engineering playbooks
 - Gateway operation best practices (Spring Cloud Gateway)
 
 ## Risks & Mitigations
+
 - **Monitoring gaps**: Run observability reviews with SRE/Ops.
 - **Runbook rot**: Schedule periodic audits via CI lint jobs.
 
 ## Dependencies
+
 - Service implementations from Phase 4.
 - Monitoring stack availability.
 
 ## Artifacts & Links
+
 - Observability configs (`config/observability/*`)
 - Runbooks (`docs/runbooks/*.md`)
 - Chaos drill reports (`docs/chaos/`)
 
 ## Progress Log
+
 - 2025-10-10 | Started implementing OpenTelemetry tracing across services.
 - 2025-10-10 | Began creating missing runbooks for API gateway, service mesh, Debezium, and polyglot datastores.
 - 2025-10-10 | Created Temporal observability runbook.
@@ -136,6 +144,7 @@ We have created a complete set of operational runbooks covering all major system
 ## Work in Progress
 
 ### 1. OpenTelemetry Implementation
+
 - Integrating OpenTelemetry SDK across all microservices
 - Planning deployment of OpenTelemetry Collector and Jaeger backend
 - Implementing distributed tracing across service boundaries
@@ -143,21 +152,25 @@ We have created a complete set of operational runbooks covering all major system
 ## Benefits Achieved
 
 ### 1. Improved Operational Clarity
+
 - Complete set of runbooks for all system components
 - Standardized documentation format across all operational guides
 - Clear procedures for common operational tasks and troubleshooting
 
 ### 2. Enhanced Observability
+
 - Comprehensive monitoring coverage for all system components
 - Defined metrics and alerting for proactive issue detection
 - Better understanding of system performance and health
 
 ### 3. Better Knowledge Transfer
+
 - Detailed documentation enables faster onboarding of new team members
 - Standardized procedures reduce operational errors
 - Clear escalation paths for issue resolution
 
 ### 4. Automated Quality Assurance
+
 - Documentation validation integrated into CI/CD pipeline
 - Automated linting ensures consistent formatting
 - Reduced risk of documentation rot through automated checks

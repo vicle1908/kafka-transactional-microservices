@@ -4,6 +4,8 @@ services:
   kafka:
     image: ${KAFKA_IMAGE:-apache/kafka:4.1.0}
     container_name: kafka
+    profiles:
+      - local
     ports:
       - "${KAFKA_PLAINTEXT_PORT:-9092}:9092"
       - "${KAFKA_CONTROLLER_PORT:-9093}:9093"
@@ -34,6 +36,8 @@ services:
   schema-registry:
     image: ${SCHEMA_REGISTRY_IMAGE:-confluentinc/cp-schema-registry:7.7.0}
     container_name: schema-registry
+    profiles:
+      - local
     depends_on:
       - kafka
     environment:
@@ -51,6 +55,8 @@ services:
   postgres:
     image: ${POSTGRES_IMAGE:-postgres:18}
     container_name: postgres
+    profiles:
+      - local
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
@@ -77,6 +83,8 @@ services:
   redis:
     image: ${REDIS_IMAGE:-redis:7-alpine}
     container_name: redis
+    profiles:
+      - local
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
@@ -90,6 +98,8 @@ services:
   debezium-connect:
     image: ${DEBEZIUM_IMAGE:-quay.io/debezium/connect:3.3}
     container_name: debezium-connect
+    profiles:
+      - local
     depends_on:
       - kafka
       - schema-registry
@@ -115,6 +125,8 @@ services:
   akhq:
     image: ${AKHQ_IMAGE:-tchiotludo/akhq:0.24.0}
     container_name: akhq
+    profiles:
+      - local
     depends_on:
       - kafka
       - schema-registry
@@ -133,6 +145,54 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  flyway-orders:
+    image: flyway/flyway:latest
+    container_name: flyway-orders
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/orders-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/orders -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations migrate
+
+  flyway-payments:
+    image: flyway/flyway:latest
+    container_name: flyway-payments
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/payments-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/payments -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations migrate
+
+  flyway-inventory:
+    image: flyway/flyway:latest
+    container_name: flyway-inventory
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/inventory-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/inventory -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations migrate
+
+  flyway-notification:
+    image: flyway/flyway:latest
+    container_name: flyway-notification
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/notification-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/notification -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations migrate
 
 volumes:
   kafka-data:

@@ -16,11 +16,13 @@ The transactional outbox pattern achieves exactly-once semantics by breaking the
 ### 2. Infrastructure Configuration Requirements
 
 #### A. Kafka Broker Configuration
+
 - `transaction.state.log.replication.factor`: Must be at least 3 in production
 - `transaction.state.log.min.isr`: Should be set to 2 (for replication factor of 3)
 - Enable idempotence and transaction support cluster-wide
 
 #### B. Database & Outbox Table
+
 - **Schema Requirements**:
   - `id`: Unique identifier (UUID or BIGSERIAL)
   - `aggregate_id`: Business entity ID the event pertains to
@@ -30,6 +32,7 @@ The transactional outbox pattern achieves exactly-once semantics by breaking the
   - `created_at`: Timestamp for ordering and diagnostics
 
 #### C. Message Relay Service (Poller or CDC)
+
 - **Producer Configuration**:
   - `enable.idempotence`: true
   - `transactional.id`: Unique, stable ID per producer instance
@@ -37,6 +40,7 @@ The transactional outbox pattern achieves exactly-once semantics by breaking the
 - **Relay Logic**: Begin transaction → Process outbox records → Commit Kafka transaction → Update DB status
 
 #### D. Kafka Consumer Configuration
+
 - `isolation.level`: `read_committed`
 - `enable.auto.commit`: false (for manual offset management)
 
@@ -45,6 +49,7 @@ The transactional outbox pattern achieves exactly-once semantics by breaking the
 ### A. Integration Testing Requirements
 
 **Test Environment Setup**:
+
 ```yaml
 # docker-compose.test.yml for CI
 version: '3.9'
@@ -76,6 +81,7 @@ services:
 ```
 
 **Test Scenarios**:
+
 - Happy path: API call → DB write → outbox insert → relay processing → Kafka message verification
 - Failure simulation: Producer idempotency testing, consumer isolation level validation
 
@@ -88,6 +94,7 @@ services:
 ### C. Observability Integration
 
 **Key Metrics to Monitor**:
+
 - `outbox_table_depth`: Number of pending outbox records
 - `relay_kafka_commit_latency`: Transaction commit time to Kafka
 - `end_to_end_latency`: From outbox creation to consumption
@@ -95,15 +102,18 @@ services:
 ## Operational Best Practices
 
 ### 1. Start Simple Approach
+
 - Begin with a simple database poller before implementing complex CDC solutions like Debezium
 - Validate requirements thoroughly before committing to EOS complexity
 
 ### 2. Monitoring & Alerting
+
 - Implement dedicated monitoring for the message relay component
 - Alert on outbox table depth growth
 - Monitor transaction commit failures
 
 ### 3. Testing Strategy
+
 - End-to-end integration tests are non-negotiable
 - Test failure scenarios and idempotency guarantees
 - Validate consumer isolation levels
@@ -111,30 +121,36 @@ services:
 ## Critical Risks and Mitigation
 
 ### 1. Operational Complexity
+
 - **Risk**: Relay component failure halts event propagation
 - **Mitigation**: Robust monitoring, alerting, and high-availability setup
 
 ### 2. Performance Considerations
+
 - **Risk**: Outbox table becomes a bottleneck
 - **Mitigation**: Proper indexing, batch processing, and monitoring
 
 ### 3. Deployment Complexity
+
 - **Risk**: Managing `transactional.id` during rolling updates
 - **Mitigation**: Careful deployment strategies and unique ID management per instance
 
 ## Implementation Phases
 
 ### Phase 1: Foundation
+
 1. Validate business requirements for EOS vs. idempotent consumers
 2. Set up basic infrastructure with proper broker configurations
 3. Implement outbox table schema and relay service configuration
 
 ### Phase 2: Testing & Validation
+
 1. Create comprehensive integration tests
 2. Add to GitHub Actions workflows
 3. Validate end-to-end transactional flow
 
 ### Phase 3: Production Readiness
+
 1. Implement monitoring and alerting
 2. Add security scanning to CI/CD
 3. Finalize deployment procedures

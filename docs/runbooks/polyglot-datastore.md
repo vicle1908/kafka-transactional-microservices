@@ -3,6 +3,7 @@
 ## Overview
 
 This document provides operational guidance for managing polyglot datastores in the microservices architecture. The system uses multiple types of databases to best fit the needs of different services:
+
 - PostgreSQL for relational data with ACID properties
 - Redis for caching and temporary data storage
 - Potential future datastores for specialized use cases
@@ -10,6 +11,7 @@ This document provides operational guidance for managing polyglot datastores in 
 ## Architecture
 
 The polyglot datastore architecture includes:
+
 - **PostgreSQL**: Primary relational database for core business data
 - **Redis**: In-memory data store for caching and session management
 - **Specialized datastores**: Additional databases for specific use cases (e.g., document stores, graph databases, time-series databases)
@@ -50,6 +52,7 @@ postgres:
 ### Database Initialization
 
 Initialization scripts are located in `./infra/postgres/init/`:
+
 - `01-create-dbs.sql`: Creates databases for each service
 - Additional scripts for schema setup and initial data
 
@@ -58,11 +61,13 @@ Initialization scripts are located in `./infra/postgres/init/`:
 #### Creating a New Database
 
 1. Add a new statement to `01-create-dbs.sql`:
+
    ```sql
    CREATE DATABASE "new-service" OWNER app;
    ```
 
 2. Restart the PostgreSQL container or execute the script manually:
+
    ```bash
    docker exec -i postgres psql -U app -f /docker-entrypoint-initdb.d/01-create-dbs.sql
    ```
@@ -70,11 +75,13 @@ Initialization scripts are located in `./infra/postgres/init/`:
 #### Backup and Restore
 
 1. **Backup**:
+
    ```bash
    docker exec postgres pg_dump -U app -d database_name > backup.sql
    ```
 
 2. **Restore**:
+
    ```bash
    docker exec -i postgres psql -U app -d database_name < backup.sql
    ```
@@ -82,6 +89,7 @@ Initialization scripts are located in `./infra/postgres/init/`:
 #### Monitoring
 
 Key PostgreSQL metrics to monitor:
+
 - Connection count
 - Transaction rate
 - Query performance
@@ -95,11 +103,13 @@ Key PostgreSQL metrics to monitor:
 **Symptoms**: Applications cannot connect to the database.
 
 **Possible Causes**:
+
 1. Incorrect connection string
 2. Database not accepting connections
 3. Network issues
 
 **Solutions**:
+
 1. Verify connection string parameters
 2. Check PostgreSQL logs for connection errors
 3. Ensure network connectivity between applications and database
@@ -109,11 +119,13 @@ Key PostgreSQL metrics to monitor:
 **Symptoms**: Slow query performance or high latency.
 
 **Possible Causes**:
+
 1. Missing indexes
 2. Inefficient queries
 3. Resource constraints
 
 **Solutions**:
+
 1. Analyze query execution plans
 2. Add appropriate indexes
 3. Optimize queries
@@ -140,6 +152,7 @@ redis:
 ### Key Settings
 
 The Redis configuration file (`./infra/redis/redis.conf`) includes:
+
 - Memory management policies
 - Persistence settings
 - Security configurations
@@ -150,16 +163,19 @@ The Redis configuration file (`./infra/redis/redis.conf`) includes:
 #### Cache Management
 
 1. **Flushing cache**:
+
    ```bash
    redis-cli FLUSHALL
    ```
 
 2. **Checking cache size**:
+
    ```bash
    redis-cli INFO memory
    ```
 
 3. **Monitoring keys**:
+
    ```bash
    redis-cli KEYS "*"
    ```
@@ -167,12 +183,14 @@ The Redis configuration file (`./infra/redis/redis.conf`) includes:
 #### Performance Tuning
 
 1. **Adjust memory policy**:
+
    ```
    maxmemory 256mb
    maxmemory-policy allkeys-lru
    ```
 
 2. **Configure persistence**:
+
    ```
    save 900 1
    save 300 10
@@ -182,6 +200,7 @@ The Redis configuration file (`./infra/redis/redis.conf`) includes:
 ### Monitoring
 
 Key Redis metrics to monitor:
+
 - Memory usage
 - Hit/miss ratio
 - Connected clients
@@ -195,11 +214,13 @@ Key Redis metrics to monitor:
 **Symptoms**: High memory usage or out-of-memory errors.
 
 **Possible Causes**:
+
 1. Large dataset
 2. Inefficient key expiration
 3. Memory leaks
 
 **Solutions**:
+
 1. Optimize data structures
 2. Set appropriate expiration times
 3. Use Redis eviction policies
@@ -210,11 +231,13 @@ Key Redis metrics to monitor:
 **Symptoms**: Slow response times or timeouts.
 
 **Possible Causes**:
+
 1. Blocking operations
 2. Large requests
 3. Network latency
 
 **Solutions**:
+
 1. Avoid blocking commands (e.g., KEYS, FLUSHALL)
 2. Batch operations when possible
 3. Optimize network configuration
@@ -267,6 +290,7 @@ mongodb:
 ### Centralized Monitoring
 
 All datastores export metrics to Prometheus:
+
 - PostgreSQL exporter for database metrics
 - Redis exporter for cache metrics
 - Specialized exporters for other datastores
@@ -296,6 +320,7 @@ All datastores export metrics to Prometheus:
 ### Grafana Dashboards
 
 Grafana dashboards are available for each datastore:
+
 - PostgreSQL dashboard with query performance and connection metrics
 - Redis dashboard with memory usage and cache hit ratios
 - Specialized dashboards for other datastores
@@ -335,6 +360,7 @@ Grafana dashboards are available for each datastore:
 ### PostgreSQL
 
 1. **Logical Backups**:
+
    ```bash
    pg_dump -U app -d database_name > backup.sql
    ```
@@ -424,6 +450,7 @@ Grafana dashboards are available for each datastore:
 ### Debezium CDC
 
 PostgreSQL integrates with Debezium for change data capture:
+
 - Logical replication enabled for CDC
 - Dedicated replication user for Debezium
 - Outbox pattern implementation for transactional messaging
@@ -431,6 +458,7 @@ PostgreSQL integrates with Debezium for change data capture:
 ### Caching Layer
 
 Redis serves as the caching layer:
+
 - Session storage for web applications
 - Cache-aside pattern for database queries
 - Distributed caching for microservices
@@ -438,6 +466,7 @@ Redis serves as the caching layer:
 ### Monitoring Stack
 
 All datastores integrate with the monitoring stack:
+
 - Metrics exported to Prometheus
 - Logs shipped to centralized logging
 - Health checks integrated with service discovery

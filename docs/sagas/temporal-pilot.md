@@ -1,6 +1,7 @@
 # Temporal Pilot Plan
 
 ## Objectives
+
 - Orchestrate the order-payment-inventory-notification workflow using Temporal to validate long-running saga orchestration.
 - Demonstrate retries, compensation hooks, and state visibility complementary to the existing event-choreographed flow.
 
@@ -13,6 +14,7 @@ The saga will be implemented using a distributed worker model:
   - `payments-service` will implement the `PaymentActivity`.
   - `inventory-service` will implement the `InventoryActivity`.
   - `notification-service` will implement the `NotificationActivity`.
+
 2. **Activities** (to be implemented):
    - `ProcessPaymentActivity` (idempotent, delegates to payments-service API/gRPC stub).
    - `ReserveInventoryActivity` (delegates to inventory stock API / future gRPC).
@@ -29,9 +31,10 @@ The saga will be implemented using a distributed worker model:
    - Record Temporal metrics (queue size, workflow latency) and feed into Grafana dashboard in Phase 5.
 
 ## Deliverables
+
 ## Implementation Plan
 
-1.  **Shared Components**: Granular activity interfaces (`PaymentActivity`, `InventoryActivity`, `NotificationActivity`) are defined in the `common-temporal` module.
-2.  **Workflow Orchestration**: The `OrderFulfillmentWorkflowImpl` is implemented in the `temporal-pilot` service, which acts as a dedicated workflow worker.
-3.  **Workflow Trigger**: The `orders-service` uses a `WorkflowClient` to start the saga when an order is created.
-4.  **Activity Workers**: The `payments-service`, `inventory-service`, and `notification-service` each host a worker configured to handle their specific activity.
+1. **Shared Components**: Granular activity interfaces (`PaymentActivity`, `InventoryActivity`, `NotificationActivity`) are defined in the `common-temporal` module.
+2. **Workflow Orchestration**: The `OrderFulfillmentWorkflowImpl` is implemented in the `temporal-pilot` service, which acts as a dedicated workflow worker.
+3. **Workflow Trigger**: The `orders-service` uses a `WorkflowClient` to start the saga when an order is created.
+4. **Activity Workers**: The `payments-service`, `inventory-service`, and `notification-service` each host a worker configured to handle their specific activity.

@@ -7,27 +7,34 @@ This document provides operational guidance for monitoring and observing Tempora
 ## Architecture
 
 The Temporal implementation uses a distributed worker model:
+
 - A dedicated workflow service (`temporal-pilot`) hosts the workflow logic, ensuring the orchestrator is isolated from other service deployments.
 - Each participating microservice (`payments-service`, `inventory-service`, etc.) runs its own worker to process activities on a dedicated task queue.
 
 ## Components
 
 ### Temporal Server
+
 The Temporal server provides:
+
 - Workflow execution and state management
 - Task queue management
 - Visibility and history storage
 - Metrics and tracing capabilities
 
 ### Temporal Workers
+
 Workers are responsible for:
+
 - Executing workflow and activity code
 - Polling task queues for tasks
 - Reporting task completion/failure
 - Exporting metrics and traces
 
 ### Temporal Client
+
 The client is used for:
+
 - Starting and interacting with workflows
 - Querying workflow state
 - Sending signals to workflows
@@ -66,6 +73,7 @@ WorkflowServiceStubsOptions options = WorkflowServiceStubsOptions.newBuilder()
 ### Monitoring Temporal Metrics
 
 Key metrics to monitor include:
+
 - Workflow start/success/failure rates
 - Activity start/success/failure rates
 - Task queue depths
@@ -76,6 +84,7 @@ Key metrics to monitor include:
 ### Creating Grafana Dashboard
 
 A Grafana dashboard should visualize:
+
 - Workflow latency percentiles
 - Activity failure rates
 - Task queue depths
@@ -85,6 +94,7 @@ A Grafana dashboard should visualize:
 ### Configuring Alerts
 
 Alerts should be configured for:
+
 - High workflow failure rates
 - High activity failure rates
 - Long workflow execution times
@@ -120,6 +130,7 @@ Alerts should be configured for:
 ### Grafana Dashboard
 
 Create a Grafana dashboard with panels for:
+
 - Workflow execution rates (success, failure, timeout)
 - Activity execution rates (success, failure, timeout)
 - Task queue depths by queue name
@@ -136,12 +147,14 @@ Create a Grafana dashboard with panels for:
 **Symptoms**: Workflows failing with errors or timeouts.
 
 **Possible Causes**:
+
 1. Activity implementation errors
 2. Resource constraints on workers
 3. Network connectivity issues
 4. Incorrect workflow logic
 
 **Solutions**:
+
 1. Check activity logs for error details
 2. Monitor worker resource usage
 3. Verify network connectivity between components
@@ -152,11 +165,13 @@ Create a Grafana dashboard with panels for:
 **Symptoms**: Large number of pending tasks in queues.
 
 **Possible Causes**:
+
 1. Insufficient worker capacity
 2. Slow activity execution
 3. Worker failures or restarts
 
 **Solutions**:
+
 1. Scale worker deployments
 2. Optimize activity implementation
 3. Investigate worker health and restart patterns
@@ -166,11 +181,13 @@ Create a Grafana dashboard with panels for:
 **Symptoms**: Workers not appearing in Temporal UI or tasks not being processed.
 
 **Possible Causes**:
+
 1. Incorrect task queue names
 2. Network connectivity issues
 3. Authentication/authorization problems
 
 **Solutions**:
+
 1. Verify task queue names match between workers and workflows
 2. Check network connectivity and firewall rules
 3. Review authentication configuration
@@ -245,6 +262,7 @@ tctl taskqueue describe --taskqueue <task-queue-name>
 ### Horizontal Scaling
 
 Temporal can be scaled horizontally by:
+
 1. Increasing the number of worker instances
 2. Adding more Temporal server nodes
 3. Scaling underlying persistence layer
@@ -266,6 +284,7 @@ Temporal can be scaled horizontally by:
 ### Observability Stack
 
 Temporal integrates with the existing observability stack:
+
 - Metrics are exported to Prometheus via Micrometer
 - Traces are sent to Jaeger via OpenTelemetry
 - Logs are shipped to centralized logging system
@@ -273,6 +292,7 @@ Temporal integrates with the existing observability stack:
 ### Service Mesh
 
 Temporal workers integrate with the Istio service mesh:
+
 - mTLS for secure service-to-service communication
 - Traffic management policies
 - Observability data collection
@@ -280,6 +300,7 @@ Temporal workers integrate with the Istio service mesh:
 ### CI/CD Pipeline
 
 Temporal components are part of the CI/CD pipeline:
+
 - Workers are deployed through standard processes
 - Configuration is managed via Infrastructure-as-Code
 - Updates are validated through automated tests
@@ -288,7 +309,7 @@ Temporal components are part of the CI/CD pipeline:
 
 ### Deployment Process
 
-1. **Worker Updates**: 
+1. **Worker Updates**:
    - Deploy new worker versions with blue-green deployment
    - Test with non-production workflows first
    - Monitor metrics during rollout

@@ -1,17 +1,21 @@
 # Health Checks Implementation Guide
 
 ## Overview
+
 This document describes the health checks implemented for all services in the Docker Compose files. Health checks are essential for ensuring that services are running correctly and for enabling Docker's service dependency management.
 
 ## Implemented Health Checks
 
 ### Kafka
+
 **Health Check Command:**
+
 ```bash
 kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1
 ```
 
 **Configuration:**
+
 ```yaml
 healthcheck:
   test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
@@ -24,12 +28,15 @@ healthcheck:
 This command attempts to connect to the Kafka broker and retrieve the supported API versions. If the broker is not ready or accessible, the command will fail and exit with a non-zero status.
 
 ### Schema Registry
+
 **Health Check Command:**
+
 ```bash
 curl -f http://localhost:8081/subjects
 ```
 
 **Configuration:**
+
 ```yaml
 healthcheck:
   test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
@@ -42,12 +49,15 @@ healthcheck:
 This command makes an HTTP request to the Schema Registry's subjects endpoint. A successful response indicates that the Schema Registry is running and can communicate with Kafka.
 
 ### PostgreSQL
+
 **Health Check Command:**
+
 ```bash
 pg_isready -U <username> -d <database>
 ```
 
 **Configuration:**
+
 ```yaml
 healthcheck:
   test: ["CMD-SHELL", "pg_isready -U app -d orders"]
@@ -60,12 +70,15 @@ healthcheck:
 The `pg_isready` utility checks the connection status of a PostgreSQL server. It returns 0 if the server is accepting connections, 1 if it's rejecting them, and 2 if there's no response.
 
 ### Redis
+
 **Health Check Command:**
+
 ```bash
 redis-cli ping
 ```
 
 **Configuration:**
+
 ```yaml
 healthcheck:
   test: ["CMD", "redis-cli", "ping"]
@@ -78,12 +91,15 @@ healthcheck:
 The Redis PING command is used to test if the Redis server is responsive. It returns "PONG" if the server is running correctly.
 
 ### Debezium Connect
+
 **Health Check Command:**
+
 ```bash
 curl -f http://localhost:8083/
 ```
 
 **Configuration:**
+
 ```yaml
 healthcheck:
   test: ["CMD", "curl", "-f", "http://localhost:8083/"]
@@ -96,12 +112,15 @@ healthcheck:
 This command makes an HTTP request to the root endpoint of the Kafka Connect REST API. A successful response indicates that the Debezium Connect service is running.
 
 ### AKHQ (Apache Kafka GUI)
+
 **Health Check Command:**
+
 ```bash
 curl -f http://localhost:8080/health
 ```
 
 **Configuration:**
+
 ```yaml
 healthcheck:
   test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -114,12 +133,15 @@ healthcheck:
 This command makes an HTTP request to the AKHQ health endpoint. A successful response indicates that the AKHQ service is running correctly.
 
 ### Grafana
+
 **Health Check Command:**
+
 ```bash
 curl -f http://localhost:3000/api/health
 ```
 
 **Configuration:**
+
 ```yaml
 healthcheck:
   test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
@@ -132,12 +154,15 @@ healthcheck:
 This command makes an HTTP request to Grafana's health API endpoint. A successful response indicates that Grafana is running correctly.
 
 ### Prometheus
+
 **Health Check Command:**
+
 ```bash
 wget --spider http://localhost:9090/-/healthy
 ```
 
 **Configuration:**
+
 ```yaml
 healthcheck:
   test: ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
@@ -162,6 +187,7 @@ All health checks use the following standard parameters:
 Health checks can be used in several ways:
 
 1. **Service Dependencies**: Use `depends_on` with `condition: service_healthy` to ensure services start in the correct order:
+
    ```yaml
    depends_on:
      kafka:
@@ -169,6 +195,7 @@ Health checks can be used in several ways:
    ```
 
 2. **Monitoring**: Health check status is visible in Docker CLI commands:
+
    ```bash
    docker ps
    docker inspect <container_name>
@@ -193,11 +220,13 @@ Health checks can be used in several ways:
 If a service is marked as unhealthy:
 
 1. Check the service logs:
+
    ```bash
    docker logs <container_name>
    ```
 
 2. Test the health check command manually:
+
    ```bash
    docker exec <container_name> <health_check_command>
    ```

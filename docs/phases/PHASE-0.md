@@ -1,16 +1,19 @@
 # Phase 0 – Discovery & Architecture
 
 ## Objectives
+
 - Align on microservice scope, data stores, and consistency requirements.
 - Ratify the baseline tech stack and architectural decisions.
 - Produce ADRs for transactional outbox, saga choreography, and schema governance.
 
 ## Deliverables
+
 - Stakeholder-approved service catalog and data flow maps.
 - Architecture decision records (outbox, saga style, schema policy).
 - Updated @AGENTS.md and IMPLEMENTATION_PLAN.md reflecting discovery outcomes.
 
 ## Task Board
+
 | ID | Task | Owner | Status | Notes |
 |----|------|-------|--------|-------|
 | P0.1 | Schedule discovery workshops with domain stakeholders | Architecture Team | Completed | See `docs/notes/phase-0-schedule.md`. |
@@ -23,22 +26,27 @@
 | P0.8 | Draft ADR: secrets management strategy | Architecture Team | Completed | See `docs/adrs/0004-secrets-management.md`. |
 
 ## Research & References
+
 - Debezium outbox SMT documentation
 - Spring Kafka EOS configuration guides
 - Domain context docs from stakeholders
 
 ## Risks & Mitigations
+
 - **Unclear ownership**: Assign decision owners during workshops.
 - **Scope creep**: Time-box discovery and log deferred items in backlog.
 
 ## Dependencies
+
 - Availability of product owners and lead engineers.
 - Access to existing system diagrams and data lineage docs.
 
 ## Artifacts & Links
+
 - Meeting notes (`docs/notes/phase-0/*.md`)
 - ADRs (`docs/adrs/`)
 - Service catalog spreadsheet or diagram
 
 ## Progress Log
+
 - 2025-10-07 | Workshops scheduled, service catalog drafted, ADRs 0001–0004 approved, docs updated.

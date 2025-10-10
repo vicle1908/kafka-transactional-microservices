@@ -7,6 +7,7 @@ This document provides operational guidance for the API Gateway component in the
 ## Architecture
 
 The API Gateway is implemented using Spring Cloud Gateway and is responsible for:
+
 - Routing requests to appropriate backend services
 - Authentication and authorization
 - Rate limiting
@@ -126,6 +127,7 @@ spring:
 ### Grafana Dashboard
 
 A Grafana dashboard is available to visualize API Gateway metrics. The dashboard includes panels for:
+
 - Request rate by route
 - Response time percentiles
 - Error rate by route
@@ -141,11 +143,13 @@ A Grafana dashboard is available to visualize API Gateway metrics. The dashboard
 **Symptoms**: Clients receive 503 errors when making requests to services.
 
 **Possible Causes**:
+
 1. Downstream service is down
 2. Network connectivity issues
 3. Service discovery problems
 
 **Solutions**:
+
 1. Check the health of the downstream service
 2. Verify network connectivity between the gateway and the service
 3. Check service discovery (Eureka/Consul) for registration issues
@@ -155,11 +159,13 @@ A Grafana dashboard is available to visualize API Gateway metrics. The dashboard
 **Symptoms**: Clients receive 404 errors for valid endpoints.
 
 **Possible Causes**:
+
 1. Incorrect route configuration
 2. Path matching issues
 3. StripPrefix filter misconfiguration
 
 **Solutions**:
+
 1. Verify the route configuration in `application.yml`
 2. Check that the path matches the configured predicates
 3. Validate StripPrefix filter configuration
@@ -169,11 +175,13 @@ A Grafana dashboard is available to visualize API Gateway metrics. The dashboard
 **Symptoms**: Clients receive 429 errors due to rate limiting.
 
 **Possible Causes**:
+
 1. Legitimate traffic spike
 2. Incorrect rate limiting configuration
 3. Malicious traffic
 
 **Solutions**:
+
 1. Review and adjust rate limiting configuration if needed
 2. Implement IP-based rate limiting for better granularity
 3. Consider increasing burst capacity for high-traffic routes
@@ -191,6 +199,7 @@ A Grafana dashboard is available to visualize API Gateway metrics. The dashboard
 ### Authentication
 
 JWT tokens are used for authentication. Ensure that:
+
 - Tokens are properly validated
 - Token expiration is configured appropriately
 - Refresh token mechanisms are in place
@@ -198,6 +207,7 @@ JWT tokens are used for authentication. Ensure that:
 ### Authorization
 
 Role-based access control (RBAC) is implemented:
+
 - Routes can be protected based on user roles
 - Fine-grained permissions can be configured
 - Audit logging is enabled for security-sensitive operations
@@ -205,6 +215,7 @@ Role-based access control (RBAC) is implemented:
 ### Rate Limiting
 
 Rate limiting helps prevent abuse and DoS attacks:
+
 - Configure appropriate limits for different types of requests
 - Implement IP-based rate limiting for additional protection
 - Monitor rate limiting metrics for potential attacks
@@ -229,6 +240,7 @@ Rate limiting helps prevent abuse and DoS attacks:
 ### Horizontal Scaling
 
 The API Gateway can be scaled horizontally by:
+
 1. Deploying multiple instances behind a load balancer
 2. Using sticky sessions if needed for session affinity
 3. Ensuring shared state (e.g., rate limiting) is properly synchronized
@@ -244,6 +256,7 @@ The API Gateway can be scaled horizontally by:
 ### Service Mesh
 
 The API Gateway integrates with Istio service mesh:
+
 - Traffic management policies are applied at both gateway and mesh levels
 - Mutual TLS is used for secure service-to-service communication
 - Observability data is collected from both gateway and mesh
@@ -251,6 +264,7 @@ The API Gateway integrates with Istio service mesh:
 ### Monitoring Stack
 
 The API Gateway integrates with the monitoring stack:
+
 - Metrics are exported to Prometheus
 - Logs are shipped to the centralized logging system
 - Traces are sent to the distributed tracing system
@@ -259,7 +273,7 @@ The API Gateway integrates with the monitoring stack:
 
 ### Deployment Process
 
-1. **Configuration Changes**: 
+1. **Configuration Changes**:
    - Make changes in a development environment first
    - Test thoroughly before promoting to production
    - Use blue-green deployment to minimize downtime

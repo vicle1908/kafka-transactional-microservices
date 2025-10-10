@@ -1,17 +1,20 @@
 # Phase 3 – Outbox Relay & Tooling
 
 ## Objectives
+
 - Validate Debezium CDC vs polling relay and finalize default selection.
 - Build tooling for replaying outbox events and monitoring connector health.
 - Integrate schema compatibility checks into CI pipelines.
 
 ## Deliverables
+
 - Comparative spike report on Debezium vs poller with decision recorded.
 - Replay tooling script (`scripts/outbox-replay.sh`) with usage guide.
 - CI job executing `./gradlew schemaCompatibilityCheck` with failure remediation steps.
 - Monitoring dashboards for Debezium lag and connector status.
 
 ## Task Board
+
 | ID | Task | Owner | Status | Notes |
 |----|------|-------|--------|-------|
 | P3.1 | Execute spike comparing Debezium vs polling relay performance | Architecture Team | Completed | Findings recorded in `docs/research/outbox-relay.md`. |
@@ -29,19 +32,23 @@
 | P3.DB13 | Canonicalize outbox schema + CDC vs poller rules | Architecture Team | Planned | CDC is default; isolate poller to non-CDC services. |
 
 ## Research & References
+
 - Debezium lag monitoring best practices
 - Schema Registry compatibility docs
 - Kafka Connect operations guides
 
 ## Risks & Mitigations
+
 - **Connector instability**: Plan automated restarts and alerting.
 - **Replay misuse**: Require dry-run mode and audit logging.
 
 ## Dependencies
+
 - Phase 1 infrastructure and Phase 2 shared modules.
 - Access to monitoring stack (Prometheus/Grafana).
 
 ## Artifacts & Links
+
 - Spike report (`docs/research/outbox-relay.md`)
 - Replay script (`scripts/outbox-replay.sh`)
 - CI config updates (`.github/workflows/`)
@@ -49,5 +56,6 @@
 - Polling relay ADR (`docs/adrs/0005-polling-relay-mechanism.md`)
 
 ## Progress Log
+
 - 2025-10-08 | Added Avro schema + connector configuration tasks; scaffolding complete (`common-events-avro`, `exportAvroSchemas`, `scripts/schema-publish.sh`) with CI validation (P3.4/P3.9 Completed). Connector JSON uses `BinaryDataConverter` and runbooks document bootstrap steps (P3.10 Completed). Debezium runbook & replay script delivered (P3.3/P3.6 Completed). Research docs added for outbox relay, Temporal, CDN (P3.1/P3.7/P3.8 Completed). Grafana dashboard now contains lag/event age thresholds (P3.5 Completed).
 - 2025-10-10 | Implemented polling relay mechanism as fallback to Debezium with scheduled processing, REST API endpoints, metrics collection, and health indicators (P3.11 Completed). Documented in ADR 0005 and updated Debezium runbook with polling relay information.

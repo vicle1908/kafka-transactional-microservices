@@ -1,16 +1,19 @@
 # Phase 1 – Platform Foundation
 
 ## Objectives
+
 - Provision shared Kafka/Postgres infrastructure for dev and CI environments.
 - Harden brokers for transactional workloads with required settings.
 - Establish CI/CD scaffolding and IaC pipelines.
 
 ## Deliverables
+
 - Docker Compose stack (`infra/compose.yml`) verified locally.
 - Shared Kafka cluster with Schema Registry, AKHQ/Kafdrop access.
 - CI pipelines covering build, test, container publish, IaC validation.
 
 ## Task Board
+
 || ID | Task | Owner | Status | Notes |
 ||----|------|-------|--------|-------|
 || P1.1 | Stand up local Docker Compose stack (Kafka, Postgres, Debezium, Schema Registry) | Platform Team | Completed | `infra/compose.yml` ready for local use. |
@@ -36,23 +39,28 @@
 || P1.ENV7 | Acceptance: validate services boot with env defaults; CI unaffected | Platform + Service Owners | Planned | No secrets in VCS; compose respects `infra/.env`; workflows continue to work. |
 
 ## Research & References
+
 - Kafka 4.1 KRaft deployment guides
 - Schema Registry and AKHQ hardening best practices
 - CI templates for Gradle + Docker
 
 ## Risks & Mitigations
+
 - **Networking restrictions**: Coordinate with ops for firewall rules.
 - **Secrets management**: Integrate Vault/AWS Secrets Manager early.
 
 ## Dependencies
+
 - Ops team for infrastructure provisioning rights.
 - Access to container registry and secret stores.
 
 ## Artifacts & Links
+
 - `infra/compose.yml`
 - CI pipeline configs (`.github/workflows/` or `.gitlab-ci.yml`)
 - Platform runbook (`docs/runbooks/platform.md`)
 
 ## Progress Log
+
 - 2025-10-07 | Compose stack, CI pipelines, Istio deployment notes, and runbooks prepared.
 - 2025-10-10 | Implemented comprehensive health checks for all services in Docker Compose files (development, test, and production environments).

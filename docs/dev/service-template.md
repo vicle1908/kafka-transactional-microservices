@@ -306,9 +306,7 @@ class ServiceEventListener(
 }
 ```
 
-## Configuration
-
-### Application Configuration
+## Configuration (env-driven; prefer placeholders with safe fallbacks)
 
 ```yaml
 server:
@@ -320,9 +318,9 @@ spring:
   application:
     name: service-name
   datasource:
-    url: jdbc:postgresql://localhost:5432/servicename
-    username: app
-    password: app
+    url: ${SERVICE_DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${SERVICE_DB_NAME:servicename}}
+    username: ${DB_USER:app}
+    password: ${DB_PASSWORD:app}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -339,29 +337,22 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    properties:
+      schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       enable-idempotence: true
       acks: all
       retries: 2147483647
-      transaction-id-prefix: service-tx-
+      transaction-id-prefix: ${SERVICE_KAFKA_TX_PREFIX:service-tx-}
     consumer:
       group-id: service-name
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       enable-auto-commit: false
       isolation-level: read_committed
-  transaction:
-    default-timeout: 30
-
-logging:
-  level:
-    com.example: INFO
-    org.springframework: INFO
-    org.hibernate: WARN
-    org.apache.kafka: INFO
 
 management:
   endpoints:
@@ -370,6 +361,10 @@ management:
         include: health,info,metrics,prometheus
   endpoint:
     health:
+      show-details: always
+```
+
+See `docs/dev/env-reference.md` for the canonical list of variables and defaults. Copy `.env.example` to `.env` and use direnv or `source scripts/export-env.sh` to load them locally.
       show-details: always
 ```
 

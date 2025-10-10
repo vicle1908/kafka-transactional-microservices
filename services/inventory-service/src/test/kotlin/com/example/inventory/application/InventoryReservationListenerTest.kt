@@ -6,6 +6,7 @@ import com.example.inventory.domain.InventoryReservationRepository
 import com.example.inventory.domain.InventoryStockEntity
 import com.example.inventory.domain.InventoryStockRepository
 import com.example.inventory.domain.ProcessedEventRepository
+import com.example.inventory.testsupport.InventoryContainers
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository
 import com.example.saga.SagaStateService
@@ -30,6 +31,8 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.test.condition.EmbeddedKafkaCondition
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -63,6 +66,29 @@ class InventoryReservationListenerTest {
 
     private val json = Json { ignoreUnknownKeys = false }
 
+    companion object {
+        private val postgres = InventoryContainers.postgres
+
+        init {
+            if (!postgres.isRunning) {
+                postgres.start()
+            }
+        }
+
+        @JvmStatic
+        @DynamicPropertySource
+        fun registerProperties(registry: DynamicPropertyRegistry) {
+            registry.add("spring.datasource.url") { postgres.jdbcUrl }
+            registry.add("spring.datasource.username") { postgres.username }
+            registry.add("spring.datasource.password") { postgres.password }
+            registry.add("spring.flyway.url") { postgres.jdbcUrl }
+            registry.add("spring.flyway.user") { postgres.username }
+            registry.add("spring.flyway.password") { postgres.password }
+            registry.add("spring.kafka.bootstrap-servers") { EmbeddedKafkaCondition.getBroker().brokersAsString }
+            registry.add("spring.kafka.consumer.bootstrap-servers") { EmbeddedKafkaCondition.getBroker().brokersAsString }
+            registry.add("spring.kafka.producer.bootstrap-servers") { EmbeddedKafkaCondition.getBroker().brokersAsString }
+        }
+    }
 
     @BeforeEach
     fun cleanRepositories() {

@@ -78,10 +78,10 @@
 
 ## Dev Workflow & Commands
 
-- Bootstrap infra with `docker compose up -d kafka postgres schema-registry debezium` (compose file will live under `infra/compose.yml`).
+- Bootstrap infra with env: `cp infra/.env.example infra/.env && docker compose --env-file infra/.env -f infra/compose.yml up -d`.
 - Run all service tests with `./gradlew clean test` and integration tests with `./gradlew :service-* :integration-test` once modules exist.
 - When you need to run shell commands, prefer the `execute_terminal_command` MCP tool so terminal interactions stay auditable and repeatable.
-- Start a sample service locally via `./gradlew :orders-service:bootRun` (ensure `.env` contains broker/bootstrap endpoints and DB creds).
+- Start a sample service locally via `./gradlew :orders-service:bootRun` after loading `.env` (copy from `.env.example` and use direnv or `source scripts/export-env.sh`).
 - Use `./gradlew flywayMigrate` to apply schema migrations before running services.
 - Lint/format with `./gradlew spotlessApply` (add plugin in the build once codebase is scaffolded).
 - When editing or inspecting code via JetBrains MCP server, open the target file with `open_file_in_editor` before running `get_file_problems` so IntelliJ indexes the file, then review errors/warnings ahead of Gradle tasks.

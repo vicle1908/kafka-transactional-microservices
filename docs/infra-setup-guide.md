@@ -5,7 +5,9 @@ This document describes the infrastructure setup for the Kafka Transactional Mic
 ## Local Development Environment
 
 ### Docker Compose (infra/compose.yml)
+
 The default development environment includes:
+
 - **Kafka**: Single-node cluster with KRaft mode for transactional support
 - **Schema Registry**: Confluent Schema Registry for Avro schema management
 - **PostgreSQL**: Database for microservices data and outbox tables
@@ -14,6 +16,7 @@ The default development environment includes:
 - **Redis**: Caching layer for high-read workloads
 
 ### Key Configuration for Exactly-Once Semantics (EOS)
+
 - `KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR`: 1 (for development)
 - `KAFKA_TRANSACTION_STATE_LOG_MIN_ISR`: 1 (for development)
 - `KAFKA_MIN_INSYNC_REPLICAS`: 1 (for development)
@@ -22,7 +25,9 @@ The default development environment includes:
 ## Integration Testing Environment
 
 ### Docker Compose (infra/compose.test.yml)
+
 The test environment mirrors the development setup but optimized for CI/CD:
+
 - **PostgreSQL Test DB**: Separate database instance for tests
 - **Kafka Test Cluster**: Single-node KRaft cluster with EOS configuration
 - **Schema Registry Test**: Separate instance for test schemas
@@ -30,7 +35,9 @@ The test environment mirrors the development setup but optimized for CI/CD:
 - **Redis Test**: Isolated cache for test environments
 
 ### GitHub Actions Integration
+
 The integration test workflow includes:
+
 - Complete Kafka/DB environment setup
 - EOS validation tests
 - End-to-end transaction flow verification
@@ -39,7 +46,9 @@ The integration test workflow includes:
 ## Production-Like Environment
 
 ### Docker Compose (infra/compose.prod.yml)
+
 The production-like setup includes:
+
 - **Kafka Cluster**: 3-node cluster with proper replication for EOS
 - **Schema Registry**: Production-grade configuration
 - **PostgreSQL**: Production database with proper initialization
@@ -48,6 +57,7 @@ The production-like setup includes:
 - **Monitoring Stack**: Prometheus + Grafana for observability
 
 ### Production Configuration for EOS
+
 - `KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR`: 3
 - `KAFKA_TRANSACTION_STATE_LOG_MIN_ISR`: 2
 - `KAFKA_MIN_INSYNC_REPLICAS`: 2
@@ -56,6 +66,7 @@ The production-like setup includes:
 ## Monitoring and Observability
 
 ### Key Metrics
+
 - `outbox_table_depth`: Number of pending outbox records
 - `kafka_consumer_lag`: Consumer lag across all topics
 - `kafka_transaction_commit_total`: Transaction commit rate
@@ -63,6 +74,7 @@ The production-like setup includes:
 - `end_to_end_latency`: Complete message processing time
 
 ### Dashboards
+
 - Outbox monitoring dashboard with alerting for high depth
 - Kafka performance and transaction metrics
 - Debezium connector health monitoring
@@ -71,15 +83,20 @@ The production-like setup includes:
 ## Running the Environments
 
 ### Local Development
+
 ```bash
-# Start local development environment
-docker-compose -f infra/compose.yml up -d
+# Copy env example (one-time)
+cp infra/.env.example infra/.env
+
+# Start local development environment (env-aware)
+docker compose --env-file infra/.env -f infra/compose.yml up -d
 
 # Stop local development environment
-docker-compose -f infra/compose.yml down
+docker compose -f infra/compose.yml down
 ```
 
 ### Integration Testing
+
 ```bash
 # Start test environment
 docker-compose -f infra/compose.test.yml up -d
@@ -89,6 +106,7 @@ docker-compose -f infra/compose.test.yml up -d
 ```
 
 ### Production-Like
+
 ```bash
 # Start production-like environment
 docker-compose -f infra/compose.prod.yml up -d
@@ -98,12 +116,14 @@ docker-compose -f infra/compose.prod.yml up -d
 ```
 
 ## Security Considerations
+
 - Schema Registry authentication (to be configured for production)
 - Kafka security (SASL/SSL) for production
 - Network isolation using Docker networks
 - Proper resource limits and health checks
 
 ## Operational Considerations
+
 - Regular monitoring of outbox table depth
 - Alerting for high consumer lag
 - Backup strategies for PostgreSQL

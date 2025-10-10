@@ -133,6 +133,7 @@ Schema compatibility checking is integrated into the CI/CD pipeline:
 ### Schema Versioning
 
 Follow semantic versioning for schemas:
+
 - Major version changes for breaking schema changes
 - Minor version changes for backward-compatible additions
 - Patch version changes for non-breaking fixes
@@ -140,6 +141,7 @@ Follow semantic versioning for schemas:
 ### Schema Deprecation
 
 To deprecate a schema:
+
 1. Mark the schema as deprecated in documentation
 2. Announce deprecation to consumers
 3. Provide migration path to new schema
@@ -185,6 +187,7 @@ curl -X GET http://localhost:8081/subjects/orders-value/versions/1
 ### Authentication
 
 Schema Registry should be secured with authentication:
+
 - Use API keys for client authentication
 - Configure SSL/TLS for encrypted communication
 - Restrict access based on subject naming conventions
@@ -192,6 +195,7 @@ Schema Registry should be secured with authentication:
 ### Authorization
 
 Implement role-based access control:
+
 - Publishers can register new schemas
 - Consumers can only read schemas
 - Administrators can configure compatibility settings

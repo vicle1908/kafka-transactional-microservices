@@ -1,9 +1,11 @@
 # CDN Rollout Playbook
 
 ## Provider
+
 Cloudflare CDN + Workers for Phase 4 pilot.
 
 ## Objectives
+
 - Serve static assets via Cloudflare edge.
 - Apply API caching headers for read-heavy endpoints.
 - Integrate rate limiting/WAF rules for zero-trust posture.
@@ -32,6 +34,7 @@ Cloudflare CDN + Workers for Phase 4 pilot.
 ### Grafana Dashboard
 
 Create a Grafana dashboard with panels for:
+
 - Cache hit ratio over time
 - Response time distribution
 - Bandwidth usage by region
@@ -42,6 +45,7 @@ Create a Grafana dashboard with panels for:
 ### Alerting Rules
 
 Configure alerts for:
+
 - Low cache hit ratio (< 80%)
 - High error rates (> 5%)
 - Increased response times (> 2x baseline)
@@ -58,11 +62,13 @@ Configure alerts for:
 6. Implement WAF rules and rate limiting policies.
 
 ## Rollback
+
 - Disable cache rules and revert DNS to origin.
 - Flush cached entries via Cloudflare API if stale data persists.
 - Revert WAF and rate limiting rules if causing issues.
 
 ## References
+
 - `docs/research/cdn-evaluation.md`
 - Cloudflare Workers KV best practices
 - Cloudflare Analytics documentation

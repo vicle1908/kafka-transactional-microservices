@@ -1,14 +1,16 @@
 # CI/CD Operations Runbook
 
 ## Overview
+
 This runbook covers the operation of the GitHub Actions CI/CD workflows for the Kafka Transactional Microservices platform.
 
 ## Workflows Overview
 
 ### 1. CI Workflow (ci.yml)
+
 - **Purpose**: Build, test, and validate code changes
 - **Trigger**: Push to main branch and pull requests
-- **Components**: 
+- **Components**:
   - JDK 25 setup
   - Gradle caching
   - Version compatibility check
@@ -17,6 +19,7 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
   - Documentation linting
 
 ### 2. Integration Test Workflow (integration-test.yml)
+
 - **Purpose**: Validate end-to-end functionality with full Kafka/DB environment
 - **Trigger**: Push to main branch and pull requests
 - **Components**:
@@ -26,6 +29,7 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
   - Exactly-once semantics validation
 
 ### 3. Schema Compatibility Workflow (schema-compatibility.yml)
+
 - **Purpose**: Validate Avro schema changes for backward compatibility
 - **Trigger**: Changes to common-events-avro module
 - **Components**:
@@ -33,6 +37,7 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
   - Compatibility checking
 
 ### 4. Security Scanning Workflow (security-scan.yml)
+
 - **Purpose**: Security and vulnerability assessment
 - **Trigger**: Push to main/develop, pull requests, weekly schedule
 - **Components**:
@@ -42,6 +47,7 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
   - SpotBugs and ErrorProne static analysis
 
 ### 5. Dependency Review Workflow (dependency-review.yml)
+
 - **Purpose**: Dependency vulnerability and license checking
 - **Trigger**: Pull requests to main
 - **Components**:
@@ -50,6 +56,7 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
   - Vulnerability identification
 
 ### 6. Infrastructure Validation Workflow (infrastructure-validation.yml)
+
 - **Purpose**: Validate infrastructure as code and configuration
 - **Trigger**: Changes to infra/ directory
 - **Components**:
@@ -59,6 +66,7 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
   - Kubernetes manifest validation
 
 ### 7. Container Publishing Workflow (container-publish.yml)
+
 - **Purpose**: Build and publish Docker images for services
 - **Trigger**: Tagged releases (v*.*.*)
 - **Components**:
@@ -68,6 +76,7 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
   - Security scanning
 
 ### 8. Canary Deployment Workflow (canary-deployment.yml)
+
 - **Purpose**: Progressive delivery with traffic splitting
 - **Trigger**: Push to main branch
 - **Components**:
@@ -77,6 +86,7 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
   - Rollback automation
 
 ### 9. Load Testing Workflow (load-test.yml)
+
 - **Purpose**: Performance validation under load
 - **Trigger**: Weekly schedule or manual
 - **Components**:
@@ -86,6 +96,7 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
   - Performance metrics collection
 
 ### 10. Chaos Engineering Workflow (chaos-engineering.yml)
+
 - **Purpose**: Resilience validation through failure injection
 - **Trigger**: Weekly schedule or manual
 - **Components**:
@@ -97,6 +108,7 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
 ## Common Operations
 
 ### Running Workflows Manually
+
 1. Navigate to the Actions tab in GitHub repository
 2. Select the workflow to run
 3. Click "Run workflow" button
@@ -105,16 +117,19 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
 ### Troubleshooting Failed Workflows
 
 #### Common CI Issues
+
 - **Dependency Resolution**: Check internet connectivity and proxy settings
 - **Version Mismatch**: Verify versionCheck task in root build.gradle.kts
 - **Test Failures**: Check test logs for specific errors
 
 #### Common Integration Test Issues
+
 - **Service Startup**: Verify Docker resources and ports availability
 - **Database Connection**: Check PostgreSQL service health
 - **Kafka Connectivity**: Verify KRaft cluster health
 
 #### Common Container Publishing Issues
+
 - **Registry Access**: Check GITHUB_TOKEN permissions
 - **Image Size**: Optimize Dockerfile for smaller images
 - **Build Failures**: Verify JAR files exist before Docker build
@@ -122,12 +137,14 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
 ## Monitoring and Alerting
 
 ### Key Metrics to Monitor
+
 - **Build Success Rate**: Percentage of successful builds
 - **Average Build Time**: Time to complete builds
 - **Test Coverage**: Code coverage metrics
 - **Security Scan Results**: Number of vulnerabilities by severity
 
 ### Alert Conditions
+
 - Build failure rate > 5% over 1 hour
 - Security vulnerabilities with CRITICAL severity
 - Integration test failure rate > 10%
@@ -136,16 +153,19 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
 ## Maintenance Tasks
 
 ### Updating Workflow Definitions
+
 1. Update GitHub Actions workflow files in .github/workflows/
 2. Test changes in a feature branch
 3. Review and approve through pull request process
 
 ### Updating Base Images
+
 1. Update Docker images in workflow files
 2. Test with integration test workflow
 3. Update related documentation if needed
 
 ### Security Updates
+
 1. Regularly update action versions in workflow files
 2. Monitor security advisories for used actions
 3. Update dependencies and test workflows
@@ -153,24 +173,30 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
 ## Troubleshooting Scenarios
 
 ### Scenario: Container Publishing Fails
+
 **Symptoms**: Container publishing workflow fails during image push
 **Diagnosis**:
+
 - Check GHCR permissions in repository settings
 - Verify GITHUB_TOKEN has packages:write scope
 - Confirm Docker image tagging is correct
 **Resolution**: Verify repository secrets and permissions
 
 ### Scenario: Canary Deployment Rollback
+
 **Symptoms**: Canary deployment triggers rollback
 **Diagnosis**:
+
 - Check smoke test results
 - Review application logs
 - Verify health endpoints
 **Resolution**: Fix underlying issue and re-trigger deployment
 
 ### Scenario: Load Test Performance Degradation
+
 **Symptoms**: Load test shows performance degradation
 **Diagnosis**:
+
 - Compare metrics with baseline
 - Check resource utilization
 - Review application logs for errors
@@ -179,18 +205,21 @@ This runbook covers the operation of the GitHub Actions CI/CD workflows for the 
 ## Emergency Procedures
 
 ### Rolling Back Breaking Changes
+
 1. If a breaking change is merged, immediately pause affected deployments
 2. Identify the change causing issues
 3. Revert the change or implement a fix
 4. Resume workflows only after verification
 
 ### Security Incident Response
+
 1. If security scan detects critical vulnerability, immediately pause deployments
 2. Create security issue with details
 3. Implement security patch
 4. Re-run security scans before resuming
 
 ### Infrastructure Failures
+
 1. For CI infrastructure failures, check GitHub status page
 2. For self-hosted runner issues, contact infrastructure team
 3. Document failures for post-incident review

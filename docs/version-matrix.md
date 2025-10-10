@@ -80,6 +80,7 @@ This document lists the current, candidate, and fallback versions for all major 
 ## CI/CD Validation
 
 All version combinations are validated through:
+
 - Gradle `versionCheck` task
 - Schema compatibility checks
 - Integration tests with full environment

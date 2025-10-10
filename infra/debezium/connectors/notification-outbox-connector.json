@@ -1,5 +1,5 @@
 {
-  "name": "orders-outbox-connector",
+  "name": "notification-outbox-connector",
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "tasks.max": "1",
@@ -7,13 +7,13 @@
     "database.port": "5432",
     "database.user": "app",
     "database.password": "app",
-    "database.dbname": "orders",
-    "topic.prefix": "orders",
+    "database.dbname": "notification",
+    "topic.prefix": "notification",
     "table.include.list": "public.outbox",
     "plugin.name": "pgoutput",
     "publication.name": "outbox_publication",
     "publication.autocreate.mode": "filtered",
-    "slot.name": "orders_outbox_slot",
+    "slot.name": "notification_outbox_slot",
     "snapshot.mode": "no_data",
     "transforms": "outbox",
     "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",

@@ -1,17 +1,20 @@
 # Phase 4 – Service Implementations
 
 ## Objectives
+
 - Build domain services following the shared template and transactional patterns.
 - Implement saga workflows across Order, Payment, Inventory, and Notification services.
 - Ensure thorough testing (unit, integration, contract) for each service.
 
 ## Deliverables
+
 - Service modules: `orders-service`, `payments-service`, `inventory-service`, `notification-service`.
 - Saga pilot documentation with state machine diagrams and code samples.
 - Contract tests covering event schemas and downstream expectations.
 - Saga metrics instrumentation via `common-sagas/SagaMetricsRecorder` plus dashboard placeholders.
 
 ## Task Board
+
 | ID | Task | Owner | Status | Notes |
 |----|------|-------|--------|-------|
 | P4.1 | Scaffold `orders-service` with create order command + outbox emission | Platform Team | Completed | Command validation, Kotlinx payload serialization, and outbox persistence shipped with tests. Saga state is now started in `OrderService`. |
@@ -31,25 +34,30 @@
 | P4.DB3 | Verify multi-DB compose + Debezium publishes outbox rows | Platform Team | Planned | Create order; observe topics per connector. |
 
 ## Research & References
+
 - Saga design patterns (choreography vs orchestration)
 - Spring Boot transactional messaging samples
 - Testcontainers best practices for Kafka/Postgres
 
 ## Risks & Mitigations
+
 - **Business logic drift**: Collaborate with domain experts for acceptance.
 - **Idempotency bugs**: Add processed-event ledger tests.
 - **Metrics blind spots**: Grafana dashboard documentation completed; track implementation in Phase 5 backlog and alert on counter growth anomalies once dashboards exist.
 
 ## Dependencies
+
 - Shared modules from Phase 2.
 - Outbox tooling and schema checks from Phase 3.
 
 ## Artifacts & Links
+
 - Service source directories (`services/*`)
 - Saga documentation (`docs/sagas/`)
 - Contract test suites (`contracts/*`)
 
 ## Progress Log
+
 - 2025-10-08 | Added gRPC task for synchronous coordination; clarified schema contract testing plan.
 - 2025-10-08 | Initialized `orders-service` module with Gradle configuration, command DTO, and baseline migration (P4.1 In Progress).
 - 2025-10-08 | Created `payments-service` module with transactional command handler and shared outbox integration; updated board statuses.

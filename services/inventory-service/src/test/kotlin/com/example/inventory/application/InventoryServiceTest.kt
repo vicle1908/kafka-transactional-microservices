@@ -4,6 +4,7 @@ import com.example.inventory.InventoryServiceApplication
 import com.example.inventory.domain.InventoryReservationRepository
 import com.example.inventory.domain.InventoryStockEntity
 import com.example.inventory.domain.InventoryStockRepository
+import com.example.inventory.testsupport.InventoryContainers
 import com.example.outbox.repository.OutboxRepository
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository
@@ -24,7 +25,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.ActiveProfiles
 import java.time.Instant
 import java.util.UUID
@@ -34,7 +36,6 @@ import java.util.UUID
     properties = ["spring.kafka.listener.auto-startup=false"],
 )
 @ActiveProfiles("test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class InventoryServiceTest {
     @Autowired
     private lateinit var inventoryService: InventoryService
@@ -58,6 +59,27 @@ class InventoryServiceTest {
     private lateinit var meterRegistry: MeterRegistry
 
     private val json = Json { ignoreUnknownKeys = false }
+
+    companion object {
+        private val postgres = InventoryContainers.postgres
+
+        init {
+            if (!postgres.isRunning) {
+                postgres.start()
+            }
+        }
+
+        @JvmStatic
+        @DynamicPropertySource
+        fun registerDataSource(registry: DynamicPropertyRegistry) {
+            registry.add("spring.datasource.url") { postgres.jdbcUrl }
+            registry.add("spring.datasource.username") { postgres.username }
+            registry.add("spring.datasource.password") { postgres.password }
+            registry.add("spring.flyway.url") { postgres.jdbcUrl }
+            registry.add("spring.flyway.user") { postgres.username }
+            registry.add("spring.flyway.password") { postgres.password }
+        }
+    }
 
     @BeforeEach
     fun cleanRepositories() {
