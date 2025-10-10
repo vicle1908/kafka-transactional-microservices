@@ -28,20 +28,20 @@ jobs:
         run: |
           for file in infra/compose*.yml; do
             echo "Validating $file..."
-            if docker-compose -f "$file" config --quiet; then
+            if docker compose -f "$file" config --quiet; then
               echo "✓ $file is valid"
             else
               echo "✗ $file has validation errors"
-              docker-compose -f "$file" config
+              docker compose -f "$file" config
               exit 1
             fi
           done
 
       - name: Run Docker Compose config check
         run: |
-          docker-compose -f infra/compose.yml config
-          docker-compose -f infra/compose.test.yml config
-          docker-compose -f infra/compose.prod.yml config
+          docker compose -f infra/compose.yml config
+          docker compose -f infra/compose.test.yml config
+          docker compose -f infra/compose.prod.yml config
 
   infrastructure-security:
     runs-on: ubuntu-latest
