@@ -1,0 +1,71 @@
+# Dependency Review Configuration
+# This file configures the GitHub Dependency Review Action
+
+# Block pull requests that introduce vulnerable dependencies
+fail-on-severity: high
+
+# Block pull requests that introduce dependencies with unacceptable licenses
+deny-licenses:
+  - AGPL-1.0
+  - AGPL-3.0
+  - CC-BY-NC-1.0
+  - CC-BY-NC-2.0
+  - CC-BY-NC-4.0
+  - GPL-1.0
+  - GPL-2.0
+  - GPL-3.0
+
+# Allow only approved licenses
+allow-licenses:
+  - Apache-2.0
+  - MIT
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - ISC
+  - CC-BY-4.0
+  - MPL-2.0
+
+# Deny dependencies with known vulnerabilities
+deny-identified-vulnerabilities: true
+
+# Warn about dependencies with moderate severity vulnerabilities
+warn-on-severity: moderate
+
+# Allow dependencies that are pending review
+allow-licenses-pending: false
+
+# Allow dependencies with pending vulnerabilities (for grace period)
+allow-vulnerabilities-pending: false
+
+# Configuration for dependency groups
+dependency-groups:
+  # Core framework dependencies
+  - name: core-framework
+    dependencies:
+      - org.springframework.*
+      - org.jetbrains.kotlin.*
+    licenses:
+      - Apache-2.0
+    severity-threshold: critical
+
+  # Testing dependencies
+  - name: testing
+    dependencies:
+      - org.junit.*
+      - org.testcontainers.*
+      - org.mockito.*
+    licenses:
+      - Apache-2.0
+      - MIT
+    severity-threshold: high
+
+  # Build tool dependencies
+  - name: build-tools
+    dependencies:
+      - com.github.davidmc24.gradle.plugin.avro
+      - io.gitlab.arturbosch.detekt
+      - org.jlleitschuh.gradle.ktlint
+    licenses:
+      - Apache-2.0
+      - MIT
+    severity-threshold: high

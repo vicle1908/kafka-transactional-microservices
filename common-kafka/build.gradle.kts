@@ -1,3 +1,7 @@
+plugins {
+    alias(libs.plugins.kotlin.spring)
+}
+
 dependencies {
     api(libs.spring.kafka)
     api(libs.spring.boot.autoconfigure)
