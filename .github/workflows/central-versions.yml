@@ -3,21 +3,51 @@ name: Central Versions
 on:
   workflow_call:
     outputs:
-      actions_checkout_version: {description: "Version of actions/checkout", value: "v4"}
-      actions_setup_java_version: {description: "Version of actions/setup-java", value: "v4"}
-      actions_cache_version: {description: "Version of actions/cache", value: "v4"}
-      docker_metadata_action_version: {description: "Version of docker/metadata-action", value: "v5"}
-      docker_setup_buildx_action_version: {description: "Version of docker/setup-buildx-action", value: "v3"}
-      docker_login_action_version: {description: "Version of docker/login-action", value: "v3"}
-      docker_build_push_action_version: {description: "Version of docker/build-push-action", value: "v5"}
-      aquasecurity_trivy_action_version: {description: "Version of aquasecurity/trivy-action", value: "0.33.1"}
-      actions_dependency_review_action_version: {description: "Version of actions/dependency-review-action", value: "v4"}
-      hashicorp_setup_terraform_version: {description: "Version of hashicorp/setup-terraform", value: "v3"}
-      gradle_actions_wrapper_validation_version: {description: "Version of gradle/actions/wrapper-validation", value: "v3"}
-      dependency_check_action_version: {description: "Version of dependency-check/action", value: "v12.1.6"}
-      github_codeql_action_version: {description: "Version of github/codeql-action", value: "v3"}
-      davidanson_markdownlint_cli2_action_version: {description: "Version of DavidAnson/markdownlint-cli2-action", value: "v15"}
-      bmuschko_setup_kubeconform_version: {description: "Version of bmuschko/setup-kubeconform", value: "v1"}
+      actions_checkout_version:
+        description: "Version of actions/checkout"
+        value: "v4"
+      actions_setup_java_version:
+        description: "Version of actions/setup-java"
+        value: "v4"
+      actions_cache_version:
+        description: "Version of actions/cache"
+        value: "v4"
+      docker_metadata_action_version:
+        description: "Version of docker/metadata-action"
+        value: "v5"
+      docker_setup_buildx_action_version:
+        description: "Version of docker/setup-buildx-action"
+        value: "v3"
+      docker_login_action_version:
+        description: "Version of docker/login-action"
+        value: "v3"
+      docker_build_push_action_version:
+        description: "Version of docker/build-push-action"
+        value: "v5"
+      aquasecurity_trivy_action_version:
+        description: "Version of aquasecurity/trivy-action"
+        value: "0.33.1"
+      actions_dependency_review_action_version:
+        description: "Version of actions/dependency-review-action"
+        value: "v4"
+      hashicorp_setup_terraform_version:
+        description: "Version of hashicorp/setup-terraform"
+        value: "v3"
+      gradle_actions_wrapper_validation_version:
+        description: "Version of gradle/actions/wrapper-validation"
+        value: "v3"
+      dependency_check_action_version:
+        description: "Version of dependency-check/action"
+        value: "v12.1.6"
+      github_codeql_action_version:
+        description: "Version of github/codeql-action"
+        value: "v3"
+      davidanson_markdownlint_cli2_action_version:
+        description: "Version of DavidAnson/markdownlint-cli2-action"
+        value: "v15"
+      bmuschko_setup_kubeconform_version:
+        description: "Version of bmuschko/setup-kubeconform"
+        value: "v1"
 
 jobs:
   versions:
