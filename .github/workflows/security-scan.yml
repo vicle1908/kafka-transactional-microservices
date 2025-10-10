@@ -33,7 +33,7 @@ jobs:
 
       # Dependency vulnerability scanning with OWASP Dependency Check
       - name: OWASP Dependency Check
-        uses: dependency-check/DependencyCheckAction@main
+        uses: dependency-check/action@main
         with:
           project: 'Kafka Transactional Microservices'
           path: '.'

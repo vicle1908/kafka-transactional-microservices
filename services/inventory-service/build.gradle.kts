@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(project(":common-proto"))
     implementation(project(":common-temporal"))
+    implementation(libs.grpc.netty)
 
     // Shared modules
     implementation(project(":common-events"))
@@ -35,6 +36,8 @@ dependencies {
     testImplementation(libs.testcontainers.kafka)
     testImplementation(libs.spring.kafka.test)
     testImplementation(libs.h2)
+    testImplementation(project(":common-proto"))
+    testImplementation(libs.grpc.netty)
 
     // Development dependencies
     developmentOnly(libs.spring.boot.devtools)
