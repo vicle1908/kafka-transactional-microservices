@@ -11,44 +11,49 @@ import java.time.Instant
 import javax.sql.DataSource
 
 @DataJpaTest
-class OutboxRepositoryTest
+class OutboxRepositoryTest {
     @Autowired
-    constructor(
-        private val repository: OutboxRepository,
-        private val entityManager: TestEntityManager,
-        private val dataSource: DataSource,
-    ) {
-        @BeforeEach
-        fun migrateSchema() {
-            Flyway
-                .configure()
-                .dataSource(dataSource)
-                .locations("classpath:db/migration")
-                .cleanDisabled(false)
-                .load()
-                .also {
-                    it.clean()
-                    it.migrate()
-                }
-        }
+    private lateinit var repository: OutboxRepository
 
-        @Test
-        fun `save and retrieve outbox message`() {
-            val message =
-                OutboxMessage(
-                    aggregateType = "Order",
-                    aggregateId = "order-123",
-                    eventType = "OrderCreated",
-                    payload = "{\"orderId\":\"order-123\"}",
-                    headers = null,
-                    occurredAt = Instant.parse("2025-01-01T00:00:00Z"),
-                )
+    @Autowired
+    private lateinit var entityManager: TestEntityManager
 
-            val saved = repository.save(message)
-            entityManager.flush()
+    @Autowired
+    private lateinit var dataSource: DataSource
 
-            val found = repository.findById(saved.id!!)
-            assertThat(found).isPresent
-            assertThat(found.get().aggregateType).isEqualTo("Order")
-        }
+    @BeforeEach
+    fun migrateSchema() {
+        Flyway
+            .configure()
+            .dataSource(dataSource)
+            .locations("classpath:db/migration")
+            .cleanDisabled(false)
+            .load()
+            .also {
+                it.clean()
+                it.migrate()
+            }
     }
+
+    @Test
+    fun `save and retrieve outbox message`() {
+        val message =
+            OutboxMessage(
+                aggregateType = "Order",
+                aggregateId = "order-123",
+                eventType = "OrderCreated",
+                payload = """{"orderId":"order-123"}""",
+                headers = null,
+                occurredAt = Instant.parse("2025-01-01T00:00:00Z"),
+            )
+
+        val saved = repository.save(message)
+        entityManager.flush()
+
+        val found = repository.findById(saved.id!!)
+        assertThat(found).isPresent
+        assertThat(found.get().aggregateType).isEqualTo("Order")
+    }
+
+    companion object {}
+}
