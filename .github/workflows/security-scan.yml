@@ -1,52 +1,64 @@
+---
+# yamllint disable rule:line-length
 name: Security Scan
 
-on:
+"on":
   push:
-    branches: [ main ]
+    branches: [main]
   schedule:
     - cron: '0 2 * * 1'  # Weekly Monday 2 AM scan
   workflow_dispatch: {}
+
+permissions:
+  contents: read
+  security-events: write
 
 jobs:
   security-scan:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
+        with:
+          egress-policy: audit
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
         with:
           distribution: temurin
           java-version: '25'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1
         with:
           gradle-home-cache-cleanup: true
 
-      # Dependency vulnerability scanning with OWASP Dependency Check
+      # Dependency vulnerability scanning with OWASP Dependency Check (Docker)
       - name: OWASP Dependency Check
-        uses: jeremylong/DependencyCheck_Action@v6
         continue-on-error: true
-        with:
-          project: 'Kafka Transactional Microservices'
-          path: '.'
-          format: 'ALL'
-          out: 'reports'
-          args: >
-            --disableAssembly
-            --disableRetireJS
-            --disableNodeJS
-            --disableNodeAudit
-            --disableNuspec
-            --disableNexus
-            --disableCmake
-            --disableCocoapodsAnalyzer
+        run: |
+          mkdir -p reports
+          docker run --rm \
+            -v "$PWD":/src \
+            owasp/dependency-check:latest \
+            --scan /src \
+            --format ALL \
+            --out /src/reports \
+            --disableAssembly \
+            --disableRetireJS \
+            --disableNodeJS \
+            --disableNodeAudit \
+            --disableNuspec \
+            --disableNexus \
+            --disableCmake \
+            --disableCocoapodsAnalyzer \
             --disableSwiftPackageManagerAnalyzer
 
       - name: Upload dependency scan results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: dependency-scan-results
@@ -72,7 +84,7 @@ jobs:
 
       # Run Trivy vulnerability scan
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -83,7 +95,7 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Upload Trivy scan results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: trivy-scan-results
@@ -91,15 +103,15 @@ jobs:
 
       # SAST scan with CodeQL
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@755f44910c12a3d7ca0d8c6e42c048b3362f7cec
         with:
           languages: java-kotlin
           queries: +security-and-quality
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@755f44910c12a3d7ca0d8c6e42c048b3362f7cec
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@755f44910c12a3d7ca0d8c6e42c048b3362f7cec
         with:
           category: "/language:java-kotlin"

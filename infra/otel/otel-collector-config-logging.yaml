@@ -7,13 +7,8 @@ receivers:
         endpoint: 0.0.0.0:4318
 
 exporters:
-  otlp:
-    endpoint: jaeger:14250
-    tls:
-      insecure: true
-
-  debug:
-    verbosity: detailed
+  logging:
+    loglevel: debug
 
 processors:
   batch:
@@ -31,4 +26,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp, debug]
+      exporters: [logging]

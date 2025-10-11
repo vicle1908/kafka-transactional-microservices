@@ -1,8 +1,10 @@
+---
+# yamllint disable rule:line-length
 name: Canary Deployment
 
-on:
+"on":
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   canary-deployment:
@@ -12,7 +14,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
 
       - name: Display canary deployment information
         run: |
@@ -33,7 +40,7 @@ jobs:
           echo "- Feature flags for controlled rollouts"
           echo ""
           echo "Current status: Placeholder workflow - Kubernetes environment not yet configured"
-          
+
       - name: Validate deployment prerequisites
         run: |
           echo "Checking deployment prerequisites..."

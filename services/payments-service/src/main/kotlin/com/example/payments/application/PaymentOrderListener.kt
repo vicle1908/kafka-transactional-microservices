@@ -1,6 +1,7 @@
 package com.example.payments.application
 
 import com.example.observability.StructuredLogger
+import com.example.payments.domain.ProcessedEventRepository
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
@@ -9,19 +10,20 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
-import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 @Component
 class PaymentOrderListener(
     private val paymentService: PaymentService,
+    private val processedEventRepository: ProcessedEventRepository,
 ) {
     private val logger = StructuredLogger.getLogger(PaymentOrderListener::class.java)
     private val json = Json { ignoreUnknownKeys = false }
 
     @KafkaListener(topics = [ORDERS_CREATED_TOPIC], containerFactory = "kafkaListenerContainerFactory")
     @Transactional
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "LongMethod")
     fun onOrderCreated(record: ConsumerRecord<String, String>) {
         runCatching {
             logger.info(
@@ -35,6 +37,16 @@ class PaymentOrderListener(
 
             val event = OrderCreatedEventCodec.decode(record.value())
             val eventId = UUID.fromString(event.eventId.toString())
+
+            // Check if event was already processed (idempotency check)
+            if (processedEventRepository.existsById(eventId)) {
+                logger.info(
+                    "Event already processed, skipping",
+                    "eventId" to eventId,
+                    "orderId" to event.aggregateId.toString(),
+                )
+                return@runCatching
+            }
 
             val payload = json.parseToJsonElement(event.payload).jsonObject
             val itemCount = payload["itemCount"]!!.jsonPrimitive.int
@@ -60,6 +72,14 @@ class PaymentOrderListener(
                 ),
             )
 
+            // Record that event was processed (idempotency ledger)
+            processedEventRepository.save(
+                com.example.payments.domain.ProcessedEventEntity(
+                    eventId = eventId,
+                    processedAt = Instant.now(),
+                ),
+            )
+
             logger.info(
                 "Payment processed successfully",
                 "orderId" to event.aggregateId.toString(),
@@ -78,8 +98,10 @@ class PaymentOrderListener(
         }
     }
 
-    private fun amountFromItemCount(itemCount: Int): BigDecimal =
-        BigDecimal.valueOf(itemCount.toLong()).multiply(BigDecimal.TEN)
+    private fun amountFromItemCount(itemCount: Int): java.math.BigDecimal =
+        java.math.BigDecimal
+            .valueOf(itemCount.toLong())
+            .multiply(java.math.BigDecimal.TEN)
 
     companion object {
         const val ORDERS_CREATED_TOPIC = "orders.created"

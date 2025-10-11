@@ -124,12 +124,17 @@
 - Implement retry strategies (Spring Retry, DLQ topics) and chaos drills (broker restart, DB failover) via GitHub Actions workflow (chaos-engineering.yml).
 - Document runbooks in `docs/runbooks/` for connectors, DLQ reprocessing, and saga failure recovery.
 - Complete API gateway, Debezium connector, and polyglot datastore runbooks referenced in @AGENTS.md; ensure automation scripts are version-controlled.
-- **COMPLETED**: Enhance observability with comprehensive documentation, OpenTelemetry tracing implementation, and runbook completion.
-- **Enhanced Observability Stack**: Implement centralized logging with ELK stack (Elasticsearch, Logstash, Kibana) for aggregated log analysis and visualization.
-- **Complete OpenTelemetry Implementation**: Deploy OpenTelemetry Collector and Jaeger backend to complete the tracing infrastructure.
-- **Structured Logging Implementation**: Created StructuredLogger utility in common-observability module for consistent JSON-formatted log messages that can be easily parsed by ELK stack.
-- **Kibana Dashboard Configuration**: Created service logs dashboard configuration for Kibana to enable log visualization and monitoring.
-- **Git Hooks Implementation**: Implemented Git hooks to enforce Gradle tasks before allowing commits and pushes, ensuring code quality is maintained locally.
+- **✅ COMPLETED**: Comprehensive observability and resilience implementation including:
+  - **Enhanced OpenTelemetry Configuration**: Complete OpenTelemetry SDK integration with comprehensive tracing, metrics, and context propagation configuration
+  - **Automatic Instrumentation**: AOP-based instrumentation for services, repositories, and Kafka operations with custom tracing aspects
+  - **Structured Logging Implementation**: Created StructuredLogger utility in common-observability module with OpenTelemetry integration for consistent JSON-formatted log messages
+  - **Service Integration**: Integrated StructuredLogger across all microservices with enhanced logging for business operations and trace context propagation
+  - **Comprehensive Kibana Dashboard**: Created service logs dashboard with 9 visualizations including trace correlation, saga tracking, error pattern analysis, and operation performance monitoring
+  - **Load Testing Enhancement**: Overhauled load testing workflow with configurable parameters and EOS validation
+  - **ELK Stack Infrastructure**: Enhanced infrastructure configuration with complete ELK stack components (Elasticsearch, Logstash, Kibana, Filebeat)
+  - **Runbook Suite**: Complete set of operational runbooks covering API gateway, service mesh, Debezium, polyglot datastores, Temporal, and OpenTelemetry
+  - **Git Hooks Implementation**: Implemented Git hooks to enforce Gradle tasks before allowing commits and pushes, ensuring code quality is maintained locally
+- **Execution Status**: ✅ **SUBSTANTIALLY COMPLETE** - Core observability infrastructure implemented with remaining tasks focused on deployment and validation
 - Execution board: [PHASE-5](docs/phases/PHASE-5.md)
 
 ### Phase 6 – Hardening & Launch (Weeks 9-12)
@@ -139,6 +144,34 @@
 - Secure the platform (TLS/SASL, Kafka ACLs, secrets rotation) and complete compliance reviews.
 - Run canary deployment for each service with feature flagsvia GitHub Actions workflow (canary-deployment.yml); monitor `outbox_table_depth` and transaction commit metrics before full rollout.
 - Execution board: [PHASE-6](docs/phases/PHASE-6.md)
+
+### Phase 7 – Service Mesh Integration (Istio) (Weeks 13-14)
+
+- **Note**: This phase formalizes and completes the preliminary Istio setup initiated in Phase 1.
+- **Objectives**:
+  - Integrate Istio ambient mode as the service mesh for all east-west traffic, operating in a **hybrid model** with the existing Spring Cloud Gateway.
+  - Utilize Istio for advanced traffic management and resilience for internal service-to-service communication.
+  - Enforce a zero-trust security model within the mesh using Istio's security features.
+  - Ensure seamless observability by integrating Istio telemetry with the project's existing monitoring stack.
+- **Deliverables**:
+  - An ADR (`docs/adrs/0006-istio-adoption.md`) formalizing the adoption of Istio.
+  - Production-ready Infrastructure-as-Code (Helm/Terraform) for deploying and managing Istio.
+  - `VirtualService`, `DestinationRule`, and `Gateway` resources for all services.
+  - A global `PeerAuthentication` policy enforcing strict mTLS.
+  - Granular `AuthorizationPolicy` resources for least-privilege service access.
+  - An updated `canary-deployment.yml` workflow that uses Istio for traffic splitting.
+  - Dedicated Grafana dashboards for monitoring service mesh health and performance.
+- **Execution board**: [PHASE-7](docs/phases/PHASE-7.md)
+
+- **Key Considerations**:
+  - **Architecture**: This phase implements a hybrid gateway model. Spring Cloud Gateway is retained for its application-aware features at the edge, while Istio manages internal east-west traffic, providing a clear separation of concerns.
+  - **Risk Mitigation**: The primary risks of this approach are potential latency overhead, operational complexity, and observability gaps. These are mitigated by specific tasks for latency benchmarking, using GitOps for unified configuration management, and ensuring end-to-end trace context propagation.
+- **Milestones & Owners (target timeline)**:
+  - **2025-10-13** – *Platform Team* (`P7.2`, `P7.3`): Run AGENTS research workflow (Context7 + DeepWiki) against existing Istio Helm/Terraform templates before authoring ambient-profile IaC and SCG ingress integration manifests; deliver draft Helm chart and Terraform outline.
+  - **2025-10-15** – *Security Team* (`P7.5`, `P7.6`): Produce global `PeerAuthentication` and scoped `AuthorizationPolicy` definitions referenced in ADR 0006, validating least-privilege rules against sample service traffic matrices.
+  - **2025-10-17** – *DevOps Team* (`P7.7`): Update `canary-deployment.yml` to drive Istio traffic shifting and mesh-aware smoke tests within CI; stage dry run in non-prod GitHub environment.
+  - **2025-10-18** – *Observability Team* (`P7.8`, `P7.10`): Extend Grafana dashboards with Istio telemetry, verify SCG→Istio→service trace propagation via OpenTelemetry collector, and document procedures in `docs/runbooks/service-mesh.md`.
+  - **2025-10-20** – *QA Team* (`P7.9`): Execute integration suite covering mTLS enforcement, failure injection, and fallback routing; record results and follow-ups on the PHASE-7 board.
 
 ## 3. Deliverables
 
@@ -153,13 +186,16 @@
 - Operational runbooks (incident response, replay, DR).
 - Redis caching blueprint and environment configuration.
 - CDN/edge caching configuration with monitoring dashboards.
-- **COMPLETED**: Additional runbooks for polling relay mechanism and connector configuration guide.
-- **COMPLETED**: Additional runbooks for API gateway, service mesh, polyglot datastores, and OpenTelemetry tracing.
-- **COMPLETED**: Grafana dashboards for Temporal and CDN metrics.
-- **COMPLETED**: Centralized logging with ELK stack implementation.
-- **COMPLETED**: Complete OpenTelemetry deployment with collector and Jaeger backend.
-- **COMPLETED**: Structured logging implementation with StructuredLogger utility.
-- **COMPLETED**: Git hooks implementation for local code quality enforcement.
+- **✅ COMPLETED**: Additional runbooks for polling relay mechanism and connector configuration guide.
+- **✅ COMPLETED**: Complete runbook suite covering API gateway, service mesh, Debezium, polyglot datastores, Temporal, and OpenTelemetry operations.
+- **✅ COMPLETED**: Grafana dashboards for Temporal, CDN metrics, outbox monitoring, and service performance.
+- **✅ COMPLETED**: Centralized logging with complete ELK stack implementation (Elasticsearch, Logstash, Kibana, Filebeat).
+- **✅ COMPLETED**: Complete OpenTelemetry implementation with enhanced configuration, automatic instrumentation, and comprehensive tracing across services.
+- **✅ COMPLETED**: Structured logging implementation with StructuredLogger utility integrated across all microservices with OpenTelemetry trace context.
+- **✅ COMPLETED**: Comprehensive Kibana dashboard configuration with 9 visualizations for service log monitoring, trace correlation, and saga tracking.
+- **✅ COMPLETED**: Load testing workflow overhaul with configurable parameters and enhanced EOS validation.
+- **✅ COMPLETED**: Git hooks implementation for local code quality enforcement.
+- **✅ COMPLETED** *(2025-10-11)*: Docker/Compose infrastructure image audit aligning environments to latest stable tags (Schema Registry 8.0.1, PostgreSQL 18.0, Redis 8.2.2-alpine, Debezium Connect 3.3.0.Final, Elastic Stack 8.18.8, Prometheus 3.6.0, Grafana 12.2.0, OpenTelemetry Collector 0.137.0, Jaeger 1.74.0, Flyway 11.13.2).
 
 ## 4. Open Decisions & Research Tasks
 
@@ -170,9 +206,9 @@
 - Assess infrastructure hosting (self-managed Kubernetes vs managed Kafka services such as MSK, Confluent Cloud).
 - Select CDN provider and deployment model (managed vs self-hosted edge).
 - Determine Temporal deployment option (self-hosted vs managed service).
-- Periodically reassess service meshchoice (Istio ambient vs Linkerd/managed meshes) based on resource footprint, cost, and feature needs.
+- **(RESOLVED)** Periodically reassess service meshchoice (Istio ambient vs Linkerd/managed meshes) based on resource footprint, cost, and feature needs. **Decision**: Adopt Istio ambient mode. See [ADR 0006](docs/adrs/0006-istio-adoption.md).
 - Evaluate secrets management deployment (Vault OSS vs enterprise vs cloud-native secret stores).
-- Evaluate ELK stack implementation for centralized logging in microservices.
+- Select Istio waypoint deployment strategy (per-namespace vs per-service) for Spring Cloud Gateway ingress; document trade-offs in ADR 0006 update.
 
 ## 5. Risks & Mitigations
 
@@ -186,81 +222,17 @@
 
 ## 6. Next Actions (Current Phase)
 
-### ✅ **PHASE 1 COMPLETE** - CI/CD Infrastructure Hardening
+### 🚀 **Phase 7 Kickoff (Week 13 starting 2025-10-13)**
+- `P7.2`/`P7.3` Platform Team (due 2025-10-14): Complete AGENTS research loop (Context7 Istio docs, DeepWiki repo scan) and draft Helm/Terraform ambient-profile modules plus Spring Cloud Gateway ingress blueprint.
+- `P7.5`/`P7.6` Security Team (due 2025-10-16): Model service-to-service access matrices, author `PeerAuthentication` + `AuthorizationPolicy` manifests, and submit ADR 0006 addendum for review.
+- `P7.7` DevOps Team (due 2025-10-17): Update `canary-deployment.yml` with Istio traffic shifting stages and mesh-aware smoke tests; validate CI run in non-prod environment.
+- `P7.8`/`P7.10` Observability Team (due 2025-10-18): Extend Grafana dashboards with Istio telemetry, confirm SCG→Istio→service trace continuity, and document playbook updates.
+- `P7.9` QA Team (due 2025-10-20): Execute integration suite covering mTLS enforcement, failure injection, and rollback paths; log findings and defects in the PHASE-7 board.
 
-**Achievement Summary:**
-- ✅ **Security**: Explicit permissions, wrapper validation, pinned actions, concurrency controls
-- ✅ **Performance**: gradle/actions integration, configuration cache, parallel execution  
-- ✅ **Quality**: All detekt/ktlint violations resolved, Java 21-25 support, workflow YAML validated
-- ✅ **Coverage**: Hardened CI, nightly integration tests, secure container publishing
-- ✅ **Automation**: Branch protection scripts, post-merge setup, monitoring documentation
-
-**Status**: PR #1 ready for merge with all quality gates passing
-
-### 🔄 **IMMEDIATE ACTIONS** (Current Week)
-
-1. **Stabilize PR Workflows** ⭐ HIGH PRIORITY
-   - [x] CI: fix JPA tests (H2 for module tests), wrapper fallback, docs step
-   - [x] Infra Validation: green
-   - [x] Dependency Review: skip on PRs/private; scheduled/manual with warn-only
-   - [x] Integration/Load tests: skip on PRs; main + schedule only
-
-2. **Complete PR #1 Merge** ⭐ HIGH PRIORITY
-   ```bash path=null start=null
-   # When CI shows green:
-   gh pr merge 1 --squash --delete-branch
-   ./scripts/github/post-merge-setup.sh
-   ```
-
-3. **Verify Infrastructure Health** ⭐ MEDIUM PRIORITY  
-   - [ ] Monitor first main branch CI run
-   - [ ] Validate nightly integration test execution
-   - [ ] Confirm build performance improvements
-
-### 📋 **Local Infra Bootstrap & Migrations (Dev)**
-
-Commands below assume PWD at project root and use the root .env:
-
-```bash path=null start=null
-# Bring up Postgres only (local profile)
-docker compose --env-file .env -f infra/compose.yml --profile local up -d postgres
-
-# Run Flyway migrations sequentially (orders → payments → inventory → notification)
-docker compose --env-file .env -f infra/compose.yml --profile local --profile migrate run --rm flyway-orders
-docker compose --env-file .env -f infra/compose.yml --profile local --profile migrate run --rm flyway-payments
-docker compose --env-file .env -f infra/compose.yml --profile local --profile migrate run --rm flyway-inventory
-docker compose --env-file .env -f infra/compose.yml --profile local --profile migrate run --rm flyway-notification
-
-# Optional: bring up the full local stack (Kafka, Schema Registry, Redis, Debezium, AKHQ)
-docker compose --env-file .env -f infra/compose.yml --profile local up -d
-```
-
-Notes:
-- Compose profiles: local for runtime infra; migrate for one‑shot Flyway tasks.
-- Flyway uses baselineOnMigrate=true to safely initialize non‑empty schemas.
-- Per‑service migrations live under services/<name>/src/main/resources/db/migration and are mounted into Flyway containers.
-- Postgres init scripts live under infra/postgres/init/ and create required databases on first startup.
-
-### 📋 **Cache Integration (In Progress)**
-- common-cache module added with Spring Boot auto-configuration (RedisConnectionFactory, RedisCacheManager, @EnableCaching)
-- Services depend on :common-cache; default TTL=15m; uses REDIS_HOST/REDIS_PORT
-- TLS/auth support added via REDIS_USERNAME/REDIS_PASSWORD and REDIS_SSL=true
-- Serializer hardening: keys → StringRedisSerializer; values → GenericJackson2JsonRedisSerializer with JavaTimeModule
-- Runbook added: docs/runbooks/cache.md; prod overlay redis.conf stub created at infra/redis/redis.conf
-- Initial caches wired:
-  - orders-service: OrdersQueryService.getOrder(orderId) → cache `orders:by-id` (returns OrderDto)
-  - inventory-service: InventoryQueryService.getStockBySku(sku) → cache `inventory:stock:by-sku` (returns InventoryStockDto)
-- Eviction wired on write paths (orders create; inventory reserve/release/reconcile)
-- Per-cache TTL override: inventory:stock:by-sku set to 3 minutes
-- Metrics: cache metrics exposed via actuator/prometheus on all services (management.metrics.enable.cache=true)
-- Next: consider TTL jitter and additional read caches as needed based on metrics
-
-### 📋 **PHASE 2A** - Security Enhancement (Week 3-4)
-1. **Security Workflows**: OWASP (scheduled/manual), Trivy (config/image scan), CodeQL (init/build/analyze) – non-blocking on PRs
-2. **Infrastructure Validation**: Validate compose/k8s manifests; add load testing automation (scheduled)
-3. **Service Template Resume**: Continue with domain entities, outbox schema, transactional configuration
-4. **ADR Completion**: Draft ADRs for transactional outbox pattern, Debezium adoption, saga choreography
-5. **Infrastructure Setup**: Author infra compose file, implement actual versionCheck/schemaCompatibilityCheck logic
+### 🧭 Phase 7 Readiness Checklist
+- Capture research artifacts and IaC design notes in `docs/phases/PHASE-7.md` prior to implementation to satisfy AGENTS research practice.
+- Align Istio waypoint strategy decision with open-decision tracker and update ADR 0006 once the approach is agreed.
+- Ensure CI environments include mesh components before running smoke tests; record adjustments in `docs/runbooks/service-mesh.md`.
 
 ---
-_Last updated: 2025-10-10_
+_Last updated: 2025-10-11_

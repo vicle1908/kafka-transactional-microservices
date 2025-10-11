@@ -32,7 +32,7 @@ services:
       retries: 5
 
   schema-registry:
-    image: ${SCHEMA_REGISTRY_IMAGE:-confluentinc/cp-schema-registry:7.7.0}
+    image: ${SCHEMA_REGISTRY_IMAGE:-confluentinc/cp-schema-registry:8.0.1}
     container_name: schema-registry
     profiles:
       - local
@@ -51,7 +51,7 @@ services:
       retries: 5
 
   postgres:
-    image: ${POSTGRES_IMAGE:-postgres:18}
+    image: ${POSTGRES_IMAGE:-postgres:18.0}
     container_name: postgres
     profiles:
       - local
@@ -80,7 +80,7 @@ services:
       retries: 5
 
   redis:
-    image: ${REDIS_IMAGE:-redis:7-alpine}
+    image: ${REDIS_IMAGE:-redis:8.2.2-alpine}
     container_name: redis
     profiles:
       - local
@@ -95,7 +95,7 @@ services:
       retries: 3
 
   debezium-connect:
-    image: ${DEBEZIUM_IMAGE:-quay.io/debezium/connect:3.3}
+    image: ${DEBEZIUM_IMAGE:-quay.io/debezium/connect:3.3.0.Final}
     container_name: debezium-connect
     profiles:
       - local
@@ -122,7 +122,7 @@ services:
       retries: 5
 
   akhq:
-    image: ${AKHQ_IMAGE:-tchiotludo/akhq:0.24.0}
+    image: ${AKHQ_IMAGE:-tchiotludo/akhq:0.25.0}
     container_name: akhq
     profiles:
       - local
@@ -146,7 +146,7 @@ services:
       retries: 5
 
   flyway-orders:
-    image: flyway/flyway:latest
+    image: flyway/flyway:11.13.2
     container_name: flyway-orders
     profiles:
       - migrate
@@ -158,7 +158,7 @@ services:
     command: -url=jdbc:postgresql://postgres:5432/orders -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
 
   flyway-payments:
-    image: flyway/flyway:latest
+    image: flyway/flyway:11.13.2
     container_name: flyway-payments
     profiles:
       - migrate
@@ -170,7 +170,7 @@ services:
     command: -url=jdbc:postgresql://postgres:5432/payments -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
 
   flyway-inventory:
-    image: flyway/flyway:latest
+    image: flyway/flyway:11.13.2
     container_name: flyway-inventory
     profiles:
       - migrate
@@ -182,7 +182,7 @@ services:
     command: -url=jdbc:postgresql://postgres:5432/inventory -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
 
   flyway-notification:
-    image: flyway/flyway:latest
+    image: flyway/flyway:11.13.2
     container_name: flyway-notification
     profiles:
       - migrate
@@ -196,7 +196,7 @@ services:
 
   # ELK Stack for centralized logging
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.8
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -213,7 +213,7 @@ services:
       retries: 5
 
   logstash:
-    image: docker.elastic.co/logstash/logstash:8.11.0
+    image: docker.elastic.co/logstash/logstash:8.18.8
     container_name: logstash
     depends_on:
       elasticsearch:
@@ -231,7 +231,7 @@ services:
       retries: 5
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
+    image: docker.elastic.co/kibana/kibana:8.18.8
     container_name: kibana
     depends_on:
       elasticsearch:
@@ -247,7 +247,7 @@ services:
       retries: 5
 
   filebeat:
-    image: docker.elastic.co/beats/filebeat:8.11.0
+    image: docker.elastic.co/beats/filebeat:8.18.8
     container_name: filebeat
     user: root
     volumes:
@@ -266,7 +266,7 @@ services:
 
   # OpenTelemetry Collector and Jaeger for distributed tracing
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.92.0
+    image: otel/opentelemetry-collector-contrib:0.137.0
     container_name: otel-collector
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
@@ -279,7 +279,7 @@ services:
       - jaeger
 
   jaeger:
-    image: jaegertracing/all-in-one:1.52
+    image: jaegertracing/all-in-one:1.74.0
     container_name: jaeger
     ports:
       - "16686:16686" # Jaeger UI

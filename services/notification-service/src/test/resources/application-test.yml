@@ -21,6 +21,9 @@ spring:
     locations: classpath:db/test-migration
     validate-migration-naming: true
     clean-disabled: false
+  task:
+    scheduling:
+      enabled: false
   kafka:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     consumer:
@@ -38,3 +41,6 @@ spring:
 logging:
   level:
     org.flywaydb: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    org.springframework.jdbc: DEBUG
