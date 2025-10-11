@@ -20,11 +20,8 @@ tasks.register("installGitHooks") {
 
             echo "Running pre-commit checks..."
 
-            # Run ktlint check
-            ./gradlew --no-daemon --stacktrace ktlintCheck
-
-            # Check the result
-            if [ \$? -ne 0 ]; then
+            # Run ktlint check and fail fast on error
+            if ! ./gradlew --no-daemon --stacktrace ktlintCheck; then
                 echo "Pre-commit checks failed. Please fix the issues before committing."
                 exit 1
             fi
@@ -46,11 +43,8 @@ tasks.register("installGitHooks") {
 
             echo "Running pre-push checks..."
 
-            # Run all checks
-            ./gradlew --no-daemon --stacktrace clean check detektAll ktlintCheck versionCheck schemaCompatibilityCheck
-
-            # Check the result
-            if [ \$? -ne 0 ]; then
+            # Run all checks and fail fast on error
+            if ! ./gradlew --no-daemon --stacktrace clean check detektAll ktlintCheck versionCheck schemaCompatibilityCheck; then
                 echo "Pre-push checks failed. Please fix the issues before pushing."
                 exit 1
             fi
