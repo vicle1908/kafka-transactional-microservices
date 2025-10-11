@@ -1,0 +1,81 @@
+title = "Gitleaks configuration for kafka-transactional-microservices"
+
+# Extend the base configuration
+[extend]
+useDefault = true
+
+# Custom rules for this repository
+[[rules]]
+description = "GitHub token"
+id = "github-token"
+regex = '''(?i)(github|ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9]{36}'''
+keywords = ["github", "ghp_", "gho_", "ghu_", "ghs_", "ghr_"]
+
+[[rules]]
+description = "AWS Access Key"
+id = "aws-access-key"
+regex = '''(?i)(aws|amazon)?(\s|_)?(access|key|id)(\s|_)?(key|id)?[:\s=][A-Z0-9]{20}'''
+keywords = ["aws", "amazon", "access", "key", "id"]
+
+[[rules]]
+description = "Generic API Key"
+id = "generic-api-key"
+regex = '''(?i)(api[_-]?key|apikey|secret|token)[\s=:]['\"]?[a-zA-Z0-9_\-]{16,}['\"]?'''
+keywords = ["api", "key", "secret", "token"]
+
+[[rules]]
+description = "Database connection string"
+id = "database-connection"
+regex = '''(?i)(mysql|postgresql|mongodb|redis):\/\/[^:]+:[^@]+@[^\/]+'''
+keywords = ["mysql://", "postgresql://", "mongodb://", "redis://"]
+
+# Allow list for false positives
+[allowlist]
+description = "Global allow list"
+paths = [
+    '''go\.mod''',
+    '''go\.sum''',
+    '''package-lock\.json''',
+    '''yarn\.lock''',
+    '''pnpm-lock\.yaml''',
+    '''\.git''',
+    '''\.github\/workflows\/.*\.yml''',
+    '''\.github\/workflows\/.*\.yaml''',
+    '''docs\/.*\.md''',
+    '''README\.md''',
+    '''CHANGELOG\.md''',
+    '''LICENSE''',
+    '''\.gitignore''',
+    '''\.dockerignore''',
+    '''Dockerfile\..*''',
+    '''.*\.example''',
+    '''.*\.template''',
+    '''.*\.sample''',
+    '''test[s]?\b.*\.(json|js|ts|py|java|kt|go|rs|php)''',
+    '''spec[s]?\b.*\.(js|ts|py|java|kt|go|rs|php)''',
+    '''mock[s]?\b.*\.(json|js|ts|py|java|kt|go|rs|php)''',
+    '''fixture[s]?\b.*\.(json|js|ts|py|java|kt|go|rs|php)''',
+]
+
+# Specific regex patterns to allow
+regexes = [
+    '''example[_-]?key[_-]?\d+''',
+    '''test[_-]?token[_-]?\d+''',
+    '''demo[_-]?secret[_-]?\d+''',
+    '''placeholder[_-]?key[_-]?\d+''',
+    '''xxx+''',
+    '''yyy+''',
+    '''zzz+''',
+    '''abc123''',
+    '''password123''',
+    '''secret123''',
+    '''changeme''',
+    '''your[_-]?key[_-]?here''',
+]
+
+# Commits to ignore
+[allowlist.commits]
+description = "Commits to ignore"
+authors = ["dependabot[bot]", "renovate[bot]", "pre-commit-ci[bot]"]
+message = '''(?i)^(wip|work in progress|draft|chore|docs|style|refactor|test|build)'''
+paths = ['docs/', 'README.md', 'CHANGELOG.md']

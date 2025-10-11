@@ -4,8 +4,8 @@
 
 This phase implements a **hybrid gateway architecture**. The model is a deliberate choice to leverage the distinct strengths of two separate layers:
 
-1.  **Tier 1: Spring Cloud Gateway (The Application-Aware Edge)**: Continues to serve as the primary entry point for external (north-south) traffic. Its responsibility is to handle application-level concerns that require business context, such as complex user authentication (OIDC/OAuth2), API composition (BFF patterns), and request/response transformations.
-2.  **Tier 2: Istio Service Mesh (The Network Infrastructure)**: Manages all internal service-to-service (east-west) traffic after it has been routed from the Spring Cloud Gateway. Its responsibility is to handle network-level concerns transparently, including enforcing encryption (mTLS), managing retries/timeouts, and executing fine-grained traffic shifting for canary releases.
+1. **Tier 1: Spring Cloud Gateway (The Application-Aware Edge)**: Continues to serve as the primary entry point for external (north-south) traffic. Its responsibility is to handle application-level concerns that require business context, such as complex user authentication (OIDC/OAuth2), API composition (BFF patterns), and request/response transformations.
+2. **Tier 2: Istio Service Mesh (The Network Infrastructure)**: Manages all internal service-to-service (east-west) traffic after it has been routed from the Spring Cloud Gateway. Its responsibility is to handle network-level concerns transparently, including enforcing encryption (mTLS), managing retries/timeouts, and executing fine-grained traffic shifting for canary releases.
 
 This separation of concerns allows developers to continue using the familiar Spring ecosystem for complex edge logic while gaining the security and resilience benefits of a service mesh for internal communication.
 

@@ -30,14 +30,14 @@ This document describes the standard development workflow for the Kafka Transact
 
 This repository uses 12‑Factor, env‑driven configuration for local development.
 
-1) Create local env files (examples provided):
+1. Create local env files (examples provided):
 
    ```bash
    cp .env.example .env
    cp infra/.env.example infra/.env
    ```
 
-2) Auto‑load env (choose one):
+2. Auto‑load env (choose one):
    - Recommended (direnv):
 
      ```bash
@@ -52,7 +52,7 @@ This repository uses 12‑Factor, env‑driven configuration for local developme
      source scripts/export-env.sh
      ```
 
-3) Start local infrastructure with env file:
+3. Start local infrastructure with env file:
    - From repo root:
 
      ```bash
@@ -65,14 +65,14 @@ This repository uses 12‑Factor, env‑driven configuration for local developme
      cd infra && docker compose up -d
      ```
 
-4) Run services (config comes from env, with safe defaults):
+4. Run services (config comes from env, with safe defaults):
 
    ```bash
    ./gradlew :services:orders-service:bootRun
    # similarly for others
    ```
 
-5) Optional: enable local tracing
+5. Optional: enable local tracing
 
    ```bash
    # in .env
@@ -80,7 +80,7 @@ This repository uses 12‑Factor, env‑driven configuration for local developme
    OTEL_ENDPOINT=localhost:4317
    ```
 
-Security & Secrets
+## Security & Secrets
 
 - Do not commit .env files (already git-ignored). Use *.env.example to share non-secret defaults.
 - Staging/Prod secrets are sourced from Vault (see ADR‑0004 and docs/runbooks/vault.md). Local .env is for dev only.
