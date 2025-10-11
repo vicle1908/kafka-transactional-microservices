@@ -98,6 +98,7 @@ The pre-commit hook auto-formats Kotlin sources (ktlintFormat), re-stages change
 ### Pre-push Hook
 
 The pre-push hook runs a comprehensive set of checks to ensure code quality before allowing a push:
+
 - Gradle build and test
 - Detekt static analysis
 - Ktlint check

@@ -1,8 +1,6 @@
 package com.example.persistence.outbox
 
 import org.assertj.core.api.Assertions.assertThat
-import org.flywaydb.core.Flyway
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
@@ -14,7 +12,6 @@ import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.time.Instant
-import javax.sql.DataSource
 
 @Testcontainers
 @DataJpaTest
@@ -25,23 +22,6 @@ class OutboxRepositoryTest {
 
     @Autowired
     private lateinit var entityManager: TestEntityManager
-
-    @Autowired
-    private lateinit var dataSource: DataSource
-
-    @BeforeEach
-    fun migrateSchema() {
-        Flyway
-            .configure()
-            .dataSource(dataSource)
-            .locations("classpath:db/migration")
-            .cleanDisabled(false)
-            .load()
-            .also {
-                it.clean()
-                it.migrate()
-            }
-    }
 
     @Test
     fun `save and retrieve outbox message`() {
@@ -80,8 +60,8 @@ class OutboxRepositoryTest {
             registry.add("spring.datasource.password", postgres::getPassword)
             registry.add("spring.datasource.driver-class-name") { "org.postgresql.Driver" }
             registry.add("spring.jpa.hibernate.ddl-auto") { "none" }
-            // Disable Spring Boot's auto Flyway runner; we invoke Flyway manually in @BeforeEach
-            registry.add("spring.flyway.enabled") { "false" }
+            registry.add("spring.flyway.enabled") { "true" }
+            registry.add("spring.flyway.locations") { "classpath:db/migration" }
         }
     }
 }

@@ -1,3 +1,4 @@
+---
 config:
   process.roles: "broker,controller"
   node.id: 1

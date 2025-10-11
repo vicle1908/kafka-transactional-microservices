@@ -18,10 +18,10 @@ The ambient mode is chosen for its reduced resource overhead (no sidecars per po
 
 Key integration points will include:
 
-1.  **Traffic Management**: Using Istio's `VirtualService` and `DestinationRule` resources for canary deployments, A/B testing, and fine-grained routing.
-2.  **Security**: Enforcing strict mTLS for all service-to-service communication and implementing `AuthorizationPolicy` for least-privilege access control.
-3.  **Ingress**: Utilizing the Kubernetes `Gateway` API for ingress traffic management.
-4.  **Observability**: Integrating Istio's telemetry with the existing Prometheus and Grafana stack for comprehensive monitoring.
+1. **Traffic Management**: Using Istio's `VirtualService` and `DestinationRule` resources for canary deployments, A/B testing, and fine-grained routing.
+2. **Security**: Enforcing strict mTLS for all service-to-service communication and implementing `AuthorizationPolicy` for least-privilege access control.
+3. **Ingress**: Utilizing the Kubernetes `Gateway` API for ingress traffic management.
+4. **Observability**: Integrating Istio's telemetry with the existing Prometheus and Grafana stack for comprehensive monitoring.
 
 ## Consequences
 

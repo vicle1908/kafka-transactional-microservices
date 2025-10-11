@@ -163,6 +163,22 @@ docker pull <image>:<tag> --dry-run 2>&1 || echo "Manual verification needed"  #
 - Service modules live under `services/<name>` (e.g., `orders-service`) and follow the hexagonal template documented in `docs/dev/service-template.md`; depend on shared modules for events, Kafka, persistence, sagas, and observability.
 - Launch disposable CLI subagents with `clink` when fresh context windows are needed for specific tasks. Currently, only claude, codex, and gemini are supported by clink due to a hardcoded allowlist. For tasks requiring other CLIs like qwen, temporarily remap an existing client or use the CLI directly.
 - Always use the Gradle version catalog (`gradle/libs.versions.toml`) when adding new plugins or dependencies to build files to ensure consistent version management across all modules
+- **Local Workflow & Document Validation**: Before committing changes, especially to GitHub Actions workflows or documentation, run local validation tools to catch errors early. These tools are typically installed via package managers like `npm`, `pip`, or `brew`.
+  - **YAML Files**: Use `yamllint` to check for syntax errors and style issues.
+    ```bash
+    # Example: Lint all YAML/YML files in the project
+    yamllint .
+    ```
+  - **GitHub Actions**: Use `actionlint` to statically check for common issues and best practices in workflow files.
+    ```bash
+    # Example: Lint all workflow files in the .github/workflows directory
+    actionlint
+    ```
+  - **Markdown Files**: Use `markdownlint-cli` to ensure documentation standards are met.
+    ```bash
+    # Example: Lint all markdown files, ignoring node_modules
+    markdownlint-cli "**/*.md" --ignore node_modules
+    ```
 
 ## Database & CDC Setup (Standardized Docker Compose)
 

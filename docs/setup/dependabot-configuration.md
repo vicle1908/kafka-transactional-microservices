@@ -20,6 +20,7 @@ The `.github/dependabot.yml` file is configured to monitor and update dependenci
 **Schedule**: Every Monday at 09:00 UTC
 
 **Groups**:
+
 - **spring-boot**: Spring ecosystem (Spring Boot, Spring Kafka, Spring Framework)
 - **kotlin**: Kotlin language tools and KSP
 - **testing**: Testing frameworks (JUnit, Testcontainers, Mockito, MockK, Awaitility)
@@ -35,6 +36,7 @@ The `.github/dependabot.yml` file is configured to monitor and update dependenci
 **Schedule**: Every Monday at 09:00 UTC
 
 **Groups**:
+
 - **security**: Security-related actions (harden-runner, dependency review)
 - **build**: Build and CI actions (checkout, setup-java, gradle actions)
 - **deployment**: Container and deployment actions
@@ -42,6 +44,7 @@ The `.github/dependabot.yml` file is configured to monitor and update dependenci
 ### 3. Docker Configuration
 
 **Scope**: Multiple directories
+
 - Root directory (`/`) - Infrastructure images
 - Services directory (`/services/`) - Application base images
 - Temporal pilot (`/temporal-pilot`) - Temporal-specific images
@@ -51,15 +54,18 @@ The `.github/dependabot.yml` file is configured to monitor and update dependenci
 **Groups by Directory**:
 
 **Root Directory Groups**:
+
 - **kafka**: Apache Kafka, Confluent Schema Registry, Debezium
 - **database**: PostgreSQL, Redis
 - **observability**: Prometheus, Grafana, Jaeger, OpenTelemetry Collector
 - **elastic**: Elastic Stack (Elasticsearch, Logstash, Kibana, Filebeat)
 
 **Services Directory Groups**:
+
 - **base**: Base images (OpenJDK, Eclipse Temurin, Ubuntu, Alpine)
 
 **Temporal Pilot Groups**:
+
 - **temporal**: Temporal.io images
 
 ### 4. npm Configuration
@@ -69,6 +75,7 @@ The `.github/dependabot.yml` file is configured to monitor and update dependenci
 **Schedule**: Every Monday at 09:00 UTC
 
 **Groups**:
+
 - **docs**: Documentation tools (MkDocs, VuePress, GitBook)
 - **dev-tools**: Development tools (ESLint, Prettier, TypeScript, Vite, Webpack)
 
@@ -85,6 +92,7 @@ Dependencies are grouped by functionality to reduce PR noise and make updates ea
 ### Reviewer and Assignee Configuration
 
 All Dependabot PRs automatically:
+
 - Assign to `vicle1908`
 - Request review from `vicle1908`
 - Use prefixed commit messages for easy filtering
@@ -98,6 +106,7 @@ All Dependabot PRs automatically:
 ### Version Catalog Support
 
 The Gradle configuration specifically supports our version catalog approach:
+
 - Updates to `gradle/libs.versions.toml` are properly detected
 - Version references are maintained across modules
 - Gradle version constraints are respected
@@ -107,16 +116,19 @@ The Gradle configuration specifically supports our version catalog approach:
 ### Supported Technologies
 
 **Backend Framework**:
+
 - Spring Boot 3.5.x
 - Spring Framework 6.x
 - Spring for Apache Kafka 3.3.x
 
 **Language & Runtime**:
+
 - Kotlin 2.2.x
 - Java 25 (with fallback to Java 21/23)
 - Gradle 9.1.x with Kotlin DSL
 
 **Messaging & Serialization**:
+
 - Apache Kafka 4.1.x
 - Apache Avro 1.12.x
 - Protocol Buffers 4.32.x
@@ -124,11 +136,13 @@ The Gradle configuration specifically supports our version catalog approach:
 - Kotlinx Serialization 1.9.x
 
 **Database**:
+
 - PostgreSQL 18.x
 - Flyway 11.x
 - H2 Database 2.x
 
 **Observability**:
+
 - OpenTelemetry 1.54.x
 - Jaeger 1.74.x
 - Prometheus v3.6.x
@@ -136,6 +150,7 @@ The Gradle configuration specifically supports our version catalog approach:
 - Elastic Stack 8.19.x
 
 **Testing**:
+
 - JUnit 6.x (Jupiter)
 - Testcontainers 1.21.x
 - Mockito Kotlin 5.4.x
@@ -143,11 +158,13 @@ The Gradle configuration specifically supports our version catalog approach:
 - Awaitility 4.3.x
 
 **Infrastructure**:
+
 - Redis 8.x
 - Docker (latest stable)
 - Temporal 1.31.x
 
 **Code Quality**:
+
 - Detekt 1.23.x
 - KtLint 1.7.x (CLI) / 13.1.x (Plugin)
 
@@ -162,6 +179,7 @@ The Gradle configuration specifically supports our version catalog approach:
 ### Handling Conflicts
 
 If Dependabot PRs have conflicts:
+
 1. Merge recent PRs first
 2. Rebase remaining PRs
 3. Dependabot will automatically retry on next scheduled run
@@ -169,6 +187,7 @@ If Dependabot PRs have conflicts:
 ### Customizing Updates
 
 To temporarily disable updates for specific dependencies:
+
 1. Add `ignore` rules to the Dependabot configuration
 2. Use wildcards for broad exclusions
 3. Specify version ranges to block
@@ -176,6 +195,7 @@ To temporarily disable updates for specific dependencies:
 ## Security Integration
 
 The configuration works seamlessly with GitHub's security features:
+
 - **Vulnerability Alerts**: Enabled for automatic security updates
 - **Dependency Review**: Integrated with GitHub Actions workflow
 - **Advanced Security**: Available (repository is public)

@@ -15,6 +15,7 @@ The repository already has comprehensive CI/CD workflows configured. To ensure c
 **Create/Edit Branch Protection Rule for `main` branch:**
 
 #### Basic Settings ✅
+
 - [ ] **Branch name pattern**: `main`
 - [ ] **Require status checks to pass before merging**: ✅ (Enable)
 - [ ] **Require branches to be up to date before merging**: ✅ (Enable)
@@ -26,6 +27,7 @@ The repository already has comprehensive CI/CD workflows configured. To ensure c
 - [ ] **Allow deletions**: ❌ (Disable)
 
 #### Protect Matching Branches
+
 - [ ] **Include `main` branch**: ✅
 
 ### 2. Required Status Checks
@@ -33,6 +35,7 @@ The repository already has comprehensive CI/CD workflows configured. To ensure c
 **Navigate to**: Branch Protection Rule → Require status checks to pass before merging
 
 #### Required Status Checks ✅
+
 Add the following status checks to the required list:
 
 1. **CI (CI workflow)** - ✅ Already implemented
@@ -71,6 +74,7 @@ Add the following status checks to the required list:
    - Runs on: push to main, weekly schedule
 
 #### Additional Recommended Status Checks ✅
+
 - [ ] **Gradle Wrapper Validation** - Already included in CI
 - [ ] **Build & Test** - Already included in CI
 - [ ] **Kotlin Lint (ktlint)** - Already included in CI
@@ -79,6 +83,7 @@ Add the following status checks to the required list:
 ## 🚀 Already Implemented Features
 
 ### Security & Compliance ✅
+
 - **Dependabot**: `.github/dependabot.yml` - Automated dependency updates
 - **Step Security Runner**: All workflows include `step-security/harden-runner`
 - **Supply Chain Hardening**: Actions pinned to full commit SHAs
@@ -86,6 +91,7 @@ Add the following status checks to the required list:
 - **Secrets Detection**: Gitleaks with custom configuration
 
 ### CI/CD Pipeline ✅
+
 - **Multi-language Support**: Kotlin, Java, Docker, JavaScript
 - **Parallel Execution**: Jobs run in parallel where possible
 - **Configuration Cache**: Gradle configuration and build caching enabled
@@ -93,6 +99,7 @@ Add the following status checks to the required list:
 - **Failure Handling**: Appropriate continue-on-error settings for non-critical scans
 
 ### Code Quality ✅
+
 - **Multiple Linters**: ktlint, Detekt, SpotBugs, Error Prone
 - **Schema Validation**: Avro schema compatibility checking
 - **Documentation Validation**: Markdown linting and link checking

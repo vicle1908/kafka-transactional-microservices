@@ -277,26 +277,25 @@ services:
       timeout: 10s
       retries: 5
 
-  
   filebeat:
     image: ${FILEBEAT_IMAGE:-docker.elastic.co/beats/filebeat:8.19.5}
-    container_name: filebeat
-    profiles:
-      - local
-    user: root
-    volumes:
-      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - ./logs:/usr/share/filebeat/logs:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    depends_on:
-      logstash:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "filebeat", "test", "config"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+  container_name: filebeat
+  profiles:
+    - local
+  user: root
+  volumes:
+    - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    - ./logs:/usr/share/filebeat/logs:ro
+    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+  depends_on:
+    logstash:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD", "filebeat", "test", "config"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
 
   prometheus:
     image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.6.0}
@@ -334,7 +333,7 @@ services:
     ports:
       - "4317:4317"   # OTLP gRPC receiver
       - "4318:4318"   # OTLP HTTP receiver
-      - "13133:13133" # Health check
+      - "13133:13133"  # Health check
     depends_on:
       - jaeger
 
@@ -344,8 +343,8 @@ services:
     profiles:
       - local
     ports:
-      - "16686:16686" # Jaeger UI
-      - "14250:14250" # gRPC server
+      - "16686:16686"  # Jaeger UI
+      - "14250:14250"  # gRPC server
     environment:
       - COLLECTOR_OTLP_ENABLED=true
 
