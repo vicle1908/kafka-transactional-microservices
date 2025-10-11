@@ -1,5 +1,4 @@
 ---
-version: "3.9"
 
 # Docker Compose file for integration testing environment
 # This matches the setup used in GitHub Actions for consistent local and CI testing

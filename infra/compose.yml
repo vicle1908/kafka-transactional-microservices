@@ -279,23 +279,23 @@ services:
 
   filebeat:
     image: ${FILEBEAT_IMAGE:-docker.elastic.co/beats/filebeat:8.19.5}
-  container_name: filebeat
-  profiles:
-    - local
-  user: root
-  volumes:
-    - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-    - ./logs:/usr/share/filebeat/logs:ro
-    - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-  depends_on:
-    logstash:
-      condition: service_healthy
-  healthcheck:
-    test: ["CMD", "filebeat", "test", "config"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
+    container_name: filebeat
+    profiles:
+      - local
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/usr/share/filebeat/logs:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      logstash:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "filebeat", "test", "config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   prometheus:
     image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.6.0}
