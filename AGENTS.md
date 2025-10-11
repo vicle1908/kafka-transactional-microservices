@@ -138,7 +138,7 @@
 - For complex decisions, use `mcp-router__consensus` (consulting Gemini, OpenAI, Grok-4 via Zen MCP) to gather multiple AI perspectives, then apply `mcp-router__thinkdeep` when deeper reasoning or resolution is required.
 - When researching, combine available search MCP tools (`mcp-router__brave_web_search`, `mcp-router__tavily_search`, `mcp-router__web_search_exa`, `mcp-router__searchGitHub`, `mcp-router__search_medium_topic`) to gather evidence before consulting Zen MCP (`consensus`, `thinkdeep`) for multi-model evaluation.
 - Launch disposable CLI subagents with `clink` when we need fresh context windows: codex uses the non-interactive `exec` path (`conf/cli_clients/codex.json`) and **requires a Zen MCP server restart** after config edits to pick up the new flags. Qwen is not yet first-class in upstream clink; either remap an existing client (e.g., temporarily wire `claude` to the `qwen` CLI) or track the upstream update before calling `cli_name='qwen'`.
-- Use `clink` to delegate tasks to external AI CLIs like Gemini, Claude, or Codex when a task is better suited for another model's specific strengths. Note that `clink` has a hardcoded allowlist for supported CLIs; only 'claude', 'codex', and 'gemini' are currently accepted, which prevents integration with other CLIs like Qwen even if configuration files exist.
+- Use `clink` to delegate tasks to external AICLIs like Gemini, Claude, or Codex when a task is better suited for another model's specific strengths. Note that `clink` has a hardcoded allowlist for supported CLIs; only 'claude', 'codex', and 'gemini' are currently accepted, which prevents integration with other CLIs like Qwen even if configuration files exist.
 - When using `clink`, you can pass context to the external CLI including files, images, and conversation history. Use the `role` parameter to invoke a pre-configured persona or skill for the target CLI (e.g., `codereviewer` for code review tasks).
 - For complex tasks requiring multiple tools, combine `clink` with other MCP tools in a tiered approach: use `clink` for CLI-specific tasks, `mcp-router__search_medium_topic` for comprehensive research, and `mcp-router__consensus` for multi-model evaluation.
 - When experiencing issues with `clink` argument forwarding (e.g., Codex not receiving the `--skip-git-repo-check` flag), consider using direct CLI execution or wrapper scripts to ensure flags are properly applied.
@@ -258,6 +258,7 @@ The project has a partial observability implementation with the following compon
 - Payment service delegates charging to `PaymentGateway` adapters; successful authorizations emit `PaymentCompletedEvent` while declines emit `PaymentFailedEvent` and mark the saga `FAILED`. The processed-event ledger is persisted within the same transaction so Kafka listener duplicates no longer re-trigger payments. Select the adapter via `payments.gateway.mode` (`IN_MEMORY` or `HTTP`); configure in-memory approval thresholds under `payments.gateway.in-memory.*` and external provider settings (`baseUrl`, `chargePath`, `apiKey`, timeouts, `retries`) under `payments.gateway.http.*`.
 - Payment compensation writes refunds to the `refunds` ledger and emits `PaymentRefundedEvent` outbox records when saga rollback is invoked; duplicate compensation attempts reuse the completed refund record.
 - Notification service supports email, SMS, and push channels via configurable sender adapters; channel properties allow simulate-failure toggles for tests while the retry template governs exponential backoff.
+- Inventory service enforces stock availability via the pessimistic-locked `inventory_stock` table; `inventoryService.reserve` will throw when stock is insufficient and compensation (`release`) restores quantities before the saga transitions to `FAILED`.
 
 ## Saga Implementation Patterns
 
@@ -302,7 +303,7 @@ The project has a partial observability implementation with the following compon
 ## Security & Compliance
 
 - Enforce TLS and SASL for Kafka brokers; manage ACLs so services only access their topics.
-- Store credentials with Vault or AWS Secrets Manager; never commit secrets.
+- Store credentials with Vault or AWS SecretsManager; never commit secrets.
 - Classify events that carry PII; mask or tokenize sensitive fields before publishing.
 - Kubernetes secrets: prefer Vault Agent Injector or Secrets Operator to deliver short-lived credentials; enforce RBAC and audit logging around secret access.
 
@@ -348,50 +349,133 @@ The project has a partial observability implementation with the following compon
 
 ### Overview
 
-The project implements the transactional outbox pattern using Debezium as the primary mechanism. This approach ensures that domain data changes and event publications happen atomically within the same database transaction, eliminating the risk of inconsistency between the database and the message broker.
+The project implements the transactional outbox pattern using both Debezium as the primary mechanism and a polling relay as a fallback. This approach ensures that domain data changes and event publications happen atomically within the same database transaction, eliminating the risk of inconsistency between the database and the message broker.
 
-### Implementation Approach
+### Implementation Approaches
 
-The implementation leverages Debezium's Outbox Event Router Single Message Transform (SMT) to capture events from an `outbox` table that is inserted into during the same transaction that modifies domain data. This approach provides:
-- Exactly-once delivery semantics
-- Strong consistency between database changes and event publication
-- Low latency event propagation
-- Minimal application code changes
+The implementation provides two mechanisms for event publication:
+
+1. **Primary: Debezium CDC with Outbox Event Router SMT**
+   - Uses Debezium to capture changes from the outbox table
+   - Routes events to appropriate Kafka topics based on aggregate type
+   - Provides low-latency, exactly-once delivery semantics
+
+2. **Fallback: Polling Relay**
+   - Scheduled service that polls the outbox table for pending messages
+   - Publishes events to Kafka using transactional producers
+   - REST endpoints for manual processing and replay
 
 ### Components
 
-1. **Outbox Table Schema**: Each service's `outbox` table is created and managed via a Flyway migration script. These scripts are located in the service's `src/main/resources/db/migration` directory and define the table structure, including columns for `id`, `aggregate_type`, `aggregate_id`, `event_type`, `payload`, and `status`.
+#### 1. Outbox Entity Structure
 
-2. **Domain Service Integration**: Services persist domain data and insert a record into the outbox table within the same transaction:
-   ```kotlin
-   @Transactional
-   fun handle(command: CreateOrderCommand): UUID {
-       // Save domain entity
-       val order = OrderEntity(/* ... */)
-       val saved = orderRepository.save(order)
-       
-       // Create outbox record
-       val outbox = OutboxMessage(
-           aggregateId = saved.id!!,
-           aggregateType = "Order",
-           eventType = "OrderCreated",
-           payload = payload,
-           status = OutboxStatus.PENDING,
-           occurredAt = Instant.now()
-       )
-       outboxRepository.save(outbox)
-       
-       return saved.id!!
-   }
-   ```
+The `OutboxMessage` entity in `common-outbox-relay` defines the structure for storing events:
 
-3. **Debezium Connectors**: Each service has a dedicated Debezium connector configuration that monitors the `outbox` table and routes events to appropriate Kafka topics based on `aggregate_type`.
+```kotlin
+@Entity
+@Table(name = "outbox")
+open class OutboxMessage(
+    @Column(name = "aggregate_id", nullable = false)
+    val aggregateId: String,
+    @Column(name = "aggregate_type", nullable = false)
+    val aggregateType: String,
+    @Column(name = "event_type", nullable = false)
+    val eventType: String,
+    @Column(name = "payload", nullable = false, columnDefinition = "TEXT")
+    val payload: String,
+    @Column(name = "headers", columnDefinition = "TEXT")
+    val headers: String? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    var status: OutboxStatus = OutboxStatus.PENDING,
+    @Column(name = "occurred_at", nullable = false)
+    val occurredAt: Instant = Instant.now(),
+    @Column(name = "published_at")
+    var publishedAt: Instant? = null,
+) {
+    @Id
+    @GeneratedValue
+    @UuidGenerator
+    var id: UUID? = null
+        protected set
 
-4. **Polling Relay (Fallback)**: A polling relay mechanism is available as a fallback when Debezium cannot be used. This mechanism periodically polls the outbox table and publishes events to Kafka.
+    @Version
+    @Column(name = "version", nullable = false)
+    var version: Long = 0
+        private set
+}
 
-### Debezium Connector Configuration
+enum class OutboxStatus {
+    PENDING,
+    SENT,
+    FAILED,
+}
+```
 
-Each service has a Debezium connector configuration file in `infra/debezium/connectors/`. For example, the orders service connector:
+#### 2. Outbox Table Schema
+
+Each service's database contains an `outbox` table defined in Flyway migrations:
+
+```sql
+CREATE TABLE IF NOT EXISTS public.outbox (
+  id UUID PRIMARY KEY,
+  aggregate_type TEXT NOT NULL,
+  aggregate_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  headers TEXT NULL,
+  status TEXT NOT NULL DEFAULT 'PENDING',
+  occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  published_at TIMESTAMP WITH TIME ZONE NULL,
+  version BIGINT NOT NULL DEFAULT 0
+);
+```
+
+#### 3. How Services Use the Outbox Pattern
+
+In the `orders-service`, when handling a `CreateOrderCommand`:
+
+```kotlin
+@Transactional
+fun handle(command: CreateOrderCommand): UUID {
+    validate(command)
+    val occurredAt = Instant.now()
+
+    // Save domain entity
+    val order = OrderEntity(/* ... */)
+    val saved = orderRepository.save(order)
+
+    // Create outbox record
+    val event = OrderCreatedEvent.newBuilder()
+        .setEventId(UUID.randomUUID())
+        .setAggregateId(saved.id!!)
+        .setOccurredAt(occurredAt)
+        .setPayload(serializePayload(saved.id!!, command))
+        .build()
+
+    val payload = encodeEvent(event)
+
+    val outbox = OutboxMessage(
+        aggregateId = saved.id!!.toString(),
+        aggregateType = "Order",
+        eventType = "OrderCreated",
+        payload = payload,
+        headers = null,
+        status = OutboxStatus.PENDING,
+        occurredAt = occurredAt,
+    )
+    outboxRepository.save(outbox)
+
+    // Rest of the method...
+    return saved.id!!
+}
+```
+
+This ensures that both the domain data and the event are persisted atomically within the same transaction.
+
+### Debezium Implementation (Primary Approach)
+
+The Debezium connectors are configured with the Outbox Event Router SMT to process outbox table changes:
 
 ```json
 {
@@ -431,39 +515,249 @@ Each service has a Debezium connector configuration file in `infra/debezium/conn
 }
 ```
 
-### Event Flow
+When an outbox record is inserted into the database:
+1. Debezium captures the change through PostgreSQL's logical replication
+2. The Outbox Event Router transforms the change into a Kafka message
+3. The message is routed to a topic based on the `aggregate_type` (e.g., "Order" → "outbox.Order")
+4. The message is published to Kafka with the `aggregate_id` as the key
 
-1. **Domain Operation**: A service performs a domain operation within a database transaction.
-2. **Outbox Insertion**: As part of the transaction, an entry is inserted into the `outbox` table.
-3. **Debezium Capture**: Debezium captures the change to the `outbox` table through PostgreSQL's logical replication.
-4. **Event Routing**: The Outbox Event Router SMT transforms the database change into a Kafka message and routes it to the appropriate topic based on `aggregate_type`.
-5. **Kafka Publication**: The transformed event is published to the appropriate Kafka topic.
-6. **Consumer Processing**: Downstream services consume the event and process it accordingly.
+### Polling Relay Implementation (Fallback Approach)
 
-### Fallback Mechanism - Polling Relay
+The polling relay is implemented in the `common-outbox-relay` module and provides both scheduled and on-demand processing:
 
-In environments where Debezium cannot be used, the polling relay mechanism can be enabled:
+#### Scheduled Processing
 
-1. **Configuration**: Set `outbox.relay.enabled=true` in the service configuration.
-2. **Processing**: A scheduled processor runs every 5 seconds to check for pending messages in the outbox table.
-3. **Publication**: Pending messages are published to Kafka using the same transactional guarantees.
+The `ScheduledOutboxProcessor` runs every 5 seconds to check for pending messages:
 
-The polling relay also provides REST endpoints for manual processing and replay:
-- `POST /api/outbox/process` - Process all pending messages
-- `POST /api/outbox/replay/{messageId}` - Replay a specific message
-- `POST /api/outbox/replay-range?startTime=<start>&endTime=<end>` - Replay messages in a time range
+```kotlin
+@Component
+class ScheduledOutboxProcessor(
+    private val outboxRelayService: OutboxRelayService,
+    meterRegistry: MeterRegistry,
+) {
+    private val logger = LoggerFactory.getLogger(ScheduledOutboxProcessor::class.java)
+    private val pendingMessagesGauge = AtomicLong(0)
 
-### Benefits of This Approach
+    init {
+        Gauge
+            .builder("outbox.pending.messages", pendingMessagesGauge) { it.toDouble() }
+            .description("Number of pending outbox messages awaiting processing")
+            .register(meterRegistry)
+    }
 
-1. **Atomicity**: Domain data changes and event publications occur within the same transaction.
-2. **Consistency**: Eliminates dual-write problems and ensures data consistency.
-3. **Exactly-Once Semantics**: Events are published exactly once to Kafka.
-4. **Low Latency**: Near real-time event propagation through Debezium.
-5. **Fault Tolerance**: Fallback mechanism available when Debezium is not accessible.
+    @Scheduled(fixedDelay = 5000, initialDelay = 10000)
+    fun processPendingMessages() {
+        try {
+            logger.debug("Scheduled outbox processing starting...")
+            val processedCount = outboxRelayService.processPendingMessages()
+            logger.debug("Scheduled outbox processing completed. Processed $processedCount messages")
+
+            // Update the gauge with current pending count
+            val pendingCount = outboxRelayService.getPendingMessageCount()
+            pendingMessagesGauge.set(pendingCount)
+        } catch (e: Exception) {
+            logger.error("Error during scheduled outbox processing", e)
+        }
+    }
+}
+```
+
+#### Outbox Relay Service
+
+The `OutboxRelayService` processes messages in batches:
+
+```kotlin
+@Service
+class OutboxRelayService(
+    private val outboxRepository: OutboxRepository,
+    private val kafkaTemplate: KafkaTemplate<String, Any>,
+    private val transactionTemplate: TransactionTemplate,
+    private val kafkaTransactionManager: KafkaTransactionManager<String, Any>,
+    private val metricsService: OutboxMetricsService,
+) {
+    private val logger = LoggerFactory.getLogger(OutboxRelayService::class.java)
+    private val batchSize = 100
+
+    @Transactional
+    fun processPendingMessages(): Int {
+        logger.info("Starting outbox relay processing")
+
+        var processedCount = 0
+        var hasMoreMessages = true
+
+        while (hasMoreMessages) {
+            val pendingMessages =
+                outboxRepository.findByStatusOrderByOccurredAtAsc(
+                    OutboxStatus.PENDING,
+                    PageRequest.of(0, batchSize),
+                )
+
+            if (pendingMessages.isEmpty()) {
+                hasMoreMessages = false
+                continue
+            }
+
+            logger.info("Processing batch of ${pendingMessages.size} pending outbox messages")
+
+            pendingMessages.forEach { message ->
+                try {
+                    val startTime = System.currentTimeMillis()
+                    processMessage(message)
+                    val endTime = System.currentTimeMillis()
+
+                    metricsService.recordProcessedMessage()
+                    metricsService.recordEndToEndLatency(endTime - startTime)
+                    processedCount++
+                } catch (e: Exception) {
+                    logger.error("Failed to process outbox message with id: ${message.id}", e)
+                    markMessageAsFailed(message)
+                    metricsService.recordFailedMessage()
+                }
+            }
+
+            // If we got less than batch size, there are no more messages
+            if (pendingMessages.size < batchSize) {
+                hasMoreMessages = false
+            }
+        }
+
+        // Update pending count metric
+        updatePendingMessageCountMetric()
+
+        logger.info("Finished outbox relay processing. Processed $processedCount messages")
+        return processedCount
+    }
+
+    private fun processMessage(message: OutboxMessage) {
+        try {
+            // Determine the topic based on the aggregate type or event type
+            val topic = determineTopic(message)
+
+            // Extract key from the message if available, otherwise use aggregate ID
+            val key = extractKey(message) ?: message.aggregateId
+
+            // Convert payload to the appropriate object or keep as string
+            val payload = convertPayload(message)
+
+            // Send message within Kafka transaction
+            val sendStartTime = System.currentTimeMillis()
+            kafkaTemplate.executeInTransaction { operations ->
+                operations.send(topic, key, payload)
+                logger.debug("Sent message to topic $topic with key $key")
+                true
+            }
+            val sendEndTime = System.currentTimeMillis()
+
+            metricsService.recordRelayLatency(sendEndTime - sendStartTime)
+
+            // Mark message as sent in the database
+            markMessageAsSent(message)
+        } catch (e: Exception) {
+            logger.error("Failed to process outbox message with id: ${message.id}", e)
+            markMessageAsFailed(message)
+            metricsService.recordFailedMessage()
+            throw e
+        }
+    }
+
+    // Other methods...
+}
+```
+
+#### REST API Endpoints
+
+The relay also provides REST endpoints for manual processing:
+
+```kotlin
+@RestController
+@RequestMapping("/api/outbox")
+class OutboxController(
+    private val outboxRelayService: OutboxRelayService,
+) {
+    @PostMapping("/process")
+    fun processPendingMessages(): ResponseEntity<Map<String, Any>> {
+        val processedCount = outboxRelayService.processPendingMessages()
+        return ResponseEntity.ok(
+            mapOf(
+                "processedCount" to processedCount,
+                "message" to "Processed $processedCount pending messages",
+            ),
+        )
+    }
+
+    @PostMapping("/replay/{messageId}")
+    fun replayMessage(
+        @PathVariable messageId: String,
+    ): ResponseEntity<Map<String, Any>> {
+        val success = outboxRelayService.replayMessage(messageId)
+        return if (success) {
+            ResponseEntity.ok(
+                mapOf(
+                    "message" to "Successfully replayed message $messageId",
+                ),
+            )
+        } else {
+            ResponseEntity.badRequest().body(
+                mapOf(
+                    "error" to "Failed to replay message $messageId",
+                ),
+            )
+        }
+    }
+
+    // Other endpoints...
+}
+```
+
+### Kafka Configuration
+
+The Kafka configuration in `common-kafka` ensures proper transactional behavior:
+
+```kotlin
+@Configuration
+class KafkaProducerConfig {
+    companion object {
+        private const val MAX_IN_FLIGHT_REQUESTS = 5
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ProducerFactory::class)
+    fun producerFactory(kafkaProperties: KafkaProperties): ProducerFactory<String, Any> {
+        val props = kafkaProperties.buildProducerProperties()
+        props.putIfAbsent(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java)
+        props.putIfAbsent(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer::class.java)
+        props[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] = true
+        props[ProducerConfig.ACKS_CONFIG] = "all"
+        props[ProducerConfig.RETRIES_CONFIG] = Integer.MAX_VALUE
+        props[ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION] = MAX_IN_FLIGHT_REQUESTS
+
+        val transactionIdPrefix =
+            kafkaProperties.producer.transactionIdPrefix?.takeIf { it.isNotBlank() } ?: "payments-tx-"
+
+        return DefaultKafkaProducerFactory<String, Any>(props).apply {
+            setTransactionIdPrefix(transactionIdPrefix)
+        }
+    }
+    
+    // Other beans...
+}
+```
+
+### Key Features
+
+1. **Exactly-Once Semantics**: Achieved through Kafka transactions and Debezium's Outbox Event Router
+2. **High Availability**: The polling relay serves as a fallback when Debezium is unavailable
+3. **Monitoring**: Metrics collection for pending messages, processed messages, and failures
+4. **Replay Capability**: Ability to replay specific messages for recovery scenarios
+5. **Idempotency**: Consumers can check a processed events table to avoid duplicate processing
+6. **Flexible Routing**: Events are routed based on aggregate type to appropriate Kafka topics
 
 ### Best Practices
 
 1. **Event Design**: Events should be designed to be immutable and backward compatible.
-2. **Idempotency**: Consumers should be designed to handle duplicate events idempotently.
+2. **Idempotency**: Consumers should be designed to handle duplicate events idempotently by checking a processed events table.
 3. **Monitoring**: Monitor outbox table depth and Debezium connector lag to ensure healthy operation.
 4. **Error Handling**: Implement proper error handling and dead letter queues for event processing failures.
+5. **Configuration**: Enable the polling relay with `outbox.relay.enabled=true` when Debezium is not available.
+
+This implementation provides a robust mechanism for ensuring that database changes and event publications occur atomically, which is critical for maintaining data consistency in a distributed microservices architecture.

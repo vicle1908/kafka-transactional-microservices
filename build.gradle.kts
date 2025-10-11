@@ -351,10 +351,10 @@ tasks.register<JavaExec>("detektChanged") {
             "--config", project.file("config/detekt/detekt.yml").absolutePath,
             "--build-upon-default-config",
             "--parallel",
-                "--excludes",
-                "**/build/**,**/build/generated/**," +
-                    "**/build/generated-sources/**,**/buildSrc/build/generated-sources/**",
-                "--report", "txt:${reportsDir.resolve("detekt-changed.txt").absolutePath}",
+            "--excludes",
+            "**/build/**,**/build/generated/**," +
+                "**/build/generated-sources/**,**/buildSrc/build/generated-sources/**",
+            "--report", "txt:${reportsDir.resolve("detekt-changed.txt").absolutePath}",
             "--report", "sarif:${reportsDir.resolve("detekt-changed.sarif").absolutePath}",
         )
         val baselineFile = project.file("config/detekt/baseline.xml")
@@ -383,14 +383,14 @@ tasks.register("preCommitCheck") {
 tasks.register("installGitHooks") {
     group = "build setup"
     description = "Install Git hooks for pre-commit and pre-push checks"
-    
+
     doLast {
         val gitHooksDir = File(project.rootDir, ".git/hooks")
         if (!gitHooksDir.exists()) {
             logger.warn("Git hooks directory not found. Make sure you're in a Git repository.")
             return@doLast
         }
-        
+
         // Create pre-commit hook
         val preCommitHook = File(gitHooksDir, "pre-commit")
         preCommitHook.writeText(
@@ -425,10 +425,10 @@ tasks.register("installGitHooks") {
             """
                 .trimIndent()
         )
-        
+
         // Make pre-commit hook executable
         preCommitHook.setExecutable(true)
-        
+
         // Create pre-push hook
         val prePushHook = File(gitHooksDir, "pre-push")
         prePushHook.writeText(
@@ -452,10 +452,10 @@ tasks.register("installGitHooks") {
             """
                 .trimIndent()
         )
-        
+
         // Make pre-push hook executable
         prePushHook.setExecutable(true)
-        
+
         logger.lifecycle("Git hooks installed successfully!")
         logger.lifecycle("Pre-commit hook: Runs ktlintFormat, ktlintCheck, detektChanged (staged files)")
         logger.lifecycle("Pre-push hook: Runs clean check detektAll ktlintCheck versionCheck schemaCompatibilityCheck")
