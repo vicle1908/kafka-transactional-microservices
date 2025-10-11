@@ -5,6 +5,7 @@ import com.example.inventory.domain.InventoryReservationEntity
 import com.example.inventory.domain.InventoryReservationRepository
 import com.example.inventory.domain.InventoryReservationStatus
 import com.example.inventory.domain.InventoryStockRepository
+import com.example.observability.StructuredLogger
 import com.example.outbox.entity.OutboxMessage
 import com.example.outbox.entity.OutboxStatus
 import com.example.outbox.repository.OutboxRepository
@@ -20,6 +21,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.avro.io.EncoderFactory
 import org.apache.avro.specific.SpecificDatumWriter
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.ByteArrayOutputStream
@@ -34,15 +36,30 @@ class InventoryService(
     private val outboxRepository: OutboxRepository,
     private val sagaStateService: SagaStateService,
     private val sagaMetrics: SagaMetricsRecorder,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
+    private val logger = StructuredLogger.getLogger(InventoryService::class.java)
+
     @Transactional
+    @Suppress("LongMethod")
     fun reserve(command: ReserveInventoryCommand): UUID {
+        logger.info(
+            "Reserving inventory",
+            "orderId" to command.orderId,
+            "sku" to command.sku,
+            "quantity" to command.quantity,
+        )
         validate(command)
         val occurredAt = Instant.now()
 
         val stock =
             stockRepository.lockBySku(command.sku)
                 ?: throw IllegalStateException("Stock not configured for sku=${command.sku}")
+        logger.info(
+            "Reserving stock",
+            "sku" to command.sku,
+            "quantity" to command.quantity,
+        )
         stock.reserve(command.quantity)
 
         val reservation =
@@ -56,6 +73,12 @@ class InventoryService(
             )
         val saved = reservationRepository.save(reservation)
         stockRepository.save(stock)
+
+        logger.info(
+            "Inventory reservation saved",
+            "reservationId" to saved.id,
+            "orderId" to command.orderId,
+        )
 
         val event =
             InventoryReservedEvent
@@ -80,6 +103,16 @@ class InventoryService(
             )
         outboxRepository.save(outbox)
 
+        logger.info(
+            "Outbox message created for inventory reservation",
+            "reservationId" to saved.id,
+            "orderId" to command.orderId,
+        )
+
+        // Publish stock change event for after-commit eviction
+        eventPublisher.publishEvent(InventoryStockChangedEvent(command.sku))
+        logger.debug("Stock change event published", "sku" to command.sku)
+
         sagaStateService.transitionByCorrelation(
             sagaType = SagaNames.ORDER_FULFILLMENT,
             correlationId = command.orderId.toString(),
@@ -99,14 +132,26 @@ class InventoryService(
             state = SagaStatus.IN_PROGRESS,
         )
 
+        logger.info(
+            "Inventory reservation completed",
+            "reservationId" to saved.id,
+            "orderId" to command.orderId,
+        )
+
         return saved.id!!
     }
 
     @Transactional
+    @Suppress("LongMethod")
     fun release(
         orderId: UUID,
         reason: String?,
     ) {
+        logger.info(
+            "Releasing inventory reservations",
+            "orderId" to orderId,
+            "reason" to reason,
+        )
         val occurredAt = Instant.now()
 
         val reservations = reservationRepository.findAllByOrderId(orderId)
@@ -114,9 +159,20 @@ class InventoryService(
             val stock =
                 stockRepository.lockBySku(reservation.sku)
                     ?: throw IllegalStateException("Stock not configured for sku=${reservation.sku}")
+            logger.info(
+                "Releasing stock",
+                "sku" to reservation.sku,
+                "quantity" to reservation.quantity,
+            )
             stock.release(reservation.quantity)
             stockRepository.save(stock)
         }
+
+        logger.info(
+            "Inventory released",
+            "orderId" to orderId,
+            "reservationCount" to reservations.size,
+        )
 
         sagaStateService.transitionByCorrelation(
             sagaType = SagaNames.ORDER_FULFILLMENT,
@@ -150,6 +206,17 @@ class InventoryService(
             step = SagaStepNames.INVENTORY_RELEASED,
             state = SagaStatus.FAILED,
         )
+
+        logger.info(
+            "Inventory release saga updated",
+            "orderId" to orderId,
+        )
+
+        // Publish stock change events for all impacted SKUs
+        reservations.map { it.sku }.toSet().forEach { sku ->
+            eventPublisher.publishEvent(InventoryStockChangedEvent(sku))
+            logger.debug("Stock change event published", "sku" to sku)
+        }
     }
 
     private fun validate(command: ReserveInventoryCommand) {

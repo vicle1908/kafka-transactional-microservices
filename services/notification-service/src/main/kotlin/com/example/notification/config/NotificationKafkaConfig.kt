@@ -12,15 +12,14 @@ import org.springframework.kafka.transaction.KafkaTransactionManager
 @Configuration
 class NotificationKafkaConfig {
     @Bean
-    fun kafkaTransactionManager(
-        producerFactory: ProducerFactory<String, String>,
-    ): KafkaTransactionManager<String, String> = KafkaTransactionManager(producerFactory)
+    fun kafkaTransactionManager(producerFactory: ProducerFactory<String, Any>): KafkaTransactionManager<String, Any> =
+        KafkaTransactionManager(producerFactory)
 
-    @Bean
-    fun kafkaListenerContainerFactory(
+    @Bean(name = ["notificationKafkaListenerContainerFactory"])
+    fun notificationKafkaListenerContainerFactory(
         configurer: ConcurrentKafkaListenerContainerFactoryConfigurer,
-        consumerFactory: ConsumerFactory<String, String>,
-        transactionManager: KafkaTransactionManager<String, String>,
+        consumerFactory: ConsumerFactory<*, *>,
+        transactionManager: KafkaTransactionManager<String, Any>,
     ): ConcurrentKafkaListenerContainerFactory<String, String> {
         @Suppress("UNCHECKED_CAST")
         val factory =

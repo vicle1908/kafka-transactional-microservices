@@ -13,11 +13,14 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.kafka)
     implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
     implementation(libs.postgresql)
     implementation(libs.kotlin.reflect)
     implementation(libs.avro)
     implementation(libs.kotlinx.serialization.json)
     implementation(project(":common-proto"))
+    implementation(libs.spring.boot.starter.cache)
+    implementation(libs.spring.boot.starter.data.redis)
     implementation(project(":common-temporal"))
     implementation(libs.grpc.netty)
     runtimeOnly(libs.grpc.netty.shaded)
@@ -30,6 +33,7 @@ dependencies {
     implementation(project(":common-sagas"))
     implementation(project(":common-outbox-relay"))
     implementation(project(":common-observability"))
+    implementation(project(":common-cache"))
 
     // Testing dependencies
     testImplementation(libs.spring.boot.starter.test)

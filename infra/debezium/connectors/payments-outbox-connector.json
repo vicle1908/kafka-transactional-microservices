@@ -28,6 +28,8 @@
     "internal.key.converter": "org.apache.kafka.connect.json.JsonConverter",
     "internal.value.converter": "org.apache.kafka.connect.json.JsonConverter",
     "internal.key.converter.schemas.enable": "false",
-    "internal.value.converter.schemas.enable": "false"
+    "internal.value.converter.schemas.enable": "false",
+    "topic.creation.default.partitions": "1",
+    "topic.creation.default.replication.factor": "1"
   }
 }

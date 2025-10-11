@@ -4,6 +4,8 @@ import com.example.inventory.InventoryServiceApplication
 import com.example.inventory.domain.InventoryReservationRepository
 import com.example.inventory.domain.InventoryStockEntity
 import com.example.inventory.domain.InventoryStockRepository
+import com.example.inventory.testsupport.InventoryContainers
+import com.example.inventory.testsupport.InventoryFlywayTestConfig
 import com.example.outbox.repository.OutboxRepository
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository
@@ -24,8 +26,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.annotation.DirtiesContext
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import java.time.Instant
 import java.util.UUID
 
@@ -34,7 +38,7 @@ import java.util.UUID
     properties = ["spring.kafka.listener.auto-startup=false"],
 )
 @ActiveProfiles("test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@Import(InventoryFlywayTestConfig::class)
 class InventoryServiceTest {
     @Autowired
     private lateinit var inventoryService: InventoryService
@@ -58,6 +62,14 @@ class InventoryServiceTest {
     private lateinit var meterRegistry: MeterRegistry
 
     private val json = Json { ignoreUnknownKeys = false }
+
+    companion object {
+        @JvmStatic
+        @DynamicPropertySource
+        fun registerDataSource(registry: DynamicPropertyRegistry) {
+            InventoryContainers.registerPostgres(registry)
+        }
+    }
 
     @BeforeEach
     fun cleanRepositories() {

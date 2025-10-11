@@ -7,12 +7,9 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class TemporalObservabilityConfig {
+    @Bean
+    fun workflowServiceStubsOptions(): WorkflowServiceStubsOptions = WorkflowServiceStubsOptions.newBuilder().build()
 
     @Bean
-    fun workflowServiceStubsOptions(): WorkflowServiceStubsOptions =
-        WorkflowServiceStubsOptions.newBuilder().build()
-
-    @Bean
-    fun workerFactoryOptions(): WorkerFactoryOptions =
-        WorkerFactoryOptions.newBuilder().build()
+    fun workerFactoryOptions(): WorkerFactoryOptions = WorkerFactoryOptions.newBuilder().build()
 }

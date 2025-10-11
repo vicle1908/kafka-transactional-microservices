@@ -9,14 +9,17 @@
 | Reporting Service (future) | BigQuery / Data Lake | Batch reads from Kafka sink | Eventually consistent | Optional downstream consumer for analytics. |
 
 ## Data Flow Highlights
+
 - Order Service initiates saga; Payment and Inventory react via Kafka events.
 - Debezium outbox streams database changes to Kafka topics per bounded context.
 - Notification Service relies on Redis for throttling and uses CDN for asset delivery.
 
 ## Integration Constraints
+
 - Legacy ERP sync required weekly; handled via separate integration service (out of scope for MVP).
 - External PSP mandates idempotency keys within 48 hours.
 
 ## Next Steps
+
 - Validate data retention requirements with compliance team.
 - Identify PII fields for masking/tokenization before publishing events.

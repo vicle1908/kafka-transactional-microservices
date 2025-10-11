@@ -4,7 +4,7 @@ This document provides a template for creating new services in the Kafka Transac
 
 ## Project Structure
 
-```
+```text
 service-name/
 ├── build.gradle.kts
 ├── src/
@@ -210,8 +210,15 @@ class ServiceService(
     private val serviceRepository: ServiceRepository,
     private val outboxRepository: OutboxRepository
 ) {
+    private val logger = StructuredLogger.getLogger(ServiceService::class.java)
     
     fun createService(createServiceRequest: CreateServiceRequest): ServiceEntity {
+        logger.info(
+            "Creating new service",
+            "requestName" to createServiceRequest.name,
+            "requestDescription" to createServiceRequest.description
+        )
+        
         // Business logic
         val entity = ServiceEntity(
             name = createServiceRequest.name,
@@ -220,6 +227,12 @@ class ServiceService(
         
         // Save entity
         val savedEntity = serviceRepository.save(entity)
+        
+        logger.info(
+            "Service entity saved",
+            "entityId" to savedEntity.id,
+            "entityName" to savedEntity.name
+        )
         
         // Create outbox message for events
         val outboxMessage = OutboxMessage(
@@ -233,19 +246,51 @@ class ServiceService(
         
         outboxRepository.save(outboxMessage)
         
+        logger.info(
+            "Outbox message created",
+            "aggregateId" to outboxMessage.aggregateId,
+            "eventType" to outboxMessage.eventType
+        )
+        
         return savedEntity
     }
     
     @Transactional(readOnly = true)
     fun getServiceById(serviceId: UUID): ServiceEntity? {
-        return serviceRepository.findById(serviceId).orElse(null)
+        logger.debug(
+            "Retrieving service by ID",
+            "serviceId" to serviceId
+        )
+        
+        val entity = serviceRepository.findById(serviceId).orElse(null)
+        
+        if (entity != null) {
+            logger.debug(
+                "Service found",
+                "serviceId" to serviceId,
+                "serviceName" to entity.name
+            )
+        } else {
+            logger.warn(
+                "Service not found",
+                "serviceId" to serviceId
+            )
+        }
+        
+        return entity
     }
 }
 ```
 
+Remember to add the import for StructuredLogger:
+
+```kotlin
+import com.example.observability.StructuredLogger
+```
+
 ### Controllers
 
-Controllers should handle HTTP requests and delegate to services:
+Controllers should handle HTTP requests and delegate to services. Include structured logging to capture request/response information:
 
 ```kotlin
 @RestController
@@ -254,9 +299,16 @@ Controllers should handle HTTP requests and delegate to services:
 class ServiceController(
     private val serviceService: ServiceService
 ) {
+    private val logger = StructuredLogger.getLogger(ServiceController::class.java)
     
     @PostMapping
     fun createService(@RequestBody @Valid createServiceRequest: CreateServiceRequestDto): ResponseEntity<ServiceResponse> {
+        logger.info(
+            "Received create service request",
+            "requestName" to createServiceRequest.name,
+            "requestDescription" to createServiceRequest.description
+        )
+        
         val request = CreateServiceRequest(
             name = createServiceRequest.name,
             description = createServiceRequest.description
@@ -265,18 +317,47 @@ class ServiceController(
         val entity = serviceService.createService(request)
         val response = ServiceResponse.fromEntity(entity)
         
+        logger.info(
+            "Service created successfully",
+            "entityId" to entity.id,
+            "entityName" to entity.name
+        )
+        
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
     
     @GetMapping("/{serviceId}")
     fun getServiceById(@PathVariable serviceId: UUID): ResponseEntity<ServiceResponse> {
-        val entity = serviceService.getServiceById(serviceId)
-            ?: return ResponseEntity.notFound().build()
+        logger.debug(
+            "Received get service request",
+            "serviceId" to serviceId
+        )
         
-        val response = ServiceResponse.fromEntity(entity)
-        return ResponseEntity.ok(response)
+        val entity = serviceService.getServiceById(serviceId)
+        
+        if (entity != null) {
+            val response = ServiceResponse.fromEntity(entity)
+            logger.debug(
+                "Service retrieved successfully", 
+                "serviceId" to serviceId,
+                "entityName" to entity.name
+            )
+            return ResponseEntity.ok(response)
+        } else {
+            logger.warn(
+                "Service not found",
+                "serviceId" to serviceId
+            )
+            return ResponseEntity.notFound().build()
+        }
     }
 }
+```
+
+Remember to add the import for StructuredLogger:
+
+```kotlin
+import com.example.observability.StructuredLogger
 ```
 
 ### Kafka Listeners
@@ -288,7 +369,7 @@ Kafka listeners should handle events from other services:
 class ServiceEventListener(
     private val serviceService: ServiceService
 ) {
-    private val logger = LoggerFactory.getLogger(ServiceEventListener::class.java)
+    private val logger = StructuredLogger.getLogger(ServiceEventListener::class.java)
     
     @KafkaListener(topics = ["orders"], groupId = "service-name")
     fun handleOrderEvent(
@@ -297,18 +378,33 @@ class ServiceEventListener(
         @Header(KafkaHeaders.RECEIVED_TIMESTAMP) timestamp: Long
     ) {
         try {
-            logger.info("Received order event: $payload")
+            logger.info(
+                "Received order event",
+                "payload" to payload,
+                "key" to key,
+                "timestamp" to timestamp
+            )
             // Process the event
         } catch (e: Exception) {
-            logger.error("Failed to process order event: $payload", e)
+            logger.error(
+                "Failed to process order event",
+                "payload" to payload,
+                "key" to key,
+                "timestamp" to timestamp,
+                "error" to e.message
+            )
         }
     }
 }
 ```
 
-## Configuration
+Remember to add the import for StructuredLogger:
 
-### Application Configuration
+```kotlin
+import com.example.observability.StructuredLogger
+```
+
+## Configuration (env-driven; prefer placeholders with safe fallbacks)
 
 ```yaml
 server:
@@ -320,9 +416,9 @@ spring:
   application:
     name: service-name
   datasource:
-    url: jdbc:postgresql://localhost:5432/servicename
-    username: app
-    password: app
+    url: ${SERVICE_DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${SERVICE_DB_NAME:servicename}}
+    username: ${DB_USER:app}
+    password: ${DB_PASSWORD:app}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -339,29 +435,22 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    properties:
+      schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       enable-idempotence: true
       acks: all
       retries: 2147483647
-      transaction-id-prefix: service-tx-
+      transaction-id-prefix: ${SERVICE_KAFKA_TX_PREFIX:service-tx-}
     consumer:
       group-id: service-name
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       enable-auto-commit: false
       isolation-level: read_committed
-  transaction:
-    default-timeout: 30
-
-logging:
-  level:
-    com.example: INFO
-    org.springframework: INFO
-    org.hibernate: WARN
-    org.apache.kafka: INFO
 
 management:
   endpoints:
@@ -372,6 +461,8 @@ management:
     health:
       show-details: always
 ```
+
+See `docs/dev/env-reference.md` for the canonical list of variables and defaults. Copy `.env.example` to `.env` and use direnv or `source scripts/export-env.sh` to load them locally.
 
 ## Database Migrations
 

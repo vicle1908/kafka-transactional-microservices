@@ -15,7 +15,7 @@ import java.util.UUID
 @Suppress("LongParameterList")
 @Entity
 @Table(name = "outbox")
-class OutboxMessage(
+open class OutboxMessage(
     @Column(name = "aggregate_id", nullable = false)
     val aggregateId: String,
     @Column(name = "aggregate_type", nullable = false)
@@ -62,6 +62,17 @@ class OutboxMessage(
     }
 
     override fun hashCode(): Int = id?.hashCode() ?: 0
+
+    constructor() : this(
+        aggregateId = "unknown",
+        aggregateType = "unknown",
+        eventType = "unknown",
+        payload = "{}",
+        headers = null,
+        status = OutboxStatus.PENDING,
+        occurredAt = Instant.EPOCH,
+        publishedAt = null,
+    )
 }
 
 enum class OutboxStatus {

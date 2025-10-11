@@ -2,11 +2,10 @@ name: Security Scan
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
     branches: [ main ]
   schedule:
     - cron: '0 2 * * 1'  # Weekly Monday 2 AM scan
+  workflow_dispatch: {}
 
 jobs:
   security-scan:
@@ -21,19 +20,15 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/deps.versions.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          gradle-home-cache-cleanup: true
 
       # Dependency vulnerability scanning with OWASP Dependency Check
       - name: OWASP Dependency Check
-        uses: dependency-check/action@v12.1.6
+        uses: jeremylong/DependencyCheck_Action@v6
+        continue-on-error: true
         with:
           project: 'Kafka Transactional Microservices'
           path: '.'

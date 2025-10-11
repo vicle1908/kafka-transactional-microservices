@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.spring.kafka)
     implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
     implementation(libs.postgresql)
     implementation(libs.kotlin.reflect)
     implementation(libs.avro)
@@ -28,6 +29,7 @@ dependencies {
     implementation(project(":common-sagas"))
     implementation(project(":common-outbox-relay"))
     implementation(project(":common-observability"))
+    implementation(project(":common-cache"))
 
     // Testing dependencies
     testImplementation(libs.spring.boot.starter.test)
@@ -35,7 +37,6 @@ dependencies {
     testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.kafka)
-    testImplementation(libs.h2)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.temporal.testing)
 

@@ -78,16 +78,37 @@
 
 ## Dev Workflow & Commands
 
-- Bootstrap infra with `docker compose up -d kafka postgres schema-registry debezium` (compose file will live under `infra/compose.yml`).
+- Bootstrap infra with env: `cp infra/.env.example infra/.env && docker compose --env-file infra/.env -f infra/compose.yml up -d`.
 - Run all service tests with `./gradlew clean test` and integration tests with `./gradlew :service-* :integration-test` once modules exist.
 - When you need to run shell commands, prefer the `execute_terminal_command` MCP tool so terminal interactions stay auditable and repeatable.
-- Start a sample service locally via `./gradlew :orders-service:bootRun` (ensure `.env` contains broker/bootstrap endpoints and DB creds).
+- Start a sample service locally via `./gradlew :orders-service:bootRun` after loading `.env` (copy from `.env.example` and use direnv or `source scripts/export-env.sh`).
 - Use `./gradlew flywayMigrate` to apply schema migrations before running services.
 - Lint/format with `./gradlew spotlessApply` (add plugin in the build once codebase is scaffolded).
 - When editing or inspecting code via JetBrains MCP server, open the target file with `open_file_in_editor` before running `get_file_problems` so IntelliJ indexes the file, then review errors/warnings ahead of Gradle tasks.
 - Export Avro schemas with `./gradlew exportAvroSchemas` and publish via `scripts/schema-publish.sh` before enabling Debezium connectors; registry compatibility is enforced in CI.
 - Service modules live under `services/<name>` (e.g., `orders-service`) and follow the hexagonal template documented in `docs/dev/service-template.md`; depend on shared modules for events, Kafka, persistence, sagas, and observability.
 - Launch disposable CLI subagents with `clink` when fresh context windows are needed for specific tasks. Currently, only claude, codex, and gemini are supported by clink due to a hardcoded allowlist. For tasks requiring other CLIs like qwen, temporarily remap an existing client or use the CLI directly.
+
+## Database & CDC Setup (Standardized Docker Compose)
+
+- Local baseline uses PostgreSQL 18 with logical decoding enabled; Compose mounts init scripts under `infra/postgres/init` to create service DBs (orders, payments, inventory, notification) and `pgcrypto`.
+- Schema is codified with Flyway migrations per service (`services/*/src/main/resources/db/migration`). A dedicated Compose profile `migrate` runs four one-off Flyway containers:
+  - flyway-orders, flyway-payments, flyway-inventory, flyway-notification
+  - Apply with: `make migrate` (after `make up`)
+- Kafka 4.1 (KRaft) is used locally. Healthcheck calls the bundled broker tool. Auto-create topics is disabled for parity with production; the internal `__consumer_offsets` topic is created explicitly.
+- Debezium Connect 3.3 is the CDC default:
+  - Connectors: orders, payments, inventory, notification
+  - `topic.prefix` set per DB, `snapshot.mode=no_data` (3.x compliant)
+  - Outbox Event Router routes to `outbox.${routedByValue}` with key=`aggregate_id`
+  - `transforms.outbox.table.fields.additional.placement` excludes payload to avoid schema duplication
+  - Connector-side `topic.creation.default.*` is enabled for local dev so outbox topics are created when producing
+- Outbox table is “lean Debezium-only” (no status column). If enabling a custom outbox relay, add `status` via a migration.
+- Standardized workflows:
+  - Start local stack: `make up`
+  - Run migrations: `make migrate`
+  - Register/refresh connectors: `make connectors`
+  - Smoke test (insert outbox row → read from Kafka): `make smoke`
+  - Tear down: `make down` (or `make clean-volumes` for a full reset)
 
 ## Documentation & Context Best Practices
 
@@ -153,6 +174,76 @@
 - Run `./gradlew schemaCompatibilityCheck` to validate Avro schemas before publishing; CI executes the task alongside `check`.
 - Observability-first: enforce OpenTelemetry instrumentation, centralize logs/metrics, and maintain dashboards/alerts for latency, errors, saturation, and business SLIs.
 - Resilience engineering: run regular chaos drills (broker restarts, mesh failures, cache outages) and record findings in runbooks.
+
+## Enhanced Observability Implementation
+
+### Current State
+
+The project has a partial observability implementation with the following components:
+
+1. **Metrics Collection**:
+   - Prometheus for metrics collection
+   - Micrometer for instrumentation in services
+   - Grafana for dashboard visualization
+   - Pre-built dashboards for various components
+
+2. **Distributed Tracing**:
+   - OpenTelemetry SDK integrated in services through the `common-observability` module
+   - Additional OpenTelemetry dependencies in `common-temporal`
+   - Dedicated OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`) with configuration details
+   - Configuration for OpenTelemetry collector and Jaeger backend documented
+
+3. **Health Checks**:
+   - Health check implementations for services
+   - Dedicated health check runbook
+
+### Missing Components
+
+1. **Centralized Logging**:
+   - Currently missing centralized logging solution
+   - Need to implement ELK (Elasticsearch, Logstash, Kibana) stack for:
+     - Centralized log aggregation from all services
+     - Advanced log search capabilities
+     - Real-time log visualization
+     - Structured log analysis
+
+2. **Complete OpenTelemetry Implementation**:
+   - Missing OpenTelemetry collector configuration in docker-compose
+   - Missing Jaeger backend for trace visualization
+   - Need to implement tracing across service boundaries, especially with Kafka
+
+### Implementation Plan
+
+#### Phase 1: Implement Centralized Logging with ELK Stack
+
+1. Add ELK stack components to `infra/compose.yml`:
+   - Elasticsearch for log storage
+   - Logstash for log processing
+   - Kibana for log visualization
+
+2. Configure log shipping from services:
+   - Add Filebeat to each service container
+   - Configure log format standardization
+
+3. Create Kibana dashboards for:
+   - Service logs
+   - Error patterns
+   - Performance logs
+
+#### Phase 2: Complete OpenTelemetry Implementation
+
+1. Add OpenTelemetry Collector and Jaeger to `infra/compose.yml`
+2. Implement cross-service tracing:
+   - HTTP request tracing
+   - Kafka message tracing
+   - Database query tracing
+3. Enhance existing dashboards with trace data
+
+#### Phase 3: Documentation Updates
+
+1. Update `AGENTS.md` with complete observability setup
+2. Create implementation guides for new components
+3. Update existing runbooks with new integration points
 
 ## Data Consistency Workflow
 
@@ -223,6 +314,8 @@
 - Add the `schemaCompatibilityCheck` Gradle task and wire it into CI pipelines alongside ktlint/detekt and the future SpotBugs/ErrorProne gates.
 - Finish API gateway, Debezium connector, and polyglot datastore runbooks referenced in Operational Automation; link them from `docs/runbooks/`.
 - Implement OpenTelemetry tracing across all services and create observability dashboards
+- Implement centralized logging with ELK stack
+- Complete OpenTelemetry implementation with collector and Jaeger backend
 
 ## Documentation Hygiene
 
@@ -241,6 +334,7 @@
 - Evaluate OpenTelemetry tracing implementations and best practices for distributed systems
 - Research advanced Grafana dashboard patterns for microservices monitoring
 - Investigate service mesh integration with observability platforms.
+- Research ELK stack implementation for centralized logging in microservices
 - Key references:
     - Spring Kafka exactly-once & transactions documentation.
     - Spring Cloud Stream blog on EOS patterns with JPA transactions.
@@ -249,4 +343,5 @@
     - Debezium outbox pattern implementations (anarefin/high-availability-debezium, YunusEmreNalbant/transactional-outbox-pattern-with-debezium, chfern/debezium-outbox-pgkafka).
     - OpenTelemetry documentation and implementation guides.
     - Istio service mesh documentation for ambient mode.
+    - ELK stack documentation for centralized logging.
 

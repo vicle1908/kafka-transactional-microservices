@@ -4,6 +4,7 @@ import com.example.events.avro.NotificationSentEvent
 import com.example.notification.domain.NotificationEntity
 import com.example.notification.domain.NotificationRepository
 import com.example.notification.domain.NotificationStatus
+import com.example.observability.StructuredLogger
 import com.example.outbox.entity.OutboxMessage
 import com.example.outbox.entity.OutboxStatus
 import com.example.outbox.repository.OutboxRepository
@@ -36,8 +37,16 @@ class NotificationService(
     private val sagaStateService: SagaStateService,
     private val sagaMetrics: SagaMetricsRecorder,
 ) {
+    private val logger = StructuredLogger.getLogger(NotificationService::class.java)
+
     @Transactional(noRollbackFor = [NotificationDispatchException::class])
     fun send(command: SendNotificationCommand): UUID {
+        logger.info(
+            "Sending notification",
+            "orderId" to command.orderId,
+            "channel" to command.channel,
+            "template" to command.template,
+        )
         validate(command)
         val occurredAt = Instant.now()
 
@@ -53,7 +62,18 @@ class NotificationService(
             )
         val saved = notificationRepository.save(notification)
 
+        logger.info(
+            "Notification entity saved",
+            "notificationId" to saved.id,
+            "orderId" to command.orderId,
+        )
+
         return try {
+            logger.info(
+                "Dispatching notification",
+                "notificationId" to saved.id,
+                "channel" to command.channel,
+            )
             notificationRetryTemplate.execute<Unit, NotificationDispatchException> {
                 notificationSenderRegistry.dispatch(command)
             }
@@ -61,6 +81,12 @@ class NotificationService(
             val completedAt = Instant.now()
             notification.markSent(completedAt)
             notificationRepository.save(notification)
+
+            logger.info(
+                "Notification sent successfully",
+                "notificationId" to saved.id,
+                "orderId" to command.orderId,
+            )
 
             val event =
                 NotificationSentEvent
@@ -104,11 +130,24 @@ class NotificationService(
                 state = SagaStatus.COMPLETED,
             )
 
+            logger.info(
+                "Notification saga updated",
+                "notificationId" to saved.id,
+                "orderId" to command.orderId,
+            )
+
             saved.id!!
         } catch (ex: NotificationDispatchException) {
             val failedAt = Instant.now()
             notification.markFailed(failedAt, ex.message)
             notificationRepository.save(notification)
+
+            logger.error(
+                "Notification dispatch failed",
+                "notificationId" to saved.id,
+                "orderId" to command.orderId,
+                "error" to ex.message,
+            )
             sagaStateService.transitionByCorrelation(
                 sagaType = SagaNames.ORDER_FULFILLMENT,
                 correlationId = command.orderId.toString(),
@@ -123,6 +162,7 @@ class NotificationService(
                         occurredAt = failedAt,
                     ),
             )
+
             sagaMetrics.recordStep(
                 sagaType = SagaNames.ORDER_FULFILLMENT,
                 step = SagaStepNames.NOTIFICATION_FAILED,

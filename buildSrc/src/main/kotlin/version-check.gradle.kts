@@ -24,10 +24,28 @@ tasks.register("versionCheck") {
     doLast {
         // Check Java version
         val javaVersion = System.getProperty("java.version")
-        if (!javaVersion.startsWith(expectedVersions["java"]!!)) {
-            logger.warn("Expected Java version ${expectedVersions["java"]}, but found $javaVersion")
-        } else {
-            logger.lifecycle("Java version check passed: $javaVersion")
+        val currentMajor = javaVersion.split(".")[0].toIntOrNull() ?: 0
+        val expectedMajor = expectedVersions["java"]!!.toInt()
+        
+        when {
+            currentMajor >= expectedMajor -> {
+                logger.lifecycle("Java version check passed: $javaVersion (target: ${expectedVersions["java"]})") 
+            }
+            currentMajor >= 23 -> {
+                logger.warn(
+                    "Using Java $currentMajor - recommended upgrade to " +
+                        "${expectedVersions["java"]} for optimal performance"
+                )
+            }
+            currentMajor >= 21 -> {
+                logger.warn(
+                    "Using fallback Java $currentMajor - consider upgrading to " +
+                        "${expectedVersions["java"]} (supported fallback)"
+                )
+            }
+            else -> {
+                throw GradleException("Expected to run with at least Java 21, but current version is $currentMajor")
+            }
         }
         
         // This would normally check other versions from the version catalog

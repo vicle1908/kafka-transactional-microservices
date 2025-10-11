@@ -1,34 +1,41 @@
-check# Debezium Connector Configuration Guide
+# Debezium Connector Configuration Guide
 
 ## Overview
+
 This document explains the different Debezium connector configurations available in the project and when to use each one.
 
 ## Connector Types
 
 ### Generic Configuration (`infra/debezium/outbox-connector.json`)
+
 This configuration is a template that can be used as a starting point for any service. It uses the `BinaryDataConverter` with Avro serialization, which is the recommended approach for production deployments.
 
 **Key Features:**
+
 - Uses `io.debezium.converters.spi.BinaryDataConverter` with Avro delegate
 - Direct Avro serialization without intermediate JSON conversion
 - Better performance for high-throughput scenarios
 - More compact message format
 
 **When to Use:**
+
 - For services that require high throughput
 - When you want to use the latest Debezium features
 - As a template for creating service-specific configurations
 
 ### Service-Specific Configurations (`infra/debezium/connectors/*.json`)
+
 These configurations are tailored for specific services (orders, payments, inventory). They use `StringConverter` for keys and `AvroConverter` for values.
 
 **Key Features:**
+
 - Uses `org.apache.kafka.connect.storage.StringConverter` for keys
 - Uses `io.confluent.connect.avro.AvroConverter` for values
 - More explicit field mapping in the Outbox Event Router configuration
 - Includes internal converter configurations for Connect
 
 **When to Use:**
+
 - For specific services in production
 - When you need more control over field mappings
 - When following the exact patterns established in the project
@@ -47,11 +54,13 @@ These configurations are tailored for specific services (orders, payments, inven
 ## Field Mapping Differences
 
 ### Generic Configuration
+
 ```json
 "transforms.outbox.table.fields.additional.placement": "headers:header,aggregateId:header"
 ```
 
 ### Service-Specific Configuration
+
 ```json
 "transforms.outbox.table.fields.additional.placement": "id:envelope:eventId,aggregate_id:envelope:aggregateId,aggregate_type:envelope:aggregateType,event_type:envelope:eventType,payload:envelope:payload,headers:envelope:headers"
 ```

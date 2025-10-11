@@ -2,6 +2,7 @@ package com.example.notification.application
 
 import com.example.events.avro.InventoryReservedEvent
 import com.example.notification.NotificationServiceApplication
+import com.example.notification.NotificationServiceIntegrationTestSupport
 import com.example.notification.domain.NotificationRepository
 import com.example.notification.domain.NotificationStatus
 import com.example.notification.domain.ProcessedEventRepository
@@ -39,9 +40,9 @@ import java.util.UUID
     topics = [NotificationListener.INVENTORY_RESERVED_TOPIC],
 )
 @ActiveProfiles("test")
-class NotificationListenerTest {
+class NotificationListenerTest : NotificationServiceIntegrationTestSupport() {
     @Autowired
-    private lateinit var kafkaTemplate: KafkaTemplate<String, String>
+    private lateinit var kafkaTemplate: KafkaTemplate<String, Any>
 
     @Autowired
     private lateinit var notificationRepository: NotificationRepository

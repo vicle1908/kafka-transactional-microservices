@@ -7,6 +7,7 @@ This document provides operational guidance for the Istio service mesh implement
 ## Architecture
 
 The service mesh is implemented using Istio in ambient mode, which provides:
+
 - Zero-trust security model
 - Traffic management capabilities
 - Enhanced observability
@@ -17,6 +18,7 @@ The service mesh is implemented using Istio in ambient mode, which provides:
 ### Control Plane
 
 The Istio control plane consists of:
+
 - **Istiod**: Manages service discovery, configuration, and certificate management
 - **Ingress Gateway**: Handles north-south traffic into the mesh
 - **Egress Gateway**: Manages outbound traffic from the mesh
@@ -24,6 +26,7 @@ The Istio control plane consists of:
 ### Data Plane
 
 In ambient mode, the data plane uses:
+
 - **Ztunnel**: Node-level proxy that handles L4 authorization and encryption
 - **Waypoint Proxies**: Handle L7 processing for specific workloads
 
@@ -129,6 +132,7 @@ spec:
 ### Deploying Services to the Mesh
 
 1. Add the Istio sidecar injection label to the namespace:
+
    ```bash
    kubectl label namespace <namespace> istio-injection=enabled
    ```
@@ -136,6 +140,7 @@ spec:
 2. Deploy services as usual; Istio will automatically inject the sidecar proxy
 
 3. Verify that services are properly injected:
+
    ```bash
    kubectl get pods -n <namespace>
    ```
@@ -144,11 +149,13 @@ spec:
 
 1. Create VirtualService and DestinationRule resources
 2. Apply the configuration using kubectl:
+
    ```bash
    kubectl apply -f traffic-policy.yaml
    ```
 
 3. Verify the configuration:
+
    ```bash
    kubectl get virtualservices
    kubectl get destinationrules
@@ -157,6 +164,7 @@ spec:
 ### Enabling Mutual TLS
 
 1. Create a PeerAuthentication policy:
+
    ```yaml
    apiVersion: security.istio.io/v1beta1
    kind: PeerAuthentication
@@ -168,6 +176,7 @@ spec:
    ```
 
 2. Apply the policy:
+
    ```bash
    kubectl apply -f peerauthentication.yaml
    ```
@@ -175,6 +184,7 @@ spec:
 ### Configuring Authorization Policies
 
 1. Create an AuthorizationPolicy resource:
+
    ```yaml
    apiVersion: security.istio.io/v1beta1
    kind: AuthorizationPolicy
@@ -196,6 +206,7 @@ spec:
    ```
 
 2. Apply the policy:
+
    ```bash
    kubectl apply -f authorizationpolicy.yaml
    ```
@@ -223,6 +234,7 @@ Several Grafana dashboards are available for monitoring the service mesh:
 ### Distributed Tracing
 
 Jaeger is used for distributed tracing:
+
 - Traces are automatically generated for service-to-service calls
 - Spans include information about request processing time
 - Traces can be filtered and searched based on various criteria
@@ -236,11 +248,13 @@ Jaeger is used for distributed tracing:
 **Symptoms**: Services in the mesh cannot communicate with each other.
 
 **Possible Causes**:
+
 1. Incorrect service discovery configuration
 2. Network policies blocking traffic
 3. Misconfigured authorization policies
 
 **Solutions**:
+
 1. Verify that services are properly registered in the service mesh
 2. Check network policies to ensure traffic is allowed
 3. Review authorization policies for proper configuration
@@ -250,11 +264,13 @@ Jaeger is used for distributed tracing:
 **Symptoms**: Increased response times for service-to-service calls.
 
 **Possible Causes**:
+
 1. Network congestion
 2. Resource constraints on proxy sidecars
 3. Misconfigured retry policies
 
 **Solutions**:
+
 1. Monitor network usage and identify bottlenecks
 2. Check resource usage on proxy sidecars
 3. Review and adjust retry policies
@@ -264,11 +280,13 @@ Jaeger is used for distributed tracing:
 **Symptoms**: Connection failures with TLS-related error messages.
 
 **Possible Causes**:
+
 1. Incorrect certificate configuration
 2. Mismatched TLS modes between services
 3. Expired certificates
 
 **Solutions**:
+
 1. Verify certificate configuration in PeerAuthentication policies
 2. Ensure consistent TLS modes across services
 3. Rotate expired certificates
@@ -305,6 +323,7 @@ istioctl pc cluster <pod-name> -o json
 ### Mutual TLS
 
 Mutual TLS is enabled by default:
+
 - All service-to-service communication is encrypted
 - Certificates are automatically rotated
 - Strong cryptographic standards are used
@@ -312,6 +331,7 @@ Mutual TLS is enabled by default:
 ### Authorization
 
 Authorization policies provide fine-grained access control:
+
 - Requests can be allowed or denied based on various criteria
 - Policies can be applied at namespace or workload level
 - Audit logging is available for security-sensitive operations
@@ -319,6 +339,7 @@ Authorization policies provide fine-grained access control:
 ### Network Security
 
 Network policies restrict traffic flow:
+
 - Only authorized traffic is allowed between services
 - Egress traffic can be controlled and monitored
 - Network segmentation is enforced
@@ -344,6 +365,7 @@ Network policies restrict traffic flow:
 ### Horizontal Scaling
 
 The service mesh can be scaled horizontally by:
+
 1. Increasing the number of Istiod replicas
 2. Scaling ingress and egress gateways
 3. Ensuring proper load distribution
@@ -359,6 +381,7 @@ The service mesh can be scaled horizontally by:
 ### API Gateway
 
 The service mesh integrates with the API Gateway:
+
 - Traffic management policies are applied at both gateway and mesh levels
 - Mutual TLS is used for secure communication between gateway and services
 - Observability data is collected from both gateway and mesh
@@ -366,6 +389,7 @@ The service mesh integrates with the API Gateway:
 ### Monitoring Stack
 
 The service mesh integrates with the monitoring stack:
+
 - Metrics are exported to Prometheus
 - Logs are shipped to the centralized logging system
 - Traces are sent to the distributed tracing system
@@ -374,7 +398,7 @@ The service mesh integrates with the monitoring stack:
 
 ### Deployment Process
 
-1. **Configuration Changes**: 
+1. **Configuration Changes**:
    - Make changes in a development environment first
    - Test thoroughly before promoting to production
    - Use blue-green deployment to minimize downtime

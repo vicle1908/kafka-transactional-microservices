@@ -6,6 +6,8 @@ import com.example.inventory.domain.InventoryReservationRepository
 import com.example.inventory.domain.InventoryStockEntity
 import com.example.inventory.domain.InventoryStockRepository
 import com.example.inventory.domain.ProcessedEventRepository
+import com.example.inventory.testsupport.InventoryContainers
+import com.example.inventory.testsupport.InventoryFlywayTestConfig
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateRepository
 import com.example.saga.SagaStateService
@@ -26,10 +28,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.kafka.core.KafkaTemplate
-import org.springframework.kafka.test.condition.EmbeddedKafkaCondition
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -42,6 +46,7 @@ import java.util.UUID
     bootstrapServersProperty = "spring.kafka.bootstrap-servers",
 )
 @ActiveProfiles("test")
+@Import(InventoryFlywayTestConfig::class)
 class InventoryReservationListenerTest {
     @Autowired
     private lateinit var kafkaTemplate: KafkaTemplate<String, Any>
@@ -63,6 +68,13 @@ class InventoryReservationListenerTest {
 
     private val json = Json { ignoreUnknownKeys = false }
 
+    companion object {
+        @JvmStatic
+        @DynamicPropertySource
+        fun registerProperties(registry: DynamicPropertyRegistry) {
+            InventoryContainers.registerPostgres(registry)
+        }
+    }
 
     @BeforeEach
     fun cleanRepositories() {

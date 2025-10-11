@@ -1,5 +1,6 @@
 package com.example.payments.application
 
+import com.example.observability.StructuredLogger
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
@@ -15,29 +16,67 @@ import java.util.UUID
 class PaymentOrderListener(
     private val paymentService: PaymentService,
 ) {
+    private val logger = StructuredLogger.getLogger(PaymentOrderListener::class.java)
     private val json = Json { ignoreUnknownKeys = false }
 
     @KafkaListener(topics = [ORDERS_CREATED_TOPIC], containerFactory = "kafkaListenerContainerFactory")
     @Transactional
+    @Suppress("TooGenericExceptionCaught")
     fun onOrderCreated(record: ConsumerRecord<String, String>) {
-        val event = OrderCreatedEventCodec.decode(record.value())
-        val eventId = UUID.fromString(event.eventId.toString())
+        try {
+            logger.info(
+                "Received order created event",
+                "topic" to record.topic(),
+                "partition" to record.partition(),
+                "offset" to record.offset(),
+                "key" to record.key(),
+                "value" to record.value(),
+            )
 
-        val payload = json.parseToJsonElement(event.payload).jsonObject
-        val itemCount = payload["itemCount"]!!.jsonPrimitive.int
-        val amount = amountFromItemCount(itemCount)
+            val event = OrderCreatedEventCodec.decode(record.value())
+            val eventId = UUID.fromString(event.eventId.toString())
 
-        paymentService.handle(
-            ProcessPaymentCommand(
-                orderId = UUID.fromString(event.aggregateId.toString()),
-                amount = amount,
-                eventId = eventId,
-                metadata =
-                    mapOf(
-                        "itemCount" to itemCount.toString(),
-                    ),
-            ),
-        )
+            val payload = json.parseToJsonElement(event.payload).jsonObject
+            val itemCount = payload["itemCount"]!!.jsonPrimitive.int
+            val amount = amountFromItemCount(itemCount)
+
+            logger.info(
+                "Processing payment for order",
+                "orderId" to event.aggregateId.toString(),
+                "itemCount" to itemCount,
+                "amount" to amount,
+                "eventId" to eventId,
+            )
+
+            paymentService.handle(
+                ProcessPaymentCommand(
+                    orderId = UUID.fromString(event.aggregateId.toString()),
+                    amount = amount,
+                    eventId = eventId,
+                    metadata =
+                        mapOf(
+                            "itemCount" to itemCount.toString(),
+                        ),
+                ),
+            )
+
+            logger.info(
+                "Payment processed successfully",
+                "orderId" to event.aggregateId.toString(),
+                "eventId" to eventId,
+            )
+        } catch (e: RuntimeException) {
+            logger.error(
+                "Failed to process order created event",
+                "topic" to record.topic(),
+                "partition" to record.partition(),
+                "offset" to record.offset(),
+                "key" to record.key(),
+                "error" to e.message,
+                "stackTrace" to e.stackTraceToString(),
+            )
+            throw e
+        }
     }
 
     private fun amountFromItemCount(itemCount: Int): BigDecimal =

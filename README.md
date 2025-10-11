@@ -32,17 +32,30 @@ This project provides a reference implementation of Kafka-backed microservices t
 
 ### Running the services
 
-To start the infrastructure (Kafka, PostgreSQL, Debezium, etc.), run:
+First, create local env files (examples provided) and load them:
 
 ```bash
-docker-compose -f infra/compose.yml up -d
+cp .env.example .env
+cp infra/.env.example infra/.env
+# Recommended
+brew install direnv && direnv allow
+# Or fallback per-shell
+source scripts/export-env.sh
 ```
 
-To run a specific service, for example `orders-service`:
+Start the infrastructure (Kafka, PostgreSQL, Debezium, etc.) with env:
+
+```bash
+docker compose --env-file infra/.env -f infra/compose.yml up -d
+```
+
+Run a specific service, for example `orders-service` (config resolves from .env):
 
 ```bash
 ./gradlew :services:orders-service:bootRun
 ```
+
+For the complete list of supported variables and defaults, see `docs/dev/env-reference.md`.
 
 ## License
 

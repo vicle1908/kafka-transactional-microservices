@@ -1,9 +1,9 @@
-version: "3.9"
-
 services:
   kafka:
     image: ${KAFKA_IMAGE:-apache/kafka:4.1.0}
     container_name: kafka
+    profiles:
+      - local
     ports:
       - "${KAFKA_PLAINTEXT_PORT:-9092}:9092"
       - "${KAFKA_CONTROLLER_PORT:-9093}:9093"
@@ -34,6 +34,8 @@ services:
   schema-registry:
     image: ${SCHEMA_REGISTRY_IMAGE:-confluentinc/cp-schema-registry:7.7.0}
     container_name: schema-registry
+    profiles:
+      - local
     depends_on:
       - kafka
     environment:
@@ -51,6 +53,9 @@ services:
   postgres:
     image: ${POSTGRES_IMAGE:-postgres:18}
     container_name: postgres
+    profiles:
+      - local
+      - migrate
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
@@ -67,7 +72,7 @@ services:
       - "5432:5432"
     volumes:
       - pg-data:/var/lib/postgresql/data
-      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB_ORDERS:-orders}"]
       interval: 10s
@@ -77,6 +82,8 @@ services:
   redis:
     image: ${REDIS_IMAGE:-redis:7-alpine}
     container_name: redis
+    profiles:
+      - local
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
@@ -90,6 +97,8 @@ services:
   debezium-connect:
     image: ${DEBEZIUM_IMAGE:-quay.io/debezium/connect:3.3}
     container_name: debezium-connect
+    profiles:
+      - local
     depends_on:
       - kafka
       - schema-registry
@@ -115,6 +124,8 @@ services:
   akhq:
     image: ${AKHQ_IMAGE:-tchiotludo/akhq:0.24.0}
     container_name: akhq
+    profiles:
+      - local
     depends_on:
       - kafka
       - schema-registry
@@ -134,7 +145,149 @@ services:
       timeout: 5s
       retries: 5
 
+  flyway-orders:
+    image: flyway/flyway:latest
+    container_name: flyway-orders
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../services/orders-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/orders -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+
+  flyway-payments:
+    image: flyway/flyway:latest
+    container_name: flyway-payments
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../services/payments-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/payments -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+
+  flyway-inventory:
+    image: flyway/flyway:latest
+    container_name: flyway-inventory
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../services/inventory-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/inventory -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+
+  flyway-notification:
+    image: flyway/flyway:latest
+    container_name: flyway-notification
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../services/notification-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/notification -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+
+  # ELK Stack for centralized logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: logstash
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=["http://elasticsearch:9200"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/usr/share/filebeat/logs:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      logstash:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "filebeat", "test", "config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # OpenTelemetry Collector and Jaeger for distributed tracing
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.92.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "13133:13133" # Health check
+    depends_on:
+      - jaeger
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    container_name: jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # gRPC server
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
 volumes:
   kafka-data:
   pg-data:
   redis-data:
+  elasticsearch-data:

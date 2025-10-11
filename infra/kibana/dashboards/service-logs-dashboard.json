@@ -1,0 +1,46 @@
+{
+  "title": "Service Logs Dashboard",
+  "description": "Dashboard for monitoring structured logs from microservices",
+  "panels": [
+    {
+      "id": "service-log-levels",
+      "type": "visualization",
+      "title": "Log Levels Distribution",
+      "description": "Distribution of different log levels across services"
+    },
+    {
+      "id": "error-rate-over-time",
+      "type": "visualization", 
+      "title": "Error Rate Over Time",
+      "description": "Rate of error logs over time"
+    },
+    {
+      "id": "top-services-by-log-volume",
+      "type": "visualization",
+      "title": "Top Services by Log Volume",
+      "description": "Services generating the most logs"
+    },
+    {
+      "id": "recent-log-entries",
+      "type": "visualization",
+      "title": "Recent Log Entries",
+      "description": "Most recent log entries from all services"
+    }
+  ],
+  "filters": [
+    {
+      "field": "service",
+      "label": "Service",
+      "type": "terms"
+    },
+    {
+      "field": "log.level",
+      "label": "Log Level", 
+      "type": "terms"
+    }
+  ],
+  "timeRange": {
+    "from": "now-24h",
+    "to": "now"
+  }
+}

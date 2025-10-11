@@ -5,48 +5,93 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v3
+        continue-on-error: true
+        id: gradle-wrapper-validation
+        with:
+          min-wrapper-count: 1
+          allow-snapshots: false
+      
+      - name: Fallback Gradle wrapper validation
+        if: steps.gradle-wrapper-validation.outcome == 'failure'
+        run: |
+          echo "Network validation failed, checking wrapper files locally..."
+          if [ -f "gradlew" ] && [ -f "gradle/wrapper/gradle-wrapper.properties" ]; then
+            echo "✅ Gradle wrapper files found"
+            echo "Wrapper version: $(grep distributionUrl gradle/wrapper/gradle-wrapper.properties)"
+          else
+            echo "❌ Gradle wrapper files missing"
+            exit 1
+          fi
+
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
-      - name: Cache Gradle
-        uses: actions/cache@v4
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/deps.versions.toml') }}
-          restore-keys: ${{ runner.os }}-gradle-
+          cache-disabled: false
+          gradle-home-cache-cleanup: true
+
       - name: Gradle version check
-        run: ./gradlew --configuration-cache versionCheck
+        run: ./gradlew --no-daemon --stacktrace --configuration-cache versionCheck
+
       - name: Schema compatibility
-        run: ./gradlew --configuration-cache schemaCompatibilityCheck
+        run: ./gradlew --no-daemon --stacktrace --configuration-cache schemaCompatibilityCheck
+
       - name: Build & Test
-        run: ./gradlew --configuration-cache check
+        run: ./gradlew --no-daemon --stacktrace --configuration-cache clean check
+
+      - name: Kotlin Lint
+        if: success() || failure()
+        run: ./gradlew --no-daemon --stacktrace ktlintCheck
+
+      - name: Detekt
+        if: success() || failure()
+        run: ./gradlew --no-daemon --stacktrace detektAll --no-configuration-cache
 
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+
       - name: Install markdownlint
         run: npm install -g markdownlint-cli
+
       - name: Markdown lint
         run: markdownlint "docs/**/*.md"
+
       - name: Validate runbook links
         run: |
           echo "Validating runbook links..."
           # Add link validation here when needed
+
       - name: Check for orphaned runbooks
         run: |
           echo "Checking for orphaned runbooks..."

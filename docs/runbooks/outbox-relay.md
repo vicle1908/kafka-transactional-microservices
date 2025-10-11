@@ -18,6 +18,7 @@ The Debezium approach uses the Outbox Event Router Single Message Transform to a
 The Debezium connector monitors the `outbox` table and uses the Outbox Event Router SMT to transform database change events into business events.
 
 Key configuration elements:
+
 - `transforms.outbox.type`: `io.debezium.transforms.outbox.EventRouter`
 - `transforms.outbox.table.fields.additional.placement`: Maps outbox table columns to event fields
 - `value.converter`: `io.confluent.connect.avro.AvroConverter` for Avro schema serialization
@@ -25,6 +26,7 @@ Key configuration elements:
 #### Topics Routing
 
 Events are routed to topics based on the `aggregate_type` field:
+
 - Orders: `orders` topic
 - Payments: `payments` topic
 - Inventory: `inventory` topic
@@ -37,6 +39,7 @@ The custom polling relay is implemented in the `common-outbox-relay` module and 
 #### Architecture
 
 The polling relay consists of:
+
 1. `OutboxMessage` entity for representing outbox records
 2. `OutboxRepository` for database access
 3. `OutboxRelayService` for processing outbox messages
@@ -61,7 +64,7 @@ The system provides multiple ways to replay outbox messages for recovery, testin
 
 Services expose REST endpoints for manual replay operations:
 
-```
+```text
 POST /api/outbox/process
 Replay all pending messages
 
@@ -138,16 +141,19 @@ For large-scale replay operations, use the time-range approach to process messag
 ### Diagnostic Procedures
 
 1. **Check Outbox Table Contents**
+
    ```sql
    SELECT * FROM outbox WHERE status = 'PENDING' ORDER BY created_at ASC LIMIT 10;
    ```
 
 2. **Verify Kafka Topic Contents**
+
    ```bash
    kafka-console-consumer --bootstrap-server localhost:9092 --topic orders --from-beginning
    ```
 
 3. **Check Debezium Connector Status**
+
    ```bash
    curl http://localhost:8083/connectors/orders-outbox-connector/status
    ```
@@ -155,24 +161,28 @@ For large-scale replay operations, use the time-range approach to process messag
 ## Best Practices
 
 ### Message Design
+
 - Keep outbox messages small and focused
 - Use appropriate aggregate types for topic routing
 - Include sufficient context for downstream consumers
 - Validate message content before writing to outbox
 
 ### Error Handling
+
 - Implement comprehensive error handling in relay services
 - Use circuit breakers for external dependencies
 - Log detailed error information for troubleshooting
 - Implement dead letter queues for persistent failures
 
 ### Performance Optimization
+
 - Tune polling intervals based on message volume
 - Optimize database indexes for outbox queries
 - Monitor and adjust Kafka producer/consumer configurations
 - Use connection pooling for database access
 
 ### Security Considerations
+
 - Protect outbox table access with appropriate permissions
 - Encrypt sensitive data in outbox messages
 - Use secure communication channels for Kafka connections

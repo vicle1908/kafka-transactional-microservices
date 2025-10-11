@@ -60,6 +60,9 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    enable:
+      cache: true
 
 notification:
   retry:

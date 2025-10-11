@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.kafka)
     implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
     implementation(libs.postgresql)
     implementation(libs.kotlin.reflect)
     implementation(libs.avro)
@@ -25,6 +26,7 @@ dependencies {
     implementation(project(":common-sagas"))
     implementation(project(":common-outbox-relay"))
     implementation(project(":common-observability"))
+    implementation(project(":common-cache"))
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.testcontainers.junit.jupiter)

@@ -15,27 +15,8 @@ deny-licenses:
   - GPL-2.0
   - GPL-3.0
 
-# Allow only approved licenses
-allow-licenses:
-  - Apache-2.0
-  - MIT
-  - BSD-2-Clause
-  - BSD-3-Clause
-  - ISC
-  - CC-BY-4.0
-  - MPL-2.0
-
-# Deny dependencies with known vulnerabilities
-deny-identified-vulnerabilities: true
-
-# Warn about dependencies with moderate severity vulnerabilities
-warn-on-severity: moderate
-
-# Allow dependencies that are pending review
-allow-licenses-pending: false
-
-# Allow dependencies with pending vulnerabilities (for grace period)
-allow-vulnerabilities-pending: false
+# License allowlist removed to avoid conflict with deny-licenses.
+# Keep deny-licenses only to prevent conflicts with the action's schema.
 
 # Configuration for dependency groups
 dependency-groups:

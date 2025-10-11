@@ -5,7 +5,6 @@ import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import jakarta.persistence.Id
-import jakarta.persistence.Lob
 import jakarta.persistence.Table
 import jakarta.persistence.Version
 import java.time.Instant
@@ -25,8 +24,7 @@ open class SagaStateEntity(
     @Enumerated(EnumType.STRING)
     @Column(name = "state", nullable = false)
     private var state: SagaStatus,
-    @Lob
-    @Column(name = "data")
+    @Column(name = "data", columnDefinition = "TEXT")
     private var data: String?,
     @Column(name = "created_at", nullable = false)
     val createdAt: Instant,

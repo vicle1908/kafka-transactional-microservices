@@ -1,49 +1,63 @@
 # Phase 5 – Observability & Resilience
 
 ## Objectives
+
 - Instrument services for tracing, metrics, and logging aligned with platform standards.
 - Implement resilience patterns (retries, DLQs, chaos drills) and document runbooks.
 - Finalize operational automation for API gateway, Debezium connectors, and polyglot datastores.
 
 ## Deliverables
+
 - OpenTelemetry tracing configured end to end (HTTP + Kafka).
 - Grafana dashboards and alert rules for transactions, lag, DLQs, saga failures.
 - Completed runbooks: API gateway, Debezium connectors, polyglot datastore adapters.
 
 ## Task Board
-| ID | Task | Owner | Status | Notes |
-|----|------|-------|--------|-------|
-| P5.1 | Integrate OpenTelemetry SDK and propagate context headers | Platform Team | Completed | Implemented OpenTelemetry tracing configuration with context propagation across HTTP/Kafka boundaries; verified spans for service interactions. |
-| P5.2 | Configure Micrometer metrics exporters and dashboards | Platform Team | Completed | Implemented in `common-observability` module with Prometheus integration and Kafka client metrics. |
-| P5.3 | Implement retry/DLQ policies and chaos drills | DevOps Team | Completed | GitHub Actions workflow (`chaos-engineering.yml`) implementing broker restart, DB failover, mesh failure, and cache outage drills with monitoring and reporting. Document drill outcomes. |
-| P5.4 | Configure Temporal Micrometer metrics and OTel tracing | Platform Team | Completed | Export metrics to Prometheus and add tracing interceptor to workers. |
-| P5.5 | Create Grafana dashboard for Temporal metrics | Platform Team | Completed | Visualize workflow latency, activity failures, and retry rates. |
-| P5.6 | Author API gateway runbook (`docs/runbooks/api-gateway.md`) | Documentation Team | Completed | Cover routing, auth, rollout, rollback. Creating comprehensive documentation. |
-| P5.7 | Author Istio service mesh runbook (`docs/runbooks/service-mesh.md`) | Documentation Team | Completed | Include ambient mode rollout, traffic policy, troubleshooting. Creating comprehensive documentation. |
-| P5.8 | Author Debezium connector runbook (`docs/runbooks/debezium.md`) | Documentation Team | Completed | Include deployment automation and troubleshooting. Creating comprehensive documentation. |
-| P5.9 | Author polyglot datastore runbook (`docs/runbooks/polyglot-datastore.md`) | Documentation Team | Completed | Capture adapter-specific monitoring. Creating comprehensive documentation. |
-| P5.10 | Instrument CDN/edge metrics and dashboards | Platform Team | Completed | Monitor cache hit ratio, latency, error rates. |
-| P5.11 | Automate runbook validation checks in CI (link checker, lint) | DevOps Team | Completed | Use markdown linting scripts. |
+
+|| ID | Task | Owner | Status | Notes |
+||----|------|-------|--------|-------|
+|| P5.1 | Integrate OpenTelemetry SDK and propagate context headers | Platform Team | Completed | Implemented OpenTelemetry tracing configuration with context propagation across HTTP/Kafka boundaries; verified spans for service interactions. |
+|| P5.2 | Configure Micrometer metrics exporters and dashboards | Platform Team | Completed | Implemented in `common-observability` module with Prometheus integration and Kafka client metrics. |
+|| P5.3 | Implement retry/DLQ policies and chaos drills | DevOps Team | Completed | GitHub Actions workflow (`chaos-engineering.yml`) implementing broker restart, DB failover, mesh failure, and cache outage drills with monitoring and reporting. Document drill outcomes. |
+|| P5.4 | Configure Temporal Micrometer metrics and OTel tracing | Platform Team | Completed | Export metrics to Prometheus and add tracing interceptor to workers. |
+|| P5.5 | Create Grafana dashboard for Temporal metrics | Platform Team | Completed | Visualize workflow latency, activity failures, and retry rates. |
+|| P5.6 | Author API gateway runbook (`docs/runbooks/api-gateway.md`) | Documentation Team | Completed | Cover routing, auth, rollout, rollback. Creating comprehensive documentation. |
+|| P5.7 | Author Istio service mesh runbook (`docs/runbooks/service-mesh.md`) | Documentation Team | Completed | Include ambient mode rollout, traffic policy, troubleshooting. Creating comprehensive documentation. |
+|| P5.8 | Author Debezium connector runbook (`docs/runbooks/debezium.md`) | Documentation Team | Completed | Include deployment automation and troubleshooting. Creating comprehensive documentation. |
+|| P5.9 | Author polyglot datastore runbook (`docs/runbooks/polyglot-datastore.md`) | Documentation Team | Completed | Capture adapter-specific monitoring. Creating comprehensive documentation. |
+|| P5.10 | Instrument CDN/edge metrics and dashboards | Platform Team | Completed | Monitor cache hit ratio, latency, error rates. |
+|| P5.11 | Automate runbook validation checks in CI (link checker, lint) | DevOps Team | Completed | Use markdown linting scripts. |
+|| P5.12 | Implement Temporal workflows/activities pilot and worker wiring (moved from P4.7) | Platform Team | In Progress | `temporal-pilot` module exists with `OrderFulfillmentWorkflowImpl` and tracing interceptors; add Payments/Notification workers, wire ActivityImpl beans, and write `TestWorkflowEnvironment` tests. |
+|| P5.13 | Expand end-to-end and compensation tests across services (moved from P4.8) | Platform Team | Planned | Build e2e saga tests and compensation/retry paths; verify idempotency across DB/Kafka with Testcontainers. |
+|| P5.14 | Integrate external gRPC consumers for inventory reconciliation (moved from P4.10) | Platform Team | Planned | Hook consumer clients to `StockReconciliationService` and validate flows. |
+|| P5.DB1 | Commit per-service Flyway migrations (moved from P4.DB1) | Platform Team | Planned | Add migrations under `src/main/resources/db/migration` for each service, keeping current naming conventions. |
+|| P5.DB3 | Verify multi-DB compose + Debezium publishes outbox rows (moved from P4.DB3) | Platform Team | Planned | Create order and observe topics per connector; follow `docs/runbooks/debezium.md`. |
+|| P5.KAFKA1 | Align Notification Kafka listener container to `kafkaAwareTransactionManager` | Platform Team | Planned | Update `NotificationKafkaConfig` per `docs/dev/kafka-transaction-config.md`. |
 
 ## Research & References
+
 - OpenTelemetry instrumentation guides for Spring
 - Kafka resilience patterns and chaos engineering playbooks
 - Gateway operation best practices (Spring Cloud Gateway)
 
 ## Risks & Mitigations
+
 - **Monitoring gaps**: Run observability reviews with SRE/Ops.
 - **Runbook rot**: Schedule periodic audits via CI lint jobs.
 
 ## Dependencies
+
 - Service implementations from Phase 4.
 - Monitoring stack availability.
 
 ## Artifacts & Links
+
 - Observability configs (`config/observability/*`)
 - Runbooks (`docs/runbooks/*.md`)
 - Chaos drill reports (`docs/chaos/`)
 
 ## Progress Log
+
 - 2025-10-10 | Started implementing OpenTelemetry tracing across services.
 - 2025-10-10 | Began creating missing runbooks for API gateway, service mesh, Debezium, and polyglot datastores.
 - 2025-10-10 | Created Temporal observability runbook.
@@ -52,6 +66,7 @@
 - 2025-10-10 | Created Grafana dashboards for Temporal and CDN metrics.
 - 2025-10-10 | Added Temporal observability configuration.
 - 2025-10-10 | Enhanced CI workflow with comprehensive documentation validation.
+- 2025-10-10 | Imported follow-ups from Phase 4 into Phase 5 Task Board: P5.12 (Temporal workers), P5.13 (e2e/compensation tests), P5.14 (gRPC consumers), P5.DB1 (migrations), P5.DB3 (Debezium verification), P5.KAFKA1 (Kafka container alignment).
 
 ## Completed Tasks
 
@@ -136,28 +151,39 @@ We have created a complete set of operational runbooks covering all major system
 ## Work in Progress
 
 ### 1. OpenTelemetry Implementation
+
 - Integrating OpenTelemetry SDK across all microservices
 - Planning deployment of OpenTelemetry Collector and Jaeger backend
 - Implementing distributed tracing across service boundaries
 
+### 2. Centralized Logging Implementation
+
+- Planning deployment of ELK stack (Elasticsearch, Logstash, Kibana)
+- Implementing centralized log aggregation from all services
+- Creating dashboards for log analysis and visualization
+
 ## Benefits Achieved
 
 ### 1. Improved Operational Clarity
+
 - Complete set of runbooks for all system components
 - Standardized documentation format across all operational guides
 - Clear procedures for common operational tasks and troubleshooting
 
 ### 2. Enhanced Observability
+
 - Comprehensive monitoring coverage for all system components
 - Defined metrics and alerting for proactive issue detection
 - Better understanding of system performance and health
 
 ### 3. Better Knowledge Transfer
+
 - Detailed documentation enables faster onboarding of new team members
 - Standardized procedures reduce operational errors
 - Clear escalation paths for issue resolution
 
 ### 4. Automated Quality Assurance
+
 - Documentation validation integrated into CI/CD pipeline
 - Automated linting ensures consistent formatting
 - Reduced risk of documentation rot through automated checks
@@ -181,8 +207,14 @@ The completion of these observability tasks has significantly improved the opera
    - Deploy OpenTelemetry Collector and Jaeger backend
    - Implement end-to-end distributed tracing
 
+2. **Deploy ELK Stack for Centralized Logging**:
+   - Deploy Elasticsearch for log storage and indexing
+   - Configure Logstash for log processing and transformation
+   - Implement Kibana dashboards for log visualization
+   - Integrate Filebeat for log shipping from services
+
 ## Conclusion
 
-Phase 5 observability tasks have been largely completed, with only the final OpenTelemetry implementation remaining. The comprehensive set of runbooks and enhanced monitoring infrastructure provides a solid foundation for operating and maintaining the microservices platform. The integration of documentation validation into the CI/CD pipeline ensures that operational documentation remains accurate and up-to-date as the system evolves.
+Phase 5 observability tasks have been largely completed, with the final OpenTelemetry implementation and ELK stack deployment remaining. The comprehensive set of runbooks and enhanced monitoring infrastructure provides a solid foundation for operating and maintaining the microservices platform. The integration of documentation validation into the CI/CD pipeline ensures that operational documentation remains accurate and up-to-date as the system evolves.
 
 With these improvements, the platform achieves a high level of operational maturity, enabling reliable and efficient operation at scale.

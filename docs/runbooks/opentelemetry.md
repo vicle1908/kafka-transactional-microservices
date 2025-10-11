@@ -7,6 +7,7 @@ This document provides operational guidance for implementing and managing OpenTe
 ## Architecture
 
 The OpenTelemetry implementation includes:
+
 - **OpenTelemetry SDK**: Integrated into each microservice
 - **OpenTelemetry Collector**: Centralized agent for telemetry processing
 - **Jaeger**: Distributed tracing backend for trace storage and visualization
@@ -17,6 +18,7 @@ The OpenTelemetry implementation includes:
 ### OpenTelemetry SDK
 
 Each service includes the OpenTelemetry SDK with the following components:
+
 - Tracer provider for creating and managing spans
 - Propagators for context propagation across services
 - Exporters for sending telemetry data to the collector
@@ -24,6 +26,7 @@ Each service includes the OpenTelemetry SDK with the following components:
 ### OpenTelemetry Collector
 
 The collector is responsible for:
+
 - Receiving telemetry data from services
 - Processing and transforming telemetry data
 - Exporting data to backend systems (Jaeger, Prometheus)
@@ -31,6 +34,7 @@ The collector is responsible for:
 ### Jaeger
 
 Jaeger provides:
+
 - Trace storage and querying
 - UI for trace visualization
 - Trace analysis and debugging capabilities
@@ -194,6 +198,7 @@ Mono<PaymentResponse> response = webClient
 ### Grafana Dashboards
 
 Grafana dashboards are available for monitoring OpenTelemetry metrics:
+
 - Trace volume and latency by service
 - Error rates and success percentages
 - Resource usage of OpenTelemetry components
@@ -201,6 +206,7 @@ Grafana dashboards are available for monitoring OpenTelemetry metrics:
 ### Jaeger UI
 
 The Jaeger UI provides:
+
 - Trace search and filtering capabilities
 - Detailed trace visualization
 - Service dependency graphs
@@ -215,11 +221,13 @@ The Jaeger UI provides:
 **Symptoms**: Traces are not appearing in Jaeger UI.
 
 **Possible Causes**:
+
 1. Incorrect collector endpoint configuration
 2. Network connectivity issues
 3. Exporter misconfiguration
 
 **Solutions**:
+
 1. Verify collector endpoint configuration in services
 2. Check network connectivity between services and collector
 3. Review exporter configuration and logs
@@ -229,11 +237,13 @@ The Jaeger UI provides:
 **Symptoms**: Increased latency in service responses.
 
 **Possible Causes**:
+
 1. Over-instrumentation
 2. Collector performance issues
 3. Network latency
 
 **Solutions**:
+
 1. Review and optimize instrumentation
 2. Scale collector resources
 3. Investigate network issues
@@ -243,11 +253,13 @@ The Jaeger UI provides:
 **Symptoms**: Distributed traces are broken across service boundaries.
 
 **Possible Causes**:
+
 1. Missing context propagation in custom code
 2. Incorrect HTTP header handling
 3. Middleware interfering with headers
 
 **Solutions**:
+
 1. Ensure proper context propagation in custom code
 2. Verify HTTP header handling
 3. Review middleware configuration
@@ -319,6 +331,7 @@ curl http://prometheus:9090/api/v1/query?query=traces_span_duration_milliseconds
 ### Horizontal Scaling
 
 The OpenTelemetry system can be scaled horizontally by:
+
 1. Increasing the number of collector instances
 2. Load balancing traffic across collectors
 3. Scaling Jaeger components
@@ -334,6 +347,7 @@ The OpenTelemetry system can be scaled horizontally by:
 ### Service Mesh
 
 OpenTelemetry integrates with the Istio service mesh:
+
 - Both provide distributed tracing capabilities
 - Can be used together for enhanced observability
 - Trace context is propagated across both systems
@@ -341,6 +355,7 @@ OpenTelemetry integrates with the Istio service mesh:
 ### Monitoring Stack
 
 OpenTelemetry integrates with the existing monitoring stack:
+
 - Metrics are exported to Prometheus
 - Traces are sent to Jaeger
 - Logs can be integrated with centralized logging
@@ -348,6 +363,7 @@ OpenTelemetry integrates with the existing monitoring stack:
 ### CI/CD Pipeline
 
 OpenTelemetry instrumentation is part of the CI/CD pipeline:
+
 - Instrumentation is validated in automated tests
 - Configuration is checked in version control
 - Updates are deployed through standard processes
@@ -356,7 +372,7 @@ OpenTelemetry instrumentation is part of the CI/CD pipeline:
 
 ### Deployment Process
 
-1. **Configuration Changes**: 
+1. **Configuration Changes**:
    - Make changes in a development environment first
    - Test thoroughly before promoting to production
    - Use blue-green deployment to minimize downtime
