@@ -1,0 +1,34 @@
+# Gitleaks ignore file
+# Exclude build artifacts and generated files from scanning
+
+build/
+.gradle/
+target/
+node_modules/
+tmp/
+cache/
+generated/
+out/
+
+# Exclude specific file patterns
+*.class
+*.jar
+*.war
+*.ear
+*.aar
+*.so
+*.dylib
+*.dll
+*.exe
+*.log
+*.tmp
+*.cache
+
+# Exclude CI/CD artifacts
+reports/
+test-results/
+jacoco/
+configuration-cache/
+
+# Exclude Gradle specific files
+gradle/wrapper/

@@ -33,6 +33,14 @@ keywords = ["mysql://", "postgresql://", "mongodb://", "redis://"]
 [allowlist]
 description = "Global allow list"
 paths = [
+    '''build''',
+    '''\.gradle''',
+    '''target''',
+    '''node_modules''',
+    '''.*\/generated\/.*''',
+    '''.*\/build\/.*''',
+    '''.*\/tmp\/.*''',
+    '''.*\/cache\/.*''',
     '''go\.mod''',
     '''go\.sum''',
     '''package-lock\.json''',
@@ -73,9 +81,3 @@ regexes = [
     '''your[_-]?key[_-]?here''',
 ]
 
-# Commits to ignore
-[allowlist.commits]
-description = "Commits to ignore"
-authors = ["dependabot[bot]", "renovate[bot]", "pre-commit-ci[bot]"]
-message = '''(?i)^(wip|work in progress|draft|chore|docs|style|refactor|test|build)'''
-paths = ['docs/', 'README.md', 'CHANGELOG.md']
