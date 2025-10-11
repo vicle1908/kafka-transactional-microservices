@@ -60,17 +60,15 @@ Initialization scripts are located in `./infra/postgres/init/`:
 
 #### Creating a New Database
 
-1. Add a new statement to `01-create-dbs.sql`:
+To create a new database for a service, add a `CREATE DATABASE` statement to the `infra/postgres/init/01-create-dbs.sql` script. This script is automatically executed when the PostgreSQL container starts, ensuring that the database is created as part of the environment setup.
 
-   ```sql
-   CREATE DATABASE "new-service" OWNER app;
-   ```
+For example, to add a database for a "new-service":
 
-2. Restart the PostgreSQL container or execute the script manually:
+```sql
+CREATE DATABASE "new-service" OWNER app;
+```
 
-   ```bash
-   docker exec -i postgres psql -U app -f /docker-entrypoint-initdb.d/01-create-dbs.sql
-   ```
+After adding the statement, restart the Docker Compose environment to apply the changes.
 
 #### Backup and Restore
 
