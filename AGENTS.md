@@ -360,21 +360,7 @@ The implementation leverages Debezium's Outbox Event Router Single Message Trans
 
 ### Components
 
-1. **Outbox Table Schema**: Each service has an `outbox` table with the following structure:
-   ```sql
-   CREATE TABLE IF NOT EXISTS public.outbox (
-     id UUID PRIMARY KEY,
-     aggregate_type TEXT NOT NULL,
-     aggregate_id TEXT NOT NULL,
-     event_type TEXT NOT NULL,
-     payload TEXT NOT NULL,
-     headers TEXT NULL,
-     status TEXT NOT NULL DEFAULT 'PENDING',
-     occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
-     published_at TIMESTAMP WITH TIME ZONE NULL,
-     version BIGINT NOT NULL DEFAULT 0
-   );
-   ```
+1. **Outbox Table Schema**: Each service's `outbox` table is created and managed via a Flyway migration script. These scripts are located in the service's `src/main/resources/db/migration` directory and define the table structure, including columns for `id`, `aggregate_type`, `aggregate_id`, `event_type`, `payload`, and `status`.
 
 2. **Domain Service Integration**: Services persist domain data and insert a record into the outbox table within the same transaction:
    ```kotlin
