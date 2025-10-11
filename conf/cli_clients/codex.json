@@ -1,7 +1,12 @@
 {
   "name": "codex",
-  "command": "./scripts/codex-wrapper.sh",
-  "additional_args": [],
+  "command": "codex",
+  "additional_args": [
+    "exec",
+    "--skip-git-repo-check",
+    "--json",
+    "--dangerously-bypass-approvals-and-sandbox"
+  ],
   "env": {},
   "roles": {
     "default": {

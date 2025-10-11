@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,9 +59,11 @@ jobs:
 
       - name: Schema compatibility
         run: ./gradlew --no-daemon --stacktrace --configuration-cache schemaCompatibilityCheck
+        timeout-minutes: 10
 
       - name: Build & Test
         run: ./gradlew --no-daemon --stacktrace --configuration-cache clean check
+        timeout-minutes: 20
 
       - name: Kotlin Lint
         if: success() || failure()

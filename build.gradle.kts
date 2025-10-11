@@ -246,7 +246,8 @@ tasks.register<JavaExec>("detektAll") {
                 "--build-upon-default-config",
                 "--parallel",
                 "--excludes",
-                "**/build/**,**/build/generated/**,**/build/generated-sources/**,**/buildSrc/build/generated-sources/**",
+                "**/build/**,**/build/generated/**," +
+                    "**/build/generated-sources/**,**/buildSrc/build/generated-sources/**",
                 "--report",
                 "txt:${reportsDir.resolve("detekt.txt").absolutePath}",
                 "--report",
@@ -298,7 +299,8 @@ tasks.register<JavaExec>("detektBaseline") {
                 "--build-upon-default-config",
                 "--parallel",
                 "--excludes",
-                "**/build/**,**/build/generated/**,**/build/generated-sources/**,**/buildSrc/build/generated-sources/**",
+                "**/build/**,**/build/generated/**," +
+                    "**/build/generated-sources/**,**/buildSrc/build/generated-sources/**",
                 "--create-baseline",
                 "--baseline",
                 baselineFile.absolutePath,
@@ -349,9 +351,10 @@ tasks.register<JavaExec>("detektChanged") {
             "--config", project.file("config/detekt/detekt.yml").absolutePath,
             "--build-upon-default-config",
             "--parallel",
-            "--excludes",
-            "**/build/**,**/build/generated/**,**/build/generated-sources/**,**/buildSrc/build/generated-sources/**",
-            "--report", "txt:${reportsDir.resolve("detekt-changed.txt").absolutePath}",
+                "--excludes",
+                "**/build/**,**/build/generated/**," +
+                    "**/build/generated-sources/**,**/buildSrc/build/generated-sources/**",
+                "--report", "txt:${reportsDir.resolve("detekt-changed.txt").absolutePath}",
             "--report", "sarif:${reportsDir.resolve("detekt-changed.sarif").absolutePath}",
         )
         val baselineFile = project.file("config/detekt/baseline.xml")
@@ -390,7 +393,8 @@ tasks.register("installGitHooks") {
         
         // Create pre-commit hook
         val preCommitHook = File(gitHooksDir, "pre-commit")
-        preCommitHook.writeText("""
+        preCommitHook.writeText(
+            """
             #!/bin/sh
             # Pre-commit hook to auto-format and run ktlint + detekt on staged Kotlin files
             
@@ -418,14 +422,17 @@ tasks.register("installGitHooks") {
             
             echo "Pre-commit checks passed."
             exit 0
-        """.trimIndent())
+            """
+                .trimIndent()
+        )
         
         // Make pre-commit hook executable
         preCommitHook.setExecutable(true)
         
         // Create pre-push hook
         val prePushHook = File(gitHooksDir, "pre-push")
-        prePushHook.writeText("""
+        prePushHook.writeText(
+            """
             #!/bin/sh
             # Pre-push hook to run comprehensive checks
             
@@ -442,7 +449,9 @@ tasks.register("installGitHooks") {
             
             echo "Pre-push checks passed."
             exit 0
-        """.trimIndent())
+            """
+                .trimIndent()
+        )
         
         // Make pre-push hook executable
         prePushHook.setExecutable(true)
