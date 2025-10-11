@@ -25,7 +25,8 @@ jobs:
             -v "${{ github.workspace }}:/repo" \
             -w /repo \
             rhysd/actionlint:latest \
-            -color -verbose
+            -color -verbose \
+            .github/workflows/*.yml
 
   yamllint:
     runs-on: ubuntu-latest
@@ -35,9 +36,21 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Debug file structure
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Listing files:"
+          ls -la
+          echo "GitHub workflows directory:"
+          ls -la .github/workflows/
+          echo "Yamllint config exists:"
+          if [ -f .yamllint ]; then echo "Found .yamllint"; cat .yamllint; else echo "No .yamllint found"; fi
+
       - name: Run yamllint
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/repo" \
+            -w /repo \
             cytopia/yamllint \
+            -c .yamllint \
             .github/workflows

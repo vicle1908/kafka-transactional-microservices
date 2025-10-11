@@ -1,3 +1,4 @@
+---
 services:
   kafka:
     image: ${KAFKA_IMAGE:-apache/kafka:4.1.0}
@@ -155,7 +156,13 @@ services:
         condition: service_healthy
     volumes:
       - ../services/orders-service/src/main/resources/db/migration:/migrations:ro
-    command: -url=jdbc:postgresql://postgres:5432/orders -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+    command: >
+      -url=jdbc:postgresql://postgres:5432/orders
+      -user=${POSTGRES_USER:-app}
+      -password=${POSTGRES_PASSWORD:-app}
+      -locations=filesystem:/migrations
+      -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true}
+      migrate
 
   flyway-payments:
     image: flyway/flyway:11.13.2
@@ -167,7 +174,13 @@ services:
         condition: service_healthy
     volumes:
       - ../services/payments-service/src/main/resources/db/migration:/migrations:ro
-    command: -url=jdbc:postgresql://postgres:5432/payments -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+    command: >
+      -url=jdbc:postgresql://postgres:5432/payments
+      -user=${POSTGRES_USER:-app}
+      -password=${POSTGRES_PASSWORD:-app}
+      -locations=filesystem:/migrations
+      -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true}
+      migrate
 
   flyway-inventory:
     image: flyway/flyway:11.13.2
@@ -179,7 +192,13 @@ services:
         condition: service_healthy
     volumes:
       - ../services/inventory-service/src/main/resources/db/migration:/migrations:ro
-    command: -url=jdbc:postgresql://postgres:5432/inventory -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+    command: >
+      -url=jdbc:postgresql://postgres:5432/inventory
+      -user=${POSTGRES_USER:-app}
+      -password=${POSTGRES_PASSWORD:-app}
+      -locations=filesystem:/migrations
+      -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true}
+      migrate
 
   flyway-notification:
     image: flyway/flyway:11.13.2
@@ -192,7 +211,13 @@ services:
     volumes:
       - ../services/notification-service/src/main/resources/db/migration:/migrations:ro
     # Use plural notifications DB to match application.yml defaults and env-reference
-    command: -url=jdbc:postgresql://postgres:5432/${NOTIFICATIONS_DB_NAME:-notifications} -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+    command: >
+      -url=jdbc:postgresql://postgres:5432/${NOTIFICATIONS_DB_NAME:-notifications}
+      -user=${POSTGRES_USER:-app}
+      -password=${POSTGRES_PASSWORD:-app}
+      -locations=filesystem:/migrations
+      -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true}
+      migrate
 
   # ELK Stack for centralized logging
   elasticsearch:
@@ -296,8 +321,6 @@ services:
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/dashboards:/var/lib/grafana/dashboards
-
-
 
   # OpenTelemetry Collector and Jaeger for distributed tracing
   otel-collector:
