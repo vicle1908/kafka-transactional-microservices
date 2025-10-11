@@ -12,3 +12,4 @@ datasources:
       exemplarTraceIdDestinations:
         - name: traceId
           datasourceUid: tempo
+# end-of-file

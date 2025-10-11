@@ -77,3 +77,4 @@ ignore: |
   generated/
   *.tgz
   *.tar.gz
+# end-of-file
