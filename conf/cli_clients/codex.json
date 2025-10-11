@@ -1,14 +1,7 @@
 {
   "name": "codex",
-  "command": "codex",
-  "additional_args": [
-    "exec",
-    "--cd",
-    "/Users/vinhlekhanh/Library/Mobile Documents/com~apple~CloudDocs/project/microservices",
-    "--skip-git-repo-check",
-    "--json",
-    "--dangerously-bypass-approvals-and-sandbox"
-  ],
+  "command": "./scripts/codex-wrapper.sh",
+  "additional_args": [],
   "env": {},
   "roles": {
     "default": {

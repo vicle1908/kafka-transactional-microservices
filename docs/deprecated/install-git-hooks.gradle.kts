@@ -16,12 +16,12 @@ tasks.register("installGitHooks") {
         preCommitHook.writeText(
             """
             #!/bin/sh
-            # Pre-commit hook to run ktlint check
+            # Pre-commit hook to run ktlint and detekt
 
             echo "Running pre-commit checks..."
 
-            # Run ktlint check and fail fast on error
-            if ! ./gradlew --no-daemon --stacktrace ktlintCheck; then
+            # Run ktlint and detekt (disable configuration cache to mirror CI)
+            if ! ./gradlew --no-daemon --stacktrace --no-configuration-cache ktlintCheck detektAll; then
                 echo "Pre-commit checks failed. Please fix the issues before committing."
                 exit 1
             fi

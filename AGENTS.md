@@ -79,23 +79,22 @@
 
 ## Dev Workflow & Commands
 
-- Bootstrap infra with env: `cp infra/.env.example infra/.env && docker compose --env-file infra/.env -f infra/compose.yml up -d`.
-- Run all service tests with `./gradlew cleantest` and integration tests with `./gradlew :service-* :integration-test` once modules exist.
-- When you need to run shell commands, prefer the `execute_terminal_command` MCP tool so terminal interactions stay auditable and repeatable.
-- Start a sample service locally via `./gradlew :orders-service:bootRun` after loading `.env` (copy from `.env.example` and use direnv or `source scripts/export-env.sh`).
-- Use `./gradlew flywayMigrate` to apply schema migrations before running services.
-- Lint/format with `./gradlew spotlessApply` (add plugin in the buildoncecodebase is scaffolded).
-- When editing or inspecting code via JetBrains MCP server, open the target file with `open_file_in_editor` before running `get_file_problems` so IntelliJ indexes the file, then review errors/warnings ahead of Gradle tasks.
-- Export Avro schemas with `./gradlew exportAvroSchemas` and publish via `scripts/schema-publish.sh` before enabling Debezium connectors; registry compatibility is enforced in CI.
-- Service modules live under `services/<name>` (e.g., `orders-service`) and follow the hexagonal template documented in `docs/dev/service-template.md`; depend on shared modulesfor events, Kafka, persistence, sagas, and observability.
+- Bootstrap infra with env: `execute_terminal_command(command='cp infra/.env.example infra/.env && docker compose --env-file infra/.env -f infra/compose.yml up -d')`.
+- Run all service tests with `execute_terminal_command(command='./gradlew cleantest')` and integration tests with `execute_terminal_command(command='./gradlew :service-* :integration-test')` once modules exist.
+    - When you need to run shell commands, prefer the `execute_terminal_command` or `start_process` tools to avoid blocking and ensure that terminal interactions stay auditable and repeatable.
+        - Start a sample service locally via `execute_terminal_command(command='./gradlew :orders-service:bootRun &')` after loading `.env` (copy from `.env.example` and use direnv or `source scripts/export-env.sh`).
+            - Use `execute_terminal_command(command='./gradlew flywayMigrate')` to apply schema migrations before running services.
+            - Lint/format with `execute_terminal_command(command='./gradlew spotlessApply')` (add plugin in the buildoncecodebase is scaffolded).
+                - When editing or inspecting code via JetBrains MCP server, open the target file with `open_file_in_editor` before running `get_file_problems` so IntelliJ indexes the file, then review errors/warnings ahead of Gradle tasks.
+                - Export Avro schemas with `execute_terminal_command(command='./gradlew exportAvroSchemas')` and publish via `execute_terminal_command(command='scripts/schema-publish.sh')` before enabling Debezium connectors; registry compatibility is enforced in CI.
+                - Service modules live under `services/<name>` (e.g., `orders-service`) and follow the hexagonal template documented in `docs/dev/service-template.md`; depend on shared modulesfor events, Kafka, persistence, sagas, and observability.
 - Launch disposable CLI subagents with `clink` when fresh context windows are needed for specific tasks. Currently, only claude, codex, and gemini are supported by clink due to a hardcoded allowlist. For tasks requiring other CLIslike qwen, temporarily remap an existing client or use the CLI directly.
-- Always use the Gradle version catalog (`gradle/libs.versions.toml`) when adding new plugins or dependencies to build files to ensure consistent version management across all modules
 
 ## Database& CDC Setup (Standardized Docker Compose)
 
 - Local baseline uses PostgreSQL 18 with logical decoding enabled; Compose mounts init scripts under `infra/postgres/init` to create service DBs (orders, payments, inventory, notification) and `pgcrypto`.
 - Schema is codified with Flyway migrations per service(`services/*/src/main/resources/db/migration`). A dedicated Compose profile `migrate` runs four one-off Flyway containers:
-  - flyway-orders, flyway-payments, flyway-inventory, flyway-notification- Apply with: `make migrate` (after `make up`)
+  - flyway-orders, flyway-payments, flyway-inventory, flyway-notification- Apply with: `execute_terminal_command(command='make migrate')` (after `execute_terminal_command(command='make up')`)
 - Kafka 4.1 (KRaft) is used locally. Healthcheck calls the bundled broker tool. Auto-create topics is disabled for parity with production; the internal `__consumer_offsets` topic is created explicitly.
 - DebeziumConnect 3.3 is the CDC default:
   - Connectors: orders, payments, inventory,notification
@@ -105,43 +104,38 @@
 - Connector-side `topic.creation.default.*` is enabled for local dev so outbox topics are created when producing
 - Outbox table is “lean Debezium-only” (no status column). If enabling acustom outbox relay, add `status` via a migration.
 - Standardized workflows:
-  - Startlocal stack: `make up`
-  - Run migrations: `make migrate`
-  - Register/refresh connectors: `make connectors`
-  - Smoke test (insert outbox row → read from Kafka): `make smoke`
-  - Tear down: `make down` (or `make clean-volumes` for a fullreset)
+  - Startlocal stack: `execute_terminal_command(command='make up')`
+  - Run migrations: `execute_terminal_command(command='make migrate')`
+  - Register/refresh connectors: `execute_terminal_command(command='make connectors')`
+  - Smoke test (insert outbox row → read from Kafka): `execute_terminal_command(command='make smoke')`
+  - Tear down: `execute_terminal_command(command='make down')` (or `execute_terminal_command(command='make clean-volumes')` for a fullreset)
 
-## Documentation & Context Best Practices
+## Information Discovery and Tooling
 
-- Before adding or editing code, use documentation tools to understand existing patterns and libraries:
-  - Use `get_code_context_exa` to search for relevant API/library contexts beforeimplementing new features
-  - Use `searchGitHub` to find real-world examples and implementation patterns fromsimilar projects
-  - Use `resolve-library-id` and `get-library-docs` to access up-to-date library documentation via Context7
-  - Use `read_wiki_structure` and `read_wiki_contents`to explore GitHub repository documentation
-  - Use DeepWiki for comprehensive documentation exploration before implementing complex features
-- Always verify implementation approaches against existing code patterns in the repository before writing new code
-- When using external libraries, first research their correct usage patterns and configuration through documentation tools
-- Follow established patterns in shared modules (`common-*`) as templates for new implementations
+- **Guiding Principle:** Before writing code or making decisions, thoroughly research existing patterns, libraries, and context. Use a tiered approach, starting with internal documentation and moving to broader web searches as needed.
 
-## MCP Search Practice
+- **Internal Code and Documentation:**
+  - **Code Search:** Use `search_in_files_by_text` (literal) or `search_in_files_by_regex` for broad codebase searches. For more advanced, streaming searches, use `start_search`.
+  - **Repository Documentation:** Use `read_wiki_structure` and `read_wiki_contents` to explore a repository's GitHub Wiki. Use DeepWiki for more comprehensive doc exploration.
+  - **Real-world Examples:** Use `searchGitHub` to find implementation patterns and examples from public repositories.
 
-- Triage query type first: use`mcp-router__brave_web_search` for broad web research, switching to `mcp-router__brave_news_search` when freshness (≤7 days) matters and `mcp-router__brave_image_search` for visual assets.
-- For deep-dive investigations build a map→extract pipeline: `mcp-router__tavily_map` to enumerate relevant docs, then `mcp-router__tavily_extract` (or `mcp-router__tavily_search` with `search_depth='advanced'`) forfull-text pulls; request `include_raw_content` when evaluating technical specs.
-- When questions target repositorydocs or architecture notes, reach for DeepWiki (GitHub doc crawler) before general search; follow with `mcp-router__brave_web_search` only if the repo lacks internal docs.
-- For library and framework-specific research, use `mcp-router__resolve-library-id` to find the correct Context7-compatible library ID, then `mcp-router__get-library-docs` to retrieve up-to-date documentation.
-- For real-world code examples and implementation patterns, leverage `mcp-router__searchGitHub` to find relevant code from over amillion public repositories.
-- Prefer Brave over raw Google for low-latency fact checks; fall back toTavily advanced search or `mcp-router__web_search_exa` when Brave results are thin or contradictory.
-- For programming-related questions, leverage `mcp-router__get_code_context_exa` to find relevantcontext for APIs, libraries, and SDKs with the highest quality and freshest context.
-- Whenvalidating internal knowledge, use `mcp-router__search_in_files_by_text` (grep-mcp) or `mcp-router__start_search` with `searchType='content'` to cross-check local docs before escalatingto web tools.
-- Leverage Medium-focused research with `mcp-router__search_medium_topic`for comprehensive topic-based research, `mcp-router__search_by_author` to find insights from domain experts, and `mcp-router__research_compilation` for multi-topic synthesis with citations.
-- Always capture tool outputs inthe working note, link to `@IMPLEMENTATION_PLAN.md` action items, and record gaps inthe Research Backlog when sources are inconclusive.
-- For complex decisions, use `mcp-router__consensus` (consulting Gemini, OpenAI, Grok-4 via Zen MCP) to gather multiple AI perspectives, then apply `mcp-router__thinkdeep` when deeper reasoning or resolution is required.
--When researching, combine available search MCP tools (`mcp-router__brave_web_search`, `mcp-router__tavily_search`, `mcp-router__web_search_exa`, `mcp-router__searchGitHub`, `mcp-router__search_medium_topic`) to gather evidence before consulting Zen MCP (`consensus`, `thinkdeep`) for multi-model evaluation.
-- Launch disposable CLI subagents with `clink` when we need fresh context windows: codex uses the non-interactive `exec` path (`conf/cli_clients/codex.json`) and **requires a Zen MCP server restart** after config edits to pick up the newflags. Qwen is not yet first-class in upstream clink; either remap an existing client (e.g., temporarily wire `claude` to the `qwen` CLI) or track the upstream update before calling`cli_name='qwen'`.
-- Use `clink` to delegate tasks to external AICLIs like Gemini, Claude, or Codex when a task is better suited for another model's specific strengths. Note that `clink` has a hardcoded allowlist for supported CLIs; only 'claude', 'codex', and 'gemini' are currently accepted, which prevents integration with other CLIs likeQwen even if configuration files exist.
-- When using `clink`, you can pass context to the external CLI including files, images, and conversation history. Use the `role` parameter to invoke a pre-configured personaor skill for the target CLI (e.g., `codereviewer` for code review tasks).
-- For complex tasks requiring multiple tools, combine `clink` with other MCP tools in a tiered approach: use `clink` for CLI-specific tasks, `mcp-router__search_medium_topic` for comprehensive research, and `mcp-router__consensus` for multi-model evaluation.
-- When experiencing issues with`clink` argument forwarding (e.g., Codex not receiving the `--skip-git-repo-check` flag), consider using direct CLI execution or wrapper scripts to ensure flags are properly applied.
+- **Library & Framework Documentation:**
+  - **API/SDK Context:** Use `get_code_context_exa` for high-quality, fresh context on libraries, SDKs, and APIs.
+  - **Specific Library Docs:** Use `resolve-library-id` to get a Context7-compatible ID, then use `get-library-docs` to fetch detailed documentation.
+
+- **Web Research:**
+  - **General Search:** Use `brave_web_search` for general queries. For news, use `brave_news_search`.
+  - **Deep-Dive Analysis:** Use `tavily_map` to get a site structure, then `tavily_extract` to pull full-text content from specific URLs. Use `tavily_search` with `search_depth='advanced'` for more comprehensive results.
+  - **Specialized Content:** Use `search_medium_topic` for articles and `brave_image_search` for visual assets.
+
+- **Advanced Analysis & Multi-model Consultation:**
+  - **Complex Decisions:** For complex problems, use `consensus` to gather perspectives from multiple AI models (e.g., Gemini, GPT-5, Grok-4). Use `thinkdeep` for deeper, structured reasoning on a topic.
+  - **CLI Subagents:** Use `clink` to delegate tasks to external AI CLIs (e.g., Claude, Codex, Gemini). Be aware of the hardcoded allowlist and potential argument-forwarding issues.
+
+- **Best Practices:**
+  - Always verify implementation approaches against existing code patterns in the repository.
+  - Capture tool outputs and key findings in working notes, linking them to `@IMPLEMENTATION_PLAN.md`.
+  - Follow established patterns in shared modules (`common-*`) as templates for new implementations.
 
 ## Knowledge Memory Practice
 
@@ -169,12 +163,11 @@
 - **Enhanced Security Scanning**: Integrated OWASPDependency Check, Trivy vulnerability scanner, and CodeQL static analysis with GitHub's security features.
 - **DependencyManagement**: Added dependency review with license compliance checking and vulnerability scanning through GitHub's Dependency Review Action.
 - **Infrastructure Validation**: Implemented Docker Compose, Kubernetes, and Terraform configuration validation workflows.
-- **Static Analysis**:Integrated SpotBugs and Error Prone for enhanced code quality assurance.
-- **Observability**: Configured OpenTelemetry tracing for distributed tracing across services with context propagation.
-- Gradle builds must run with configuration cache and build cache enabled (`org.gradle.configuration-cache=true`, `org.gradle.caching=true`); CI invokes `./gradlew --configuration-cache` and developers should prefer the same for local workflows.
-- Run `./gradlew schemaCompatibilityCheck` to validate Avro schemas before publishing; CI executes the task alongside `check`.
-- Observability-first: enforce OpenTelemetry instrumentation, centralize logs/metrics, and maintain dashboards/alerts for latency, errors, saturation, and business SLIs.
-- Resilience engineering: run regular chaosdrills (broker restarts, mesh failures, cache outages) and record findings in runbooks.
+    - **Static Analysis**:Integrated SpotBugs and Error Prone for enhanced code quality assurance.
+    - **Observability**: Configured OpenTelemetry tracing for distributed tracing across services with context propagation.
+    - Gradle builds must run with configuration cache and build cache enabled (`org.gradle.configuration-cache=true`, `org.gradle.caching=true`); CI invokes `execute_terminal_command(command='./gradlew --configuration-cache')` and developers should prefer the same for local workflows.
+    - Run `execute_terminal_command(command='./gradlew schemaCompatibilityCheck')` to validate Avro schemas before publishing; CI executes the task alongside `check`.
+    - Observability-first: enforce OpenTelemetry instrumentation, centralize logs/metrics, and maintain dashboards/alerts for latency, errors, saturation, and business SLIs.- Resilience engineering: run regular chaosdrills (broker restarts, mesh failures, cache outages) and record findings in runbooks.
 
 ## Enhanced Observability Implementation
 
@@ -275,7 +268,7 @@ The project has a partial observability implementation with the following compon
 ## Schema Evolution Policy
 
 - Enforce backward compatibility for message schemas (Avro `BACKWARD` mode, JSON Schema additive changes only). Breaking changes require a new topic or schema version with dual-publish strategy.
-- Automate schema validation in CI using `./gradlew schemaCompatibilityCheck`; merges fail ifcompatibility rules are violated.
+- Automate schema validation in CI; merges fail ifcompatibility rules are violated.
 - Record schema change intents in `docs/schemas/CHANGELOG.md` with effectivedates, owner, and impacted services. Notify consumer teams via shared channels before rollout.
 - For database schemas, apply Flyway migrations with reversible scripts where feasible and maintain downgrade instructions in the migration description.
 

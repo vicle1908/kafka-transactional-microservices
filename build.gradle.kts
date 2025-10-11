@@ -310,6 +310,72 @@ tasks.register<JavaExec>("detektBaseline") {
     }
 }
 
+// Fast pre-commit Detekt over only staged Kotlin files
+tasks.register<JavaExec>("detektChanged") {
+    group = "verification"
+    description = "Runs detekt on staged Kotlin files only (fast pre-commit gate)."
+    classpath = detektCli
+    mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+    notCompatibleWithConfigurationCache("Detekt CLI arguments are constructed at execution time.")
+    doFirst {
+        fun stagedKotlinFiles(): List<String> {
+            val pb = ProcessBuilder(listOf("git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"))
+                .directory(project.rootDir)
+                .redirectErrorStream(true)
+            val proc = pb.start()
+            val output = proc.inputStream.bufferedReader().readText()
+            proc.waitFor()
+            return output
+                .lineSequence()
+                .map { it.trim() }
+                .filter { it.endsWith(".kt") || it.endsWith(".kts") }
+                .map { project.rootDir.resolve(it).absolutePath }
+                .toList()
+        }
+
+        val inputs = stagedKotlinFiles()
+        if (inputs.isEmpty()) {
+            println("No staged Kotlin files detected; skipping detektChanged.")
+            // Provide a harmless invocation so the JavaExec task completes successfully
+            args = listOf("--help")
+            return@doFirst
+        }
+
+        val reportsDir = layout.buildDirectory.dir("reports/detekt").get().asFile
+        reportsDir.mkdirs()
+
+        val arguments = mutableListOf(
+            "--input", inputs.joinToString(","),
+            "--config", project.file("config/detekt/detekt.yml").absolutePath,
+            "--build-upon-default-config",
+            "--parallel",
+            "--excludes",
+            "**/build/**,**/build/generated/**,**/build/generated-sources/**,**/buildSrc/build/generated-sources/**",
+            "--report", "txt:${reportsDir.resolve("detekt-changed.txt").absolutePath}",
+            "--report", "sarif:${reportsDir.resolve("detekt-changed.sarif").absolutePath}",
+        )
+        val baselineFile = project.file("config/detekt/baseline.xml")
+        if (baselineFile.exists()) {
+            arguments += listOf("--baseline", baselineFile.absolutePath)
+        }
+        val pluginClasspath = detektPlugins.resolve()
+        if (pluginClasspath.isNotEmpty()) {
+            arguments += listOf("--plugins", pluginClasspath.joinToString(",") { it.absolutePath })
+        }
+        args = arguments
+    }
+}
+
+// Unified entrypoint to mirror the pre-commit gate (without auto-formatting)
+tasks.register("preCommitCheck") {
+    group = "verification"
+    description = "Runs ktlint checks across subprojects and detektChanged on staged files."
+    // run ktlintCheck in all subprojects
+    dependsOn(subprojects.map { "${'$'}{it.path}:ktlintCheck" })
+    // fast detekt over staged files
+    dependsOn("detektChanged")
+}
+
 // Register the installGitHooks task
 tasks.register("installGitHooks") {
     group = "build setup"
@@ -326,15 +392,26 @@ tasks.register("installGitHooks") {
         val preCommitHook = File(gitHooksDir, "pre-commit")
         preCommitHook.writeText("""
             #!/bin/sh
-            # Pre-commit hook to run ktlint check
+            # Pre-commit hook to auto-format and run ktlint + detekt on staged Kotlin files
             
+            set -e
             echo "Running pre-commit checks..."
             
-            # Run ktlint check
-            ./gradlew --no-daemon --stacktrace ktlintCheck
+            # Ensure we run at repo root
+            REPO_ROOT="${'$'}(git rev-parse --show-toplevel)"
+            cd "${'$'}REPO_ROOT"
+            
+            # Auto-format Kotlin sources
+            ./gradlew --no-daemon --stacktrace ktlintFormat
+            
+            # Re-stage any formatting changes
+            git add -A
+            
+            # Run checks: ktlint + fast detekt on staged files only
+            ./gradlew --no-daemon --stacktrace ktlintCheck detektChanged
             
             # Check the result
-            if [ \$? -ne 0 ]; then
+            if [ ${'$'}? -ne 0 ]; then
                 echo "Pre-commit checks failed. Please fix the issues before committing."
                 exit 1
             fi
@@ -358,7 +435,7 @@ tasks.register("installGitHooks") {
             ./gradlew --no-daemon --stacktrace clean check detektAll ktlintCheck versionCheck schemaCompatibilityCheck
             
             # Check the result
-            if [ \$? -ne 0 ]; then
+            if [ ${'$'}? -ne 0 ]; then
                 echo "Pre-push checks failed. Please fix the issues before pushing."
                 exit 1
             fi
@@ -371,7 +448,7 @@ tasks.register("installGitHooks") {
         prePushHook.setExecutable(true)
         
         logger.lifecycle("Git hooks installed successfully!")
-        logger.lifecycle("Pre-commit hook: Runs ktlintCheck")
+        logger.lifecycle("Pre-commit hook: Runs ktlintFormat, ktlintCheck, detektChanged (staged files)")
         logger.lifecycle("Pre-push hook: Runs clean check detektAll ktlintCheck versionCheck schemaCompatibilityCheck")
     }
 }

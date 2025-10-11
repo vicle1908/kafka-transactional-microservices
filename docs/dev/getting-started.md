@@ -93,7 +93,7 @@ This project uses Git hooks to enforce code quality checks before allowing commi
 
 ### Pre-commit Hook
 
-The pre-commit hook runs a quick ktlint check to ensure code formatting is correct before allowing a commit.
+The pre-commit hook auto-formats Kotlin sources (ktlintFormat), re-stages changes, then runs ktlintCheck and a fast Detekt pass over staged Kotlin files. You can also run a single consolidated task locally: ./gradlew preCommitCheck (no auto-format).
 
 ### Pre-push Hook
 

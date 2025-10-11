@@ -81,7 +81,7 @@
 
 - Bootstrap infra with env: `cp infra/.env.example infra/.env && docker compose --env-file infra/.env -f infra/compose.yml up -d`.
 - Run all service tests with `./gradlew cleantest` and integration tests with `./gradlew :service-* :integration-test` once modules exist.
-- When you need to run shell commands, prefer the `execute_terminal_command` MCP tool so terminal interactions stay auditable and repeatable.
+- When you need to run shell commands, prefer the `execute_terminal_command` or `start_process` tools to avoid blocking and ensure that terminal interactions stay auditable and repeatable.
 - Start a sample service locally via `./gradlew :orders-service:bootRun` after loading `.env` (copy from `.env.example` and use direnv or `source scripts/export-env.sh`).
 - Use `./gradlew flywayMigrate` to apply schema migrations before running services.
 - Lint/format with `./gradlew spotlessApply` (add plugin in the buildoncecodebase is scaffolded).

@@ -1,16 +1,10 @@
----
-trigger: always_on
----
-
-#Kafka Transactional Microservices – Agent Guide
-
 #Kafka Transactional Microservices – Agent Guide
 
 ## Scope & Outcomes
 
 - Build Spring Boot microservices that coordinate business state changes with Kafka events without dual writes.
 - Guarantee at-least-once delivery everywhere and exactly-once semantics for read→process→write flows that update a database and publish to Kafka.
-  -Keep`@IMPLEMENTATION_PLAN.md` current; treat it as the source for milestones, deliverables, and sequencing.
+-Keep`@IMPLEMENTATION_PLAN.md` current; treat it as the source for milestones, deliverables, and sequencing.
 
 ## Architectural Guardrails
 
@@ -32,16 +26,16 @@ trigger: always_on
 ## Version Management Practices
 
 - Regularly check for newer versions of key dependencies using authoritative sources:
-- MavenCentral Repository (<https://mvnrepository.com/>) for Java/Kotlin libraries
-- Gradle Plugin Portal (<https://plugins.gradle.org/>) for Gradle plugins
-- Google's Maven Repository (<https://maven.google.com/web/index.html>) for Android libraries
-- Official project release pagesand GitHubrepositories
+ - MavenCentral Repository (<https://mvnrepository.com/>) for Java/Kotlin libraries
+  - Gradle Plugin Portal (<https://plugins.gradle.org/>) for Gradle plugins
+  - Google's Maven Repository (<https://maven.google.com/web/index.html>) for Android libraries
+  - Official project release pagesand GitHubrepositories
 - When evaluating version upgrades, consider:
-    - Compatibility with existing dependencies
-    - Security fixes and vulnerability patches
-    - Performance improvements and new features
-    - Migration effort and breaking changes
-    - LTS vs. latest version tradeoffs
+  - Compatibility with existing dependencies
+  - Security fixes and vulnerability patches
+  - Performance improvements and new features
+  - Migration effort and breaking changes
+  - LTS vs. latest version tradeoffs
 - Document version decisions in `docs/version-matrix.md`with rationalefor selections
 - Run comprehensive tests (unit, integration, contract) after version upgrades
 - Update the Gradle version catalog (`gradle/libs.versions.toml`) with new versions following semantic versioning conventions
@@ -101,30 +95,30 @@ trigger: always_on
 
 - Local baseline uses PostgreSQL 18 with logical decoding enabled; Compose mounts init scripts under `infra/postgres/init` to create service DBs (orders, payments, inventory, notification) and `pgcrypto`.
 - Schema is codified with Flyway migrations per service(`services/*/src/main/resources/db/migration`). A dedicated Compose profile `migrate` runs four one-off Flyway containers:
-    - flyway-orders, flyway-payments, flyway-inventory, flyway-notification- Apply with: `make migrate` (after `make up`)
+  - flyway-orders, flyway-payments, flyway-inventory, flyway-notification- Apply with: `make migrate` (after `make up`)
 - Kafka 4.1 (KRaft) is used locally. Healthcheck calls the bundled broker tool. Auto-create topics is disabled for parity with production; the internal `__consumer_offsets` topic is created explicitly.
 - DebeziumConnect 3.3 is the CDC default:
-    - Connectors: orders, payments, inventory,notification
-    - `topic.prefix` set per DB, `snapshot.mode=no_data` (3.x compliant)
-    - Outbox Event Router routes to `outbox.${routedByValue}` with key=`aggregate_id`
-    - `transforms.outbox.table.fields.additional.placement` excludes payload to avoid schema duplication
+  - Connectors: orders, payments, inventory,notification
+  - `topic.prefix` set per DB, `snapshot.mode=no_data` (3.x compliant)
+  - Outbox Event Router routes to `outbox.${routedByValue}` with key=`aggregate_id`
+  - `transforms.outbox.table.fields.additional.placement` excludes payload to avoid schema duplication
 - Connector-side `topic.creation.default.*` is enabled for local dev so outbox topics are created when producing
 - Outbox table is “lean Debezium-only” (no status column). If enabling acustom outbox relay, add `status` via a migration.
 - Standardized workflows:
-    - Startlocal stack: `make up`
-    - Run migrations: `make migrate`
-    - Register/refresh connectors: `make connectors`
-    - Smoke test (insert outbox row → read from Kafka): `make smoke`
-    - Tear down: `make down` (or `make clean-volumes` for a fullreset)
+  - Startlocal stack: `make up`
+  - Run migrations: `make migrate`
+  - Register/refresh connectors: `make connectors`
+  - Smoke test (insert outbox row → read from Kafka): `make smoke`
+  - Tear down: `make down` (or `make clean-volumes` for a fullreset)
 
 ## Documentation & Context Best Practices
 
 - Before adding or editing code, use documentation tools to understand existing patterns and libraries:
-    - Use `get_code_context_exa` to search for relevant API/library contexts beforeimplementing new features
-    - Use `searchGitHub` to find real-world examples and implementation patterns fromsimilar projects
-    - Use `resolve-library-id` and `get-library-docs` to access up-to-date library documentation via Context7
-    - Use `read_wiki_structure` and `read_wiki_contents`to explore GitHub repository documentation
-    - Use DeepWiki for comprehensive documentation exploration before implementing complex features
+  - Use `get_code_context_exa` to search for relevant API/library contexts beforeimplementing new features
+  - Use `searchGitHub` to find real-world examples and implementation patterns fromsimilar projects
+  - Use `resolve-library-id` and `get-library-docs` to access up-to-date library documentation via Context7
+  - Use `read_wiki_structure` and `read_wiki_contents`to explore GitHub repository documentation
+  - Use DeepWiki for comprehensive documentation exploration before implementing complex features
 - Always verify implementation approaches against existing code patterns in the repository before writing new code
 - When using external libraries, first research their correct usage patterns and configuration through documentation tools
 - Follow established patterns in shared modules (`common-*`) as templates for new implementations
@@ -142,7 +136,7 @@ trigger: always_on
 - Leverage Medium-focused research with `mcp-router__search_medium_topic`for comprehensive topic-based research, `mcp-router__search_by_author` to find insights from domain experts, and `mcp-router__research_compilation` for multi-topic synthesis with citations.
 - Always capture tool outputs inthe working note, link to `@IMPLEMENTATION_PLAN.md` action items, and record gaps inthe Research Backlog when sources are inconclusive.
 - For complex decisions, use `mcp-router__consensus` (consulting Gemini, OpenAI, Grok-4 via Zen MCP) to gather multiple AI perspectives, then apply `mcp-router__thinkdeep` when deeper reasoning or resolution is required.
-  -When researching, combine available search MCP tools (`mcp-router__brave_web_search`, `mcp-router__tavily_search`, `mcp-router__web_search_exa`, `mcp-router__searchGitHub`, `mcp-router__search_medium_topic`) to gather evidence before consulting Zen MCP (`consensus`, `thinkdeep`) for multi-model evaluation.
+-When researching, combine available search MCP tools (`mcp-router__brave_web_search`, `mcp-router__tavily_search`, `mcp-router__web_search_exa`, `mcp-router__searchGitHub`, `mcp-router__search_medium_topic`) to gather evidence before consulting Zen MCP (`consensus`, `thinkdeep`) for multi-model evaluation.
 - Launch disposable CLI subagents with `clink` when we need fresh context windows: codex uses the non-interactive `exec` path (`conf/cli_clients/codex.json`) and **requires a Zen MCP server restart** after config edits to pick up the newflags. Qwen is not yet first-class in upstream clink; either remap an existing client (e.g., temporarily wire `claude` to the `qwen` CLI) or track the upstream update before calling`cli_name='qwen'`.
 - Use `clink` to delegate tasks to external AICLIs like Gemini, Claude, or Codex when a task is better suited for another model's specific strengths. Note that `clink` has a hardcoded allowlist for supported CLIs; only 'claude', 'codex', and 'gemini' are currently accepted, which prevents integration with other CLIs likeQwen even if configuration files exist.
 - When using `clink`, you can pass context to the external CLI including files, images, and conversation history. Use the `role` parameter to invoke a pre-configured personaor skill for the target CLI (e.g., `codereviewer` for code review tasks).
@@ -189,66 +183,66 @@ trigger: always_on
 The project has a partial observability implementation with the following components:
 
 1. **Metrics Collection**:
-    - Prometheus for metrics collection
-    - Micrometer for instrumentation in services- Grafana for dashboard visualization
-    - Pre-built dashboards for various components
+   - Prometheus for metrics collection
+   - Micrometer for instrumentation in services- Grafana for dashboard visualization
+   - Pre-built dashboards for various components
 
 2. **Distributed Tracing**:
-    - OpenTelemetry SDK integrated in services through the `common-observability` module
-    - Additional OpenTelemetry dependencies in `common-temporal`
-    - Dedicated OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`) with configuration details
-    - Configuration for OpenTelemetry collector and Jaeger backend documented
+   - OpenTelemetry SDK integrated in services through the `common-observability` module
+   - Additional OpenTelemetry dependencies in `common-temporal`
+   - Dedicated OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`) with configuration details
+   - Configuration for OpenTelemetry collector and Jaeger backend documented
 
 3. **Health Checks**:
-    - Health check implementations forservices
-    - Dedicated health check runbook
+   - Health check implementations forservices
+   - Dedicated health check runbook
 
 ### Missing Components
 
 1. **Centralized Logging**:
 - Currently missing centralized logging solution
-    - Need to implement ELK (Elasticsearch, Logstash, Kibana) stack for:
-        - Centralized log aggregation from all services
-        - Advancedlog search capabilities
-        - Real-time log visualization
-        - Structured log analysis
+   - Need to implement ELK (Elasticsearch, Logstash, Kibana) stack for:
+     - Centralized log aggregation from all services
+     - Advancedlog search capabilities
+     - Real-time log visualization
+     - Structured log analysis
 
 2. **CompleteOpenTelemetry Implementation**:
-    - Missing OpenTelemetry collector configuration in docker-compose
-    - Missing Jaeger backend for trace visualization
-    - Need to implement tracing across service boundaries, especially with Kafka
+   - Missing OpenTelemetry collector configuration in docker-compose
+   - Missing Jaeger backend for trace visualization
+   - Need to implement tracing across service boundaries, especially with Kafka
 
 ###Implementation Plan
 
 #### Phase 1: Implement Centralized Logging with ELK Stack
 
 1. Add ELKstack components to `infra/compose.yml`:
-    - Elasticsearch for log storage
-    - Logstash for log processing
-    - Kibana for log visualization
+   - Elasticsearch for log storage
+   - Logstash for log processing
+   - Kibana for log visualization
 
 2. Configure log shipping from services:
-- Add Filebeat to each service container
-- Configure log format standardization
+  - Add Filebeat to each service container
+   - Configure log format standardization
 
 3. Create Kibana dashboards for:
-    - Service logs
-    - Error patterns
-    - Performance logs
+   - Service logs
+   - Error patterns
+   - Performance logs
 
 #### Phase 2: Complete OpenTelemetry Implementation
 
 1. Add OpenTelemetry Collector and Jaeger to `infra/compose.yml`
 2. Implement cross-service tracing:
-    - HTTP request tracing
-    - Kafka messagetracing
-    - Database query tracing
+   - HTTP request tracing
+   - Kafka messagetracing
+   - Database query tracing
 3. Enhance existing dashboards with trace data
 
 #### Phase 3: Documentation Updates
 
 1. Update `AGENTS.md` with complete observability setup
-   2.Create implementation guides for new components
+2.Create implementation guides for new components
 3. Update existing runbooks with new integration points
 
 ## Data Consistency Workflow- Within each command handler, persist domain aggregates and append an outbox row inside one transaction; mark unsent events with `status='NEW'`.
@@ -257,7 +251,7 @@ The project has a partial observability implementation with the following compon
 - Application services validate commands prior to persistence (non-blank customer identifiers, non-empty item collections) and reuse a single captured `Instant` for domain writes,Avro event timestamps, and outbox records to ensure envelope consistency.
 - Mirror the orders pattern in `payments-service`: compute payment payloads via Kotlinx Serialization, emit `PaymentCompletedEvent` Avro records, and persist payment aggregates as `COMPLETED` alongside outbox entries within one transaction; Kafka consumer wiring follows once topiccontracts are defined.
 - Maintain a shared `processed_events` ledger per service (JPA entity + Flyway migration) to short-circuit duplicate payloads inside Kafka listeners; wrap listener handlers in Spring transactions backed by `KafkaTransactionManager` so ledger writes, payment persistence, and offset commits share a unit of work.
-  -Inventory service consumes `PaymentCompletedEvent` messages, resolves stock reservations via `InventoryService.reserve`, and publishes `InventoryReservedEvent` payloads through the transactional outbox to notify downstream consumers.
+-Inventory service consumes `PaymentCompletedEvent` messages, resolves stock reservations via `InventoryService.reserve`, and publishes `InventoryReservedEvent` payloads through the transactional outbox to notify downstream consumers.
 - For long-running sagas, store state transitions in a dedicated table and emit compensating events on failure paths.
 - Payment service delegatescharging to `PaymentGateway` adapters; successful authorizations emit `PaymentCompletedEvent` while declines emit `PaymentFailedEvent` and mark the saga `FAILED`. The processed-event ledger is persisted within the same transaction so Kafka listener duplicates no longer re-trigger payments. Select the adapter via `payments.gateway.mode` (`IN_MEMORY`or `HTTP`); configure in-memory approval thresholds under `payments.gateway.in-memory.*` and external provider settings (`baseUrl`, `chargePath`, `apiKey`, timeouts, `retries`) under `payments.gateway.http.*`.
 - Payment compensation writes refunds to the `refunds` ledger and emits `PaymentRefundedEvent`outbox records when saga rollback is invoked; duplicate compensation attempts reuse the completed refund record.
@@ -271,8 +265,8 @@ The project has a partial observability implementation with the following compon
 - Standardize sagastep markers via `SagaStepNames` and the helper `SagaStepFormatter` so logs, monitoring, and replaytooling can parse step history consistently.
 - Provide compensating helpers (`paymentsService.compensate`, `inventoryService.release`) that transition sagas to `COMPENSATING`/`FAILED` with clear stepannotations (`payment-compensated`, `inventory-released`) while downstream actions (refunds, stock release) arestubbed for future integrations.
 - Adopt Temporal (self-hosted or cloud) as the orchestrator for complex, multi-domain sagas. The implementation uses a distributed worker model:
-    - A dedicatedworkflow service (`temporal-pilot`) hosts the workflow logic, ensuring the orchestrator is isolated from other service deployments.
-    - Each participating microservice (`payments-service`, `inventory-service`, etc.) runs its own worker to process activities on a dedicated task queue.
+  - A dedicatedworkflow service (`temporal-pilot`) hosts the workflow logic, ensuring the orchestrator is isolated from other service deployments.
+  - Each participating microservice (`payments-service`, `inventory-service`, etc.) runs its own worker to process activities on a dedicated task queue.
 - Emit compensating commands/events from the application layer or Temporal activities when a step fails; include correlation identifiers and reason codes so downstream services can reconcile partial changes.
 - Provideidempotent handlers by combining processed-event ledgers with business keys (e.g., `order_id`); return early if the saga step has already completed.
 - Document saga flows with sequence diagrams in `docs/sagas/` and include contract tests that replay happy-path, compensating, and timeout scenarios.
@@ -300,9 +294,9 @@ The project has a partial observability implementation with the following compon
 - Automate Debezium connector lifecycle using Infrastructure-as-Code (Terraform/Helm) alongside smoke tests that validate lag and schema mappings after each deployment.
 - For services using non-relational stores or polyglot runtimes, include adapter-specific health checks and replication monitoring intheir runbooks; reference the shared version matrix to confirm driver compatibility.
 - Maintain comprehensive observability runbooks forall monitoring components:
-    - Service Mesh runbook (`docs/runbooks/service-mesh.md`) covering Istio configuration and troubleshooting
-    - Polyglot Datastore runbook (`docs/runbooks/polyglot-datastore.md`) covering database operations and maintenance
-    - OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`) covering distributed tracing implementation
+  - Service Mesh runbook (`docs/runbooks/service-mesh.md`) covering Istio configuration and troubleshooting
+  - Polyglot Datastore runbook (`docs/runbooks/polyglot-datastore.md`) covering database operations and maintenance
+  - OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`) covering distributed tracing implementation
 
 ## Security & Compliance
 
@@ -346,5 +340,6 @@ The project has a partial observability implementation with the following compon
     - Debezium 3.3 release notes (EOS support and connectorupdates).
     - Debezium outbox pattern implementations (anarefin/high-availability-debezium,YunusEmreNalbant/transactional-outbox-pattern-with-debezium, chfern/debezium-outbox-pgkafka).
     - OpenTelemetry documentation and implementation guides.
-      -Istio service mesh documentation for ambient mode.
+    -Istio service mesh documentation for ambient mode.
     - ELK stack documentation for centralized logging.
+

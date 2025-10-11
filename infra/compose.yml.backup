@@ -198,8 +198,6 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     container_name: elasticsearch
-    profiles:
-      - local
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -217,8 +215,6 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash:8.11.0
     container_name: logstash
-    profiles:
-      - local
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -237,8 +233,6 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.0
     container_name: kibana
-    profiles:
-      - local
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -255,8 +249,6 @@ services:
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.11.0
     container_name: filebeat
-    profiles:
-      - local
     user: root
     volumes:
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
@@ -276,8 +268,6 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.92.0
     container_name: otel-collector
-    profiles:
-      - local
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
@@ -291,8 +281,6 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:1.52
     container_name: jaeger
-    profiles:
-      - local
     ports:
       - "16686:16686" # Jaeger UI
       - "14250:14250" # gRPC server
