@@ -27,7 +27,7 @@ jobs:
             -v "${{ github.workspace }}:/repo" \
             -w /repo \
             zricethezav/gitleaks:latest \
-            detect --redact --exit-code 1 --report-format sarif --report-path gitleaks.sarif --config .gitleaks.toml --gitleaks-ignore-path .gitleaksignore
+            detect --redact --exit-code 1 --report-format sarif --report-path gitleaks.sarif --config .gitleaks.toml
 
       - name: Upload Gitleaks report
         if: always()

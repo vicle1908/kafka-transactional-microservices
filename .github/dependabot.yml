@@ -1,61 +1,234 @@
+---
+# Dependabot configuration for Kafka Transactional Microservices
+# Supports: Gradle, Docker, GitHub Actions, and npm
+# Tech Stack: Kotlin 2.2, Spring Boot 3.5, Kafka 4.1, PostgreSQL 18, Redis 8, OpenTelemetry, etc.
+
 version: 2
+registries:
+# Configure access to private registries if needed in the future
+# docker-registry:
+#   type: docker-registry
+#   url: registry.example.com
+#   username: ${{secrets.DOCKER_USERNAME}}
+#   password: ${{secrets.DOCKER_PASSWORD}}
+
 updates:
-  # Gradle (multi-module)
+  # Gradle (multi-module project with version catalog)
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
     open-pull-requests-limit: 5
+    target-branch: "main"
     groups:
-      spring:
+      # Group Spring ecosystem updates together
+      spring-boot:
         patterns:
-          - "org.springframework*"
           - "org.springframework.boot*"
+          - "org.springframework.kafka*"
+          - "org.springframework*"
+        dependency-type: "direct"
+      # Group Kotlin ecosystem updates
       kotlin:
         patterns:
           - "org.jetbrains.kotlin*"
           - "com.google.devtools.ksp*"
-      gradle-plugins:
+        dependency-type: "direct"
+      # Group testing libraries
+      testing:
+        patterns:
+          - "org.junit*"
+          - "org.testcontainers*"
+          - "org.mockito*"
+          - "io.mockk*"
+          - "org.awaitility*"
+        dependency-type: "direct"
+      # Group static analysis tools
+      static-analysis:
         patterns:
           - "io.gitlab.arturbosch.detekt*"
-          - "com.diffplug.spotless*"
+          - "org.jlleitschuh.gradle.ktlint*"
           - "com.github.ben-manes.versions*"
+        dependency-type: "direct"
+      # Group serialization and messaging
+      serialization:
+        patterns:
+          - "org.apache.avro*"
+          - "com.google.protobuf*"
+          - "io.grpc*"
+          - "org.jetbrains.kotlinx.serialization*"
+        dependency-type: "direct"
+      # Group observability tools
+      observability:
+        patterns:
+          - "io.opentelemetry*"
+          - "io.temporal*"
+        dependency-type: "direct"
+      # Group database drivers
+      database:
+        patterns:
+          - "org.postgresql*"
+          - "org.flywaydb*"
+          - "com.h2database*"
+        dependency-type: "direct"
+    reviewers:
+      - "vicle1908"
+    assignees:
+      - "vicle1908"
+    commit-message:
+      prefix: "gradle"
+      include: "scope"
 
-  # GitHub Actions
+  # GitHub Actions workflows
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    groups:
+      # Group security-related actions
+      security:
+        patterns:
+          - "step-security/harden-runner"
+          - "github/advanced-security"
+          - "actions/dependency-review"
+      # Group build and CI actions
+      build:
+        patterns:
+          - "actions/checkout"
+          - "actions/setup-java"
+          - "gradle/actions"
+      # Group container and deployment actions
+      deployment:
+        patterns:
+          - "docker/*"
+          - "aws-actions/*"
+    reviewers:
+      - "vicle1908"
+    assignees:
+      - "vicle1908"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
 
-  # Dockerfiles (root and each service)
+  # Docker images - Root directory
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    groups:
+      # Group Kafka ecosystem images
+      kafka:
+        patterns:
+          - "apache/kafka*"
+          - "confluentinc/cp-*"
+          - "quay.io/debezium/*"
+      # Group Database images
+      database:
+        patterns:
+          - "postgres*"
+          - "redis*"
+      # Group Observability images
+      observability:
+        patterns:
+          - "prom/*"
+          - "grafana/*"
+          - "jaegertracing/*"
+          - "otel/*"
+      # Group Elastic Stack images
+      elastic:
+        patterns:
+          - "docker.elastic.co/*"
+    reviewers:
+      - "vicle1908"
+    assignees:
+      - "vicle1908"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
+
+  # Docker images - Temporal pilot service
   - package-ecosystem: "docker"
     directory: "/temporal-pilot"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "docker"
-    directory: "/services/orders-service"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "docker"
-    directory: "/services/payments-service"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "docker"
-    directory: "/services/inventory-service"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "docker"
-    directory: "/services/notification-service"
-    schedule:
-      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 2
+    groups:
+      temporal:
+        patterns:
+          - "temporalio/*"
+    reviewers:
+      - "vicle1908"
+    assignees:
+      - "vicle1908"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
 
-  # npm at repo root (for docs tooling or scripts if present)
+  # Docker images - Microservices
+  - package-ecosystem: "docker"
+    directory: "/services"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 2
+    groups:
+      # Group base images
+      base:
+        patterns:
+          - "openjdk*"
+          - "eclipse-temurin*"
+          - "ubuntu*"
+          - "alpine*"
+    reviewers:
+      - "vicle1908"
+    assignees:
+      - "vicle1908"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
+
+  # npm (for documentation tooling, scripts, or potential frontend components)
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    groups:
+      # Group documentation tools
+      docs:
+        patterns:
+          - "mkdocs*"
+          - "vuepress*"
+          - "gitbook*"
+      # Group development tools
+      dev-tools:
+        patterns:
+          - "eslint*"
+          - "prettier*"
+          - "typescript*"
+          - "vite*"
+          - "webpack*"
+    reviewers:
+      - "vicle1908"
+    assignees:
+      - "vicle1908"
+    commit-message:
+      prefix: "npm"
+      include: "scope"
+
+# Configure security updates (separate from version updates)
+# Note: Security updates are enabled by default in GitHub's security settings
+# This section can be used to override default behavior if needed
