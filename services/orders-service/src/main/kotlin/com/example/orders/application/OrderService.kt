@@ -1,6 +1,9 @@
+@file:Suppress("ImportOrdering", "ktlint:standard:import-ordering")
+
 package com.example.orders.application
 
 import com.example.events.avro.OrderCreatedEvent
+import com.example.observability.StructuredLogger
 import com.example.orders.domain.OrderEntity
 import com.example.orders.domain.OrderRepository
 import com.example.orders.domain.OrderStatus
@@ -17,9 +20,6 @@ import com.example.temporal.OrderFulfillmentWorkflow
 import com.example.temporal.TaskQueues
 import io.temporal.client.WorkflowClient
 import io.temporal.client.WorkflowOptions
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.apache.avro.io.EncoderFactory
 import org.apache.avro.specific.SpecificDatumWriter
 import org.springframework.context.ApplicationEventPublisher
@@ -29,6 +29,9 @@ import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.UUID
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.Serializable
 
 @Service
 class OrderService(
@@ -39,10 +42,25 @@ class OrderService(
     private val workflowClient: WorkflowClient,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
+    private val logger = StructuredLogger.getLogger(OrderService::class.java)
+
     @Transactional
+    @Suppress("LongMethod")
     fun handle(command: CreateOrderCommand): UUID {
+        logger.info(
+            "Starting order creation",
+            "customerId" to command.customerId,
+            "itemCount" to command.orderItems.size,
+        )
         validate(command)
         val occurredAt = Instant.now()
+
+        logger.info(
+            "Creating order",
+            "customerId" to command.customerId,
+            "itemCount" to command.orderItems.size,
+            "occurredAt" to occurredAt,
+        )
 
         val order =
             OrderEntity(
@@ -51,6 +69,12 @@ class OrderService(
                 createdAt = occurredAt,
             )
         val saved = orderRepository.save(order)
+
+        logger.info(
+            "Order entity created",
+            "orderId" to saved.id,
+            "status" to order.status.name,
+        )
 
         val event =
             OrderCreatedEvent
@@ -62,6 +86,13 @@ class OrderService(
                 .build()
 
         val payload = encodeEvent(event)
+
+        logger.info(
+            "Creating outbox message for OrderCreated event",
+            "eventId" to event.eventId,
+            "aggregateId" to event.aggregateId,
+            "eventType" to "OrderCreated",
+        )
 
         val outbox =
             OutboxMessage(
@@ -75,6 +106,13 @@ class OrderService(
             )
         outboxRepository.save(outbox)
 
+        logger.info(
+            "Saga state started",
+            "sagaType" to SagaNames.ORDER_FULFILLMENT,
+            "correlationId" to saved.id!!,
+            "step" to SagaStepNames.ORDER_CREATED,
+        )
+
         sagaStateService.start(
             sagaType = SagaNames.ORDER_FULFILLMENT,
             correlationId = saved.id!!.toString(),
@@ -85,6 +123,13 @@ class OrderService(
             sagaType = SagaNames.ORDER_FULFILLMENT,
             step = SagaStepNames.ORDER_CREATED,
             state = SagaStatus.STARTED,
+        )
+
+        logger.info(
+            "Starting Temporal workflow",
+            "workflowType" to "OrderFulfillmentWorkflow",
+            "orderId" to saved.id!!,
+            "taskQueue" to TaskQueues.ORDER_FULFILLMENT_WORKFLOW_TASK_QUEUE,
         )
 
         val workflowOptions =
@@ -98,16 +143,43 @@ class OrderService(
         // Publish change event for after-commit cache eviction
         eventPublisher.publishEvent(OrderChangedEvent(saved.id!!))
 
+        logger.info(
+            "Order creation completed successfully",
+            "orderId" to saved.id!!,
+            "customerId" to command.customerId,
+            "status" to saved.status.name,
+        )
+
         return saved.id!!
     }
 
     private fun validate(command: CreateOrderCommand) {
-        require(command.customerId.isNotBlank()) {
-            "customerId must not be blank"
+        if (command.customerId.isBlank()) {
+            logger.error(
+                "Order validation failed: customerId cannot be blank",
+                "operation" to "order.create",
+                "customerId" to command.customerId,
+                "reason" to "validation_error",
+            )
+            throw IllegalArgumentException("customerId must not be blank")
         }
-        require(command.orderItems.isNotEmpty()) {
-            "orderItems must not be empty"
+
+        if (command.orderItems.isEmpty()) {
+            logger.error(
+                "Order validation failed: orderItems cannot be empty",
+                "operation" to "order.create",
+                "customerId" to command.customerId,
+                "itemCount" to command.orderItems.size,
+                "reason" to "validation_error",
+            )
+            throw IllegalArgumentException("orderItems must not be empty")
         }
+
+        logger.debug(
+            "Order validation passed",
+            "customerId" to command.customerId,
+            "itemCount" to command.orderItems.size,
+        )
     }
 
     private fun serializePayload(

@@ -24,7 +24,7 @@ open class SagaStateEntity(
     @Enumerated(EnumType.STRING)
     @Column(name = "state", nullable = false)
     private var state: SagaStatus,
-    @Column(name = "data", columnDefinition = "TEXT")
+    @Column(name = "data", columnDefinition = "text")
     private var data: String?,
     @Column(name = "created_at", nullable = false)
     val createdAt: Instant,

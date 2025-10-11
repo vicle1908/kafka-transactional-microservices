@@ -1,6 +1,8 @@
+---
+# yamllint disable rule:line-length
 name: Load Testing
 
-on:
+"on":
   schedule:
     - cron: '0 3 * * 1'  # Weekly Monday 3 AM run
   workflow_dispatch:  # Allow manual trigger
@@ -11,9 +13,9 @@ on:
         default: 'medium'
         type: choice
         options:
-        - light
-        - medium
-        - heavy
+          - light
+          - medium
+          - heavy
       duration:
         description: 'Test duration in minutes'
         required: true
@@ -32,16 +34,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
+        with:
+          egress-policy: audit
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
         with:
           java-version: '25'
           distribution: 'temurin'
 
       - name: Cache Gradle packages
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ~/.gradle/caches
@@ -51,10 +58,10 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1
         with:
-          gradle-version: '9.1.0'
-          cache-read-only: false
+          cache-disabled: false
+          gradle-home-cache-cleanup: true
 
       - name: Validate infrastructure files exist
         run: |
@@ -74,24 +81,24 @@ jobs:
           echo "🚀 Starting test infrastructure..."
 
           # Start a test environment with Kafka, PostgreSQL, and services
-          docker-compose -f infra/compose.test.yml up -d
+          docker compose -f infra/compose.test.yml up -d
 
           # Enhanced health checks with proper timeouts
           echo "⏳ Waiting for infrastructure services to be ready..."
 
           # Wait for PostgreSQL
           echo "📊 Waiting for PostgreSQL to be ready..."
-          timeout 120 bash -c 'until docker-compose -f infra/compose.test.yml exec -T postgres-test pg_isready -U app -d test &>/dev/null; do sleep 5; done' || {
+          timeout 120 bash -c 'until docker compose -f infra/compose.test.yml exec -T postgres-test pg_isready -U app -d test &>/dev/null; do sleep 5; done' || {
             echo "❌ PostgreSQL failed to start within timeout"
-            docker-compose -f infra/compose.test.yml logs postgres-test
+            docker compose -f infra/compose.test.yml logs postgres-test
             exit 1
           }
 
           # Wait for Kafka
           echo "📡 Waiting for Kafka to be ready..."
-          timeout 180 bash -c 'until docker-compose -f infra/compose.test.yml exec -T kafka-test kafka-broker-api-versions --bootstrap-server localhost:9092 &>/dev/null; do sleep 10; done' || {
+          timeout 180 bash -c 'until docker compose -f infra/compose.test.yml exec -T kafka-test kafka-broker-api-versions --bootstrap-server localhost:9092 &>/dev/null; do sleep 10; done' || {
             echo "❌ Kafka failed to start within timeout"
-            docker-compose -f infra/compose.test.yml logs kafka-test
+            docker compose -f infra/compose.test.yml logs kafka-test
             exit 1
           }
 
@@ -99,7 +106,7 @@ jobs:
           echo "📋 Waiting for Schema Registry to be ready..."
           timeout 120 bash -c 'until curl -f http://localhost:8081/subjects &>/dev/null; do sleep 5; done' || {
             echo "❌ Schema Registry failed to start within timeout"
-            docker-compose -f infra/compose.test.yml logs schema-registry-test
+            docker compose -f infra/compose.test.yml logs schema-registry-test
             exit 1
           }
 
@@ -107,7 +114,7 @@ jobs:
           echo "🔄 Waiting for Debezium Connect to be ready..."
           timeout 120 bash -c 'until curl -f http://localhost:8083/ &>/dev/null; do sleep 5; done' || {
             echo "❌ Debezium Connect failed to start within timeout"
-            docker-compose -f infra/compose.test.yml logs debezium-connect-test
+            docker compose -f infra/compose.test.yml logs debezium-connect-test
             exit 1
           }
 
@@ -145,7 +152,7 @@ jobs:
             if [ -d "services/${service}-service/src/main/resources/db/migration" ]; then
               echo "Running migrations for ${service} service..."
               docker run --rm \
-                --network "$(docker-compose -f infra/compose.test.yml ps -q kafka-test | head -1 | cut -d'-' -f1)" \
+                --network "$(docker compose -f infra/compose.test.yml ps -q kafka-test | head -1 | cut -d'-' -f1)" \
                 -v "$(pwd)/services/${service}-service/src/main/resources/db/migration:/migrations:ro" \
                 flyway/flyway:latest \
                 -url=jdbc:postgresql://postgres-test:5432/test \
@@ -159,12 +166,11 @@ jobs:
 
           echo "✅ Database migrations completed"
 
-      - name: Create improved services compose override
+      - name: Create services compose override
         run: |
           echo "📝 Creating services compose override..."
-
-          # Create a dynamic compose override file
-          cat > infra/compose.loadtest.yml << 'EOF'
+          bash scripts/loadtest/make-compose-override.sh
+          cat > infra/compose.loadtest.yml <<'YAML'
           version: "3.9"
 
           services:
@@ -176,7 +182,7 @@ jobs:
                 - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-test:5432/test
                 - SPRING_DATASOURCE_USERNAME=app
                 - SPRING_DATASOURCE_PASSWORD=app
-                - SPRING_KAFKA_BOOTSTRAP-SERVERS=kafka-test:9092
+                - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-test:9092
                 - SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry-test:8081
                 - MANAGEMENT_OTLP_ENDPOINT=http://otel-collector:4317
                 - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
@@ -215,7 +221,7 @@ jobs:
                 - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-test:5432/test
                 - SPRING_DATASOURCE_USERNAME=app
                 - SPRING_DATASOURCE_PASSWORD=app
-                - SPRING_KAFKA_BOOTSTRAP-SERVERS=kafka-test:9092
+                - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-test:9092
                 - SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry-test:8081
                 - MANAGEMENT_OTLP_ENDPOINT=http://otel-collector:4317
                 - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
@@ -246,117 +252,38 @@ jobs:
                     cpus: '0.5'
                     memory: 512M
 
-            # Enhanced OpenTelemetry and Jaeger setup
-            otel-collector:
-              image: otel/opentelemetry-collector-contrib:0.92.0
-              command: ["--config=/etc/otel-collector-config.yaml"]
-              volumes:
-                - ./infra/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
-              ports:
-                - "4317:4317"   # OTLP gRPC receiver
-                - "4318:4318"   # OTLP HTTP receiver
-                - "13133:13133" # Health check
-              depends_on:
-                - jaeger
-              healthcheck:
-                test: ["CMD", "curl", "-f", "http://localhost:13133"]
-                interval: 30s
-                timeout: 10s
-                retries: 3
+          YAML
 
-            jaeger:
-              image: jaegertracing/all-in-one:1.52
-              ports:
-                - "16686:16686" # Jaeger UI
-                - "14250:14250" # gRPC server
-              environment:
-                - COLLECTOR_OTLP_ENABLED=true
-              healthcheck:
-                test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:14269/metrics"]
-                interval: 30s
-                timeout: 10s
-                retries: 3
-
-            # Prometheus for metrics collection during load test
-            prometheus:
-              image: prom/prometheus:v2.40.0
-              ports:
-                - "9090:9090"
-              volumes:
-                - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-              command:
-                - '--config.file=/etc/prometheus/prometheus.yml'
-                - '--storage.tsdb.path=/prometheus'
-                - '--web.console.libraries=/etc/prometheus/console_libraries'
-                - '--web.console.templates=/etc/prometheus/consoles'
-                - '--storage.tsdb.retention.time=1h'
-                - '--web.enable-lifecycle'
-              healthcheck:
-                test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
-                interval: 30s
-                timeout: 10s
-                retries: 3
-
-          networks:
-            default:
-              name: loadtest-network
-EOF
-
-          # Create Prometheus config if it doesn't exist
-          mkdir -p monitoring
-          if [ ! -f "monitoring/prometheus.yml" ]; then
-            cat > monitoring/prometheus.yml << 'EOF'
-          global:
-            scrape_interval: 15s
-            evaluation_interval: 15s
-
-          scrape_configs:
-            - job_name: 'prometheus'
-              static_configs:
-                - targets: ['localhost:9090']
-
-            - job_name: 'orders-service'
-              static_configs:
-                - targets: ['orders-service:8080']
-              metrics_path: /actuator/prometheus
-              scrape_interval: 5s
-
-            - job_name: 'payments-service'
-              static_configs:
-                - targets: ['payments-service:8080']
-              metrics_path: /actuator/prometheus
-              scrape_interval: 5s
-
-            - job_name: 'otel-collector'
-              static_configs:
-                - targets: ['otel-collector:8888']
-              scrape_interval: 10s
-EOF
-          fi
+      - name: Create Prometheus config
+        run: |
+          echo "📝 Creating Prometheus config..."
+          bash scripts/loadtest/make-prometheus.sh
 
       - name: Start services with Docker Compose
         run: |
+          # shellcheck disable=SC2086
           echo "🚀 Starting microservices..."
 
           # Start the services
-          docker-compose -f infra/compose.test.yml -f infra/compose.loadtest.yml up -d orders-service payments-service
+          docker compose -f infra/compose.test.yml -f infra/compose.loadtest.yml up -d orders-service payments-service
 
           # Wait for services to be ready with enhanced monitoring
           services=("orders-service:8081" "payments-service:8082")
 
           for service in "${services[@]}"; do
-            service_name=$(echo $service | cut -d':' -f1)
-            port=$(echo $service | cut -d':' -f2)
+            service_name=$(echo "$service" | cut -d':' -f1)
+            port=$(echo "$service" | cut -d':' -f2)
 
             echo "⏳ Waiting for ${service_name} to be ready on port ${port}..."
+            # shellcheck disable=SC2086
             timeout 300 bash -c "until curl -f http://localhost:${port}/actuator/health &>/dev/null; do sleep 10; done" || {
               echo "❌ ${service_name} failed to start within timeout"
-              docker-compose -f infra/compose.test.yml -f infra/compose.loadtest.yml logs ${service_name}
+          docker compose -f infra/compose.test.yml -f infra/compose.loadtest.yml logs "${service_name}"
               exit 1
             }
 
             # Additional health check
-            health=$(curl -s http://localhost:${port}/actuator/health | jq -r '.status // "unknown"')
+            health=$(curl -s "http://localhost:${port}/actuator/health" | jq -r '.status // "unknown"')
             echo "✅ ${service_name} is ready (status: ${health})"
           done
 
@@ -369,189 +296,10 @@ EOF
           sudo cp k6-v0.48.0-linux-amd64/k6 /usr/local/bin/
           k6 version
 
-      - name: Create improved k6 load test scripts
+      - name: Create k6 load test scripts
         run: |
           echo "📝 Creating k6 load test scripts..."
-
-          mkdir -p load-tests
-
-          # Determine load parameters based on input
-          case "$LOAD_LEVEL" in
-            "light")
-              VUS=5
-              DURATION="2m"
-              RAMP_UP="30s"
-              ;;
-            "medium")
-              VUS=20
-              DURATION="5m"
-              RAMP_UP="60s"
-              ;;
-            "heavy")
-              VUS=50
-              DURATION="10m"
-              RAMP_UP="120s"
-              ;;
-            *)
-              VUS=10
-              DURATION="${LOAD_TEST_DURATION}m"
-              RAMP_UP="30s"
-              ;;
-          esac
-
-          echo "Load test configuration: VUs=$VUS, Duration=$DURATION, Ramp-up=$RAMP_UP"
-
-          # Create primary load test script
-          cat > load-tests/microservices-load-test.js << EOF
-          import http from 'k6/http';
-          import { check, sleep } from 'k6';
-          import { Rate, Trend } from 'k6/metrics';
-
-          // Custom metrics
-          const failureRate = new Rate('failures');
-          const orderResponseTime = new Trend('order_response_time');
-          const paymentResponseTime = new Trend('payment_response_time');
-
-          export const options = {
-            stages: [
-              { duration: '\${RAMP_UP}', target: \${VUS} },     // Ramp up
-              { duration: '\${DURATION}', target: \${VUS} },   // Stay at load
-              { duration: '\${RAMP_UP}', target: 0 },         // Ramp down
-            ],
-            thresholds: {
-              'http_req_failed': ['rate<0.1'],        // Error rate < 10%
-              'http_req_duration': ['p(95)<3000'],   // 95% under 3s
-              'http_req_waiting': ['p(95)<2500'],    // 95% waiting under 2.5s
-              'failures': ['rate<0.1'],              // Custom failure rate < 10%
-            },
-            thresholds: {
-              'order_response_time': ['p(95)<2000'],
-              'payment_response_time': ['p(95)<2500'],
-            },
-          };
-
-          const BASE_URL = 'http://localhost';
-
-          function generateUniqueId() {
-            return Math.random().toString(36).substr(2, 9) + Date.now();
-          }
-
-          export function setup() {
-            console.log('Load test setup complete');
-            console.log('Configuration:');
-            console.log('- VUs: \${VUS}');
-            console.log('- Duration: \${DURATION}');
-            console.log('- Ramp-up: \${RAMP_UP}');
-
-            // Test connectivity
-            const response = http.get('\${BASE_URL}:8081/actuator/health');
-            check(response, {
-              'orders service is accessible': (r) => r.status === 200,
-            }) || console.error('Orders service is not accessible');
-
-            return { startTime: new Date().toISOString() };
-          }
-
-          export default function (data) {
-            const uniqueId = generateUniqueId();
-
-            // Test Orders Service
-            const orderPayload = JSON.stringify({
-              customerId: "test-customer-" + uniqueId,
-              orderItems: [
-                { productId: "product-1", quantity: 2, price: 29.99 },
-                { productId: "product-2", quantity: 1, price: 49.99 }
-              ]
-            });
-
-            const orderStart = Date.now();
-            const orderResponse = http.post('\${BASE_URL}:8081/orders', orderPayload, {
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Request-ID': uniqueId
-              },
-              timeout: '10s',
-            });
-            const orderEnd = Date.now();
-
-            orderResponseTime.add(orderEnd - orderStart);
-
-            const orderChecks = check(orderResponse, {
-              'create order status is 200 or 201': (r) => r.status >= 200 && r.status < 300,
-              'create order response has orderId': (r) => r.json('orderId') !== undefined,
-              'order response time < 2s': (r) => r.timings.duration < 2000,
-            });
-
-            if (orderChecks) {
-              console.log('✅ Order created: ' + (orderResponse.json('orderId') || 'unknown'));
-
-              // Brief pause between order creation and potential payment processing
-              sleep(1);
-
-              // Test Payments Service (simulate payment processing)
-              if (orderResponse.json('orderId')) {
-                const paymentPayload = JSON.stringify({
-                  orderId: orderResponse.json('orderId'),
-                  amount: 109.97, // Total amount from order items
-                  currency: 'USD',
-                  paymentMethod: 'credit_card'
-                });
-
-                const paymentStart = Date.now();
-                const paymentResponse = http.post('\${BASE_URL}:8082/payments', paymentPayload, {
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'X-Request-ID': uniqueId + '-payment'
-                  },
-                  timeout: '15s',
-                });
-                const paymentEnd = Date.now();
-
-                paymentResponseTime.add(paymentEnd - paymentStart);
-
-                const paymentChecks = check(paymentResponse, {
-                  'payment status is 200 or 201': (r) => r.status >= 200 && r.status < 300,
-                  'payment response has paymentId': (r) => r.json('paymentId') !== undefined,
-                  'payment response time < 2.5s': (r) => r.timings.duration < 2500,
-                });
-
-                if (paymentChecks) {
-                  console.log('✅ Payment processed: ' + (paymentResponse.json('paymentId') || 'unknown'));
-                }
-              }
-            }
-
-            failureRate.add(!orderChecks);
-            sleep(Math.random() * 2 + 1); // Random pause between 1-3 seconds
-          }
-
-          export function teardown(data) {
-            console.log('Load test teardown started');
-            console.log('Test started at:', data.startTime);
-            console.log('Test completed at:', new Date().toISOString());
-          }
-EOF
-
-          # Create health check test
-          cat > load-tests/health-check.js << EOF
-          import http from 'k6/http';
-          import { check } from 'k6';
-
-          export default function () {
-            const responses = http.batch([
-              ['GET', 'http://localhost:8081/actuator/health'],
-              ['GET', 'http://localhost:8082/actuator/health'],
-            ]);
-
-            check(responses[0], {
-              'orders service health is 200': (r) => r.status === 200,
-            });
-
-            check(responses[1], {
-              'payments service health is 200': (r) => r.status === 200,
-            });
-          }
-EOF
+          LOAD_TEST_DURATION=${{ env.LOAD_TEST_DURATION }} LOAD_LEVEL=${{ env.LOAD_LEVEL }} bash scripts/loadtest/make-k6-scripts.sh
 
       - name: Validate k6 scripts
         run: |
@@ -570,14 +318,14 @@ EOF
           echo "📊 Establishing baseline outbox metrics..."
 
           # Check if outbox tables exist and get baseline counts
-          docker-compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
             SELECT 'outbox' as table_name, COUNT(*) as count
             FROM information_schema.tables
             WHERE table_name = 'outbox' AND table_schema = 'public';
           " 2>/dev/null || echo "Outbox table not found"
 
           # Count pending messages if outbox exists
-          docker-compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
             SELECT 'pending_messages' as metric, COUNT(*) as count
             FROM outbox
             WHERE status = 'PENDING' OR status IS NULL;
@@ -604,7 +352,7 @@ EOF
           echo "📊 Analyzing post-load outbox metrics..."
 
           # Check outbox table depth after load test
-          docker-compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
             SELECT
               'outbox_depth' as metric,
               COUNT(*) as count,
@@ -614,7 +362,7 @@ EOF
           " 2>/dev/null || echo "Could not query outbox metrics"
 
           # Check for any failed processing
-          docker-compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
             SELECT
               'failed_messages' as metric,
               COUNT(*) as count
@@ -627,7 +375,7 @@ EOF
           echo "🔍 Validating Exactly-Once Semantics under load..."
 
           # Check for duplicate order IDs in database (would indicate EOS violations)
-          docker-compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
             SELECT
               'duplicate_check' as metric,
               COUNT(*) as total_orders,
@@ -637,7 +385,7 @@ EOF
           " 2>/dev/null || echo "Could not validate EOS behavior"
 
           # Check processed events ledger for duplicates
-          docker-compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
             SELECT
               'processed_events_check' as metric,
               COUNT(*) as total_processed,
@@ -649,56 +397,12 @@ EOF
       - name: Generate comprehensive load test report
         run: |
           echo "📋 Generating comprehensive load test report..."
-
-          mkdir -p reports
-          REPORT_FILE="reports/load-test-report-$(date +%Y%m%d-%H%M%S).md"
-
-          cat > "$REPORT_FILE" << EOF
-          # Load Test Report
-
-          ## Test Configuration
-          - **Date**: $(date)
-          - **Branch**: $GITHUB_REF_NAME
-          - **Commit**: $GITHUB_SHA
-          - **Load Level**: $LOAD_LEVEL
-          - **Duration**: $LOAD_TEST_DURATION minutes
-          - **Runner**: ${{ runner.os }}
-
-          ## Test Environment
-          - **Infrastructure**: Docker Compose (Test Environment)
-          - **Services**: Orders, Payments
-          - **Database**: PostgreSQL 18
-          - **Message Broker**: Apache Kafka 4.1.0
-          - **Schema Registry**: Confluent Schema Registry
-          - **CDC**: Debezium 3.3
-          - **Observability**: OpenTelemetry + Jaeger
-
-          ## Key Metrics
-
-          TODO: Extract actual metrics from k6 results and add them here.
-
-          ## EOS Validation Results
-
-          TODO: Add EOS validation results from outbox analysis.
-
-          ## Recommendations
-
-          TODO: Add recommendations based on test results.
-
-          ---
-          *Report generated automatically by GitHub Actions*
-EOF
-
-          # Extract key metrics from k6 results if available
-          if [ -f "load-summary.json" ]; then
-            echo "📊 Adding k6 metrics to report..."
-            # Add actual metrics parsing here
-          fi
-
-          echo "✅ Report generated: $REPORT_FILE"
+          LOAD_TEST_DURATION=${{ env.LOAD_TEST_DURATION }} LOAD_LEVEL=${{ env.LOAD_LEVEL }} RUNNER_OS=${{ runner.os }} \
+            GITHUB_REF_NAME=${{ github.ref_name }} GITHUB_SHA=${{ github.sha }} \
+            bash scripts/loadtest/make-load-report.sh
 
       - name: Upload load test artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: load-test-results
@@ -710,7 +414,7 @@ EOF
           retention-days: 30
 
       - name: Upload Docker logs if failed
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: failure()
         with:
           name: docker-logs
@@ -725,7 +429,7 @@ EOF
           echo "🧹 Cleaning up test infrastructure..."
 
           # Stop all services
-          docker-compose -f infra/compose.test.yml -f infra/compose.loadtest.yml down -v --remove-orphans
+          docker compose -f infra/compose.test.yml -f infra/compose.loadtest.yml down -v --remove-orphans
 
           # Clean up Docker resources
           docker system prune -f --volumes || true

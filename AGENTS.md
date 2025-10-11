@@ -30,6 +30,11 @@
   - Gradle Plugin Portal (<https://plugins.gradle.org/>) for Gradle plugins
   - Google's Maven Repository (<https://maven.google.com/web/index.html>) for Android libraries
   - Official project release pages and GitHub repositories
+  - **Docker CLI** for direct Docker Hub verification:
+    - Use `docker search <image_name>` to find official repositories
+    - Query Docker Hub API directly for accurate version information: `curl -s "https://registry.hub.docker.com/v2/repositories/library/<image>/tags?page_size=10"`
+    - Verify actual tag availability with `docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.CreatedAt}}"`
+    - Cross-reference with `docker manifest inspect <image>:<tag>` for multi-architecture support
 - When evaluating version upgrades, consider:
   - Compatibility with existing dependencies
   - Security fixes and vulnerability patches
@@ -76,6 +81,74 @@
 - Maintain `docs/version-matrix.md` listing each service's current, candidate, and fallback versions (JDK, Spring Boot, Kafka client, Debezium connector, Testcontainers) plus compatibility notes.
 - Run a quarterly dependency review (see Research Backlog) to validate new maintenance drops; require smoke tests, upgrade playbooks, and rollback plans before updating production baselines.
 - Use CI checks (Gradle task `versionCheck`) to flag mismatched runtime versions across services; merge is blocked until the matrix is updated or the mismatch is resolved.
+
+## Docker Image Version Verification
+
+### Using Docker CLI for Latest Version Research
+
+When managing Docker infrastructure components, use the Docker CLI directly to verify latest versions rather than relying solely on web searches:
+
+#### Core Docker CLI Commands
+
+```bash
+# Search for official repositories
+docker search --limit 5 postgres
+docker search --limit 5 redis
+docker search --limit 5 apache/kafka
+
+# Query Docker Hub API directly for accurate tags
+curl -s "https://registry.hub.docker.com/v2/repositories/library/postgres/tags?page_size=10" | jq -r '.results[] | "\(.name): \(.last_updated)"'
+
+# Check currently cached images and their creation dates
+docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | grep -E "(postgres|redis|kafka)"
+
+# Verify multi-architecture support
+docker manifest inspect redis:latest
+```
+
+#### Best Practices for Docker Version Management
+
+1. **Prefer Official Images**: Use `docker search` to identify official repositories marked with `[OK]`
+2. **Cross-Reference Sources**: Combine Docker CLI results with:
+   - Docker Hub API calls for exact timestamps
+   - `docker images` for local cache verification
+   - `docker manifest inspect` for architecture support
+3. **Version Selection Strategy**:
+   - Use major version tags (e.g., `postgres:18`, `redis:8-alpine`)
+   - Prefer Alpine variants for smaller footprint when appropriate
+   - Avoid `latest` tag in production - use specific versions
+4. **API-Based Verification**: When in doubt, query the Docker Hub API directly:
+   ```bash
+   # Get latest 5 tags with timestamps
+   curl -s "https://registry.hub.docker.com/v2/repositories/library/redis/tags?page_size=5" | jq -r '.results[] | "\(.name): \(.last_updated)"'
+
+   # Find highest version numbers
+   curl -s "https://registry.hub.docker.com/v2/repositories/library/postgres/tags?page_size=30" | jq -r '.results[] | "\(.name)"' | grep -E "^[0-9]+" | sort -V | tail -3
+   ```
+
+#### Environment Variable Management
+
+- Maintain image versions in `infra/.env` with specific tags
+- Use environment variables in `compose.yml` for consistent version management:
+  ```yaml
+  services:
+    postgres:
+      image: ${POSTGRES_IMAGE:-postgres:18-alpine3.22}
+    redis:
+      image: ${REDIS_IMAGE:-redis:8-alpine3.22}
+  ```
+- Update version matrix with reasoning for version selections
+- Run smoke tests after version upgrades to validate compatibility
+
+#### Common Docker CLI Patterns
+
+```bash
+# Research workflow for new image versions
+docker search <service_name>                    # Find official repo
+curl -s "https://registry.hub.docker.com/v2/repositories/library/<service>/tags?page_size=10" | jq '.results[0:3] | .name'  # Check recent tags
+docker manifest inspect <image>:<tag>            # Verify architecture support
+docker pull <image>:<tag> --dry-run 2>&1 || echo "Manual verification needed"  # Test availability
+```
 
 ## Dev Workflow & Commands
 

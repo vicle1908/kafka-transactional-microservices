@@ -11,8 +11,7 @@ import java.time.Instant
 
 /**
  * Structured logging utility for consistent log formatting across microservices.
- * Provides methods to log events with consistent structure including trace IDs,
- * service context, and structured data.
+ * Provides methods to log events with consistent structure.
  */
 class StructuredLogger(
     clazz: Class<*>,

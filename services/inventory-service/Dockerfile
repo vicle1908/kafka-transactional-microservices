@@ -1,5 +1,5 @@
 # Multi-stage build: use Gradle to build the application
-FROM gradle:8.10-jdk25 as builder
+FROM gradle:9.1.0-jdk25 as builder
 WORKDIR /app
 
 # Copy only the necessary files to build the inventory-service
