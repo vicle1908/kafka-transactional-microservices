@@ -1,5 +1,3 @@
-@file:Suppress("JpaDataSourceORMInspection", "unused")
-
 package com.example.orders.domain
 
 import jakarta.persistence.Column

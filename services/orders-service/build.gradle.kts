@@ -34,6 +34,7 @@ dependencies {
     testImplementation(libs.testcontainers.kafka)
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.temporal.testing)
+    testImplementation(libs.h2)
 
     developmentOnly(libs.spring.boot.devtools)
 }

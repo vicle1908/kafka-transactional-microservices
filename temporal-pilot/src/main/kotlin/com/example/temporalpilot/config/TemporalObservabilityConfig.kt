@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration
 class TemporalObservabilityConfig {
     @Bean
     fun workerFactoryOptions(): WorkerFactoryOptions =
-        WorkerFactoryOptions.newBuilder()
+        WorkerFactoryOptions
+            .newBuilder()
             .build()
 }

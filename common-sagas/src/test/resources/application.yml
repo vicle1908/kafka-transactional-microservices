@@ -1,16 +1,15 @@
 spring:
   datasource:
-    url: jdbc:tc:postgresql:15:///test
-    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
-    username: test
-    password: test
+    url: jdbc:h2:mem:sagas;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: sa
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: create-drop
     properties:
       hibernate:
         format_sql: true
     show-sql: false
   flyway:
-    enabled: true
-    locations: classpath:db/migration
+    enabled: false

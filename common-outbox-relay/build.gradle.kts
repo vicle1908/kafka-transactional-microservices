@@ -1,9 +1,18 @@
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 plugins {
     `java-library`
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.spring)
+    alias(libs.plugins.kotlin.jpa)
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
+}
+
+// This module is a library, not a bootable application
+// Disable bootJar to avoid requiring a main class
+tasks.named<BootJar>("bootJar") {
+    enabled = false
 }
 
 dependencies {

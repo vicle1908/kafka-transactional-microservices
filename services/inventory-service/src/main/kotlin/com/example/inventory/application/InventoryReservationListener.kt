@@ -24,17 +24,8 @@ class InventoryReservationListener(
 
     @KafkaListener(topics = [PAYMENTS_COMPLETED_TOPIC], containerFactory = "kafkaListenerContainerFactory")
     @Transactional
-    @Suppress("LongMethod", "TooGenericExceptionCaught")
     fun onPaymentCompleted(record: ConsumerRecord<String, String>) {
-        try {
-            logger.info(
-                "Received payment completed event",
-                "topic" to record.topic(),
-                "partition" to record.partition(),
-                "offset" to record.offset(),
-                "key" to record.key(),
-                "value" to record.value(),
-            )
+        runCatching {
             val event = PaymentCompletedEventCodec.decode(record.value())
             val eventId = UUID.fromString(event.eventId.toString())
 
@@ -43,26 +34,23 @@ class InventoryReservationListener(
                     "Event already processed, skipping",
                     "eventId" to eventId,
                 )
-                return
+                return@runCatching
             }
 
-            val payload = json.parseToJsonElement(event.payload).jsonObject
-            val orderId = UUID.fromString(payload["orderId"]!!.jsonPrimitive.content)
-            val sku = payload["preferredSku"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: DEFAULT_SKU
-            val quantity = payload["quantity"]?.jsonPrimitive?.int ?: DEFAULT_QUANTITY
+            val reservation = reservationDetails(event.payload)
 
             logger.info(
                 "Reserving inventory for payment",
-                "orderId" to orderId,
-                "sku" to sku,
-                "quantity" to quantity,
+                "orderId" to reservation.orderId,
+                "sku" to reservation.sku,
+                "quantity" to reservation.quantity,
             )
 
             inventoryService.reserve(
                 ReserveInventoryCommand(
-                    orderId = orderId,
-                    sku = sku,
-                    quantity = quantity,
+                    orderId = reservation.orderId,
+                    sku = reservation.sku,
+                    quantity = reservation.quantity,
                 ),
             )
 
@@ -75,20 +63,19 @@ class InventoryReservationListener(
 
             logger.info(
                 "Inventory reservation processed successfully",
-                "orderId" to orderId,
+                "orderId" to reservation.orderId,
                 "eventId" to eventId,
             )
-        } catch (e: Exception) {
+        }.onFailure { throwable ->
             logger.error(
                 "Failed to process payment completed event",
                 "topic" to record.topic(),
                 "partition" to record.partition(),
                 "offset" to record.offset(),
                 "key" to record.key(),
-                "error" to e.message,
-                "stackTrace" to e.stackTraceToString(),
+                "error" to throwable.message,
             )
-            throw e
+            throw throwable
         }
     }
 
@@ -97,4 +84,20 @@ class InventoryReservationListener(
         private const val DEFAULT_SKU = "generic-sku"
         private const val DEFAULT_QUANTITY = 1
     }
+
+    private fun reservationDetails(payload: String): ReservationDetails {
+        val jsonPayload = json.parseToJsonElement(payload).jsonObject
+        val orderId = UUID.fromString(jsonPayload["orderId"]!!.jsonPrimitive.content)
+        val sku =
+            jsonPayload["preferredSku"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
+                ?: DEFAULT_SKU
+        val quantity = jsonPayload["quantity"]?.jsonPrimitive?.int ?: DEFAULT_QUANTITY
+        return ReservationDetails(orderId, sku, quantity)
+    }
+
+    private data class ReservationDetails(
+        val orderId: UUID,
+        val sku: String,
+        val quantity: Int,
+    )
 }

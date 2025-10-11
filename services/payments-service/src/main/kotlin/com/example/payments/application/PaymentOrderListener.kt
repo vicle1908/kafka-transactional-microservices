@@ -23,7 +23,7 @@ class PaymentOrderListener(
     @Transactional
     @Suppress("TooGenericExceptionCaught")
     fun onOrderCreated(record: ConsumerRecord<String, String>) {
-        try {
+        runCatching {
             logger.info(
                 "Received order created event",
                 "topic" to record.topic(),
@@ -65,17 +65,16 @@ class PaymentOrderListener(
                 "orderId" to event.aggregateId.toString(),
                 "eventId" to eventId,
             )
-        } catch (e: RuntimeException) {
+        }.onFailure { throwable ->
             logger.error(
                 "Failed to process order created event",
                 "topic" to record.topic(),
                 "partition" to record.partition(),
                 "offset" to record.offset(),
                 "key" to record.key(),
-                "error" to e.message,
-                "stackTrace" to e.stackTraceToString(),
+                "error" to throwable.message,
             )
-            throw e
+            throw throwable
         }
     }
 

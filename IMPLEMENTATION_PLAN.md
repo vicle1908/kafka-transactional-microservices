@@ -25,7 +25,7 @@
 - Set up Docker Compose for local infra under `infra/compose.yml` (Kafka, Postgres, Debezium, Schema Registry,Redis for caching).
 - Configure Postgres for Debezium logical replication and multi-database:
   - Enable `wal_level=logical`, `max_wal_senders`, `max_replication_slots` via `postgres` command flags.
-- Created `infra/postgres/init/01-create-databases.sql` to create `payments`, `inventory`, and `notification` databases owned by `app`.
+- Created `infra/postgres/init/01-create-databases.sql` to create `payments`, `inventory`, and `notifications` databases owned by `app`. Standardized database naming to use plural `notifications` across infra and services.
   - Create a dedicated replication user `debezium` with LOGIN/REPLICATION privileges.
   - Document bootstrap steps in `docs/runbooks/debezium.md`.
 - ✅ **COMPLETED**: **PHASE 1 CI/CD HARDENING** - Comprehensive GitHub Actions security and performance enhancement:
@@ -49,6 +49,7 @@
   - Add `sagas` table using the `SagaStateEntity` shape (single canonical entity); remove/replace alternative mappings.
   - Add `inventory_items` (and reservations if used) with pessimistic locking support.
   - Place migrations under each service at `src/main/resources/db/migration` and enable Flyway (`spring.flyway.enabled=true`).
+  - 2025-10-11: Completed baseline migrations for orders, payments, inventory, and notification services; added `CREATE EXTENSION IF NOT EXISTS pgcrypto;` to support UUID defaults in local dev; aligned `notifications` DB naming across infra and Flyway.
 - Wire `KafkaTransactionManager`, transactional `KafkaTemplate`, and error handling interceptors with proper `transactional.id` configuration.
 - Configure Kafka producers with `enable.idempotence=true`, `acks=all`, and unique `transactional.id`.
 - Configure Kafka consumers with `isolation.level=read_committed` and `enable.auto.commit=false` for manual offset management.

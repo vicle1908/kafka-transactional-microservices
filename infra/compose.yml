@@ -191,7 +191,8 @@ services:
         condition: service_healthy
     volumes:
       - ../services/notification-service/src/main/resources/db/migration:/migrations:ro
-    command: -url=jdbc:postgresql://postgres:5432/notification -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+    # Use plural notifications DB to match application.yml defaults and env-reference
+    command: -url=jdbc:postgresql://postgres:5432/${NOTIFICATIONS_DB_NAME:-notifications} -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
 
   # ELK Stack for centralized logging
   elasticsearch:

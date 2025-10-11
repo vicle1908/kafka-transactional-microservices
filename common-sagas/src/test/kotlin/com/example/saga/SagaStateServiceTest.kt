@@ -2,14 +2,12 @@ package com.example.saga
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.flywaydb.core.Flyway
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 import java.time.Instant
-import javax.sql.DataSource
 
 @DataJpaTest
 class SagaStateServiceTest {
@@ -19,23 +17,10 @@ class SagaStateServiceTest {
     @Autowired
     private lateinit var entityManager: TestEntityManager
 
-    @Autowired
-    private lateinit var dataSource: DataSource
-
     private lateinit var service: SagaStateService
 
     @BeforeEach
     fun setup() {
-        Flyway
-            .configure()
-            .dataSource(dataSource)
-            .locations("classpath:db/migration")
-            .cleanDisabled(false)
-            .load()
-            .also {
-                it.clean()
-                it.migrate()
-            }
         service = SagaStateService(repository)
     }
 
@@ -116,6 +101,27 @@ class SagaStateServiceTest {
     }
 
     @Test
+    fun `transitionByCorrelation should reject blank inputs`() {
+        assertThatThrownBy {
+            service.transitionByCorrelation(
+                sagaType = "",
+                correlationId = "order-123",
+                newState = SagaStatus.IN_PROGRESS,
+            )
+        }.isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("sagaType must not be blank")
+
+        assertThatThrownBy {
+            service.transitionByCorrelation(
+                sagaType = "order-fulfillment",
+                correlationId = "",
+                newState = SagaStatus.IN_PROGRESS,
+            )
+        }.isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("correlationId must not be blank")
+    }
+
+    @Test
     fun `fail should append failure reason`() {
         val saga =
             service.start(
@@ -129,5 +135,44 @@ class SagaStateServiceTest {
         entityManager.flush()
         assertThat(failed.state()).isEqualTo(SagaStatus.FAILED)
         assertThat(failed.data()).contains("gateway timeout")
+    }
+
+    @Test
+    fun `completeByCorrelation should update state to completed`() {
+        val saga =
+            service.start(
+                sagaType = "fulfillment",
+                correlationId = "order-444",
+                initialState = SagaStatus.IN_PROGRESS,
+            )
+
+        val completed =
+            service.completeByCorrelation(
+                sagaType = "fulfillment",
+                correlationId = "order-444",
+            )
+
+        entityManager.flush()
+        assertThat(completed.state()).isEqualTo(SagaStatus.COMPLETED)
+    }
+
+    @Test
+    fun `failByCorrelation should update state to failed with reason`() {
+        service.start(
+            sagaType = "shipping",
+            correlationId = "order-555",
+            initialState = SagaStatus.IN_PROGRESS,
+        )
+
+        val failed =
+            service.failByCorrelation(
+                sagaType = "shipping",
+                correlationId = "order-555",
+                reason = "address invalid",
+            )
+
+        entityManager.flush()
+        assertThat(failed.state()).isEqualTo(SagaStatus.FAILED)
+        assertThat(failed.data()).contains("address invalid")
     }
 }

@@ -13,6 +13,5 @@ dependencies {
     implementation(libs.opentelemetry.api)
     implementation(libs.opentelemetry.opentracing.shim)
 
-
     testImplementation(libs.temporal.testing)
 }

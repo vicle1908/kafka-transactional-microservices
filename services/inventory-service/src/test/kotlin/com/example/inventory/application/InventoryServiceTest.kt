@@ -38,7 +38,7 @@ import java.util.UUID
     properties = ["spring.kafka.listener.auto-startup=false"],
 )
 @ActiveProfiles("test")
-@Import(InventoryFlywayTestConfig::class)
+@Import(InventoryFlywayTestConfig::class, com.example.inventory.testsupport.TestCacheConfig::class)
 class InventoryServiceTest {
     @Autowired
     private lateinit var inventoryService: InventoryService

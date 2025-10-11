@@ -54,4 +54,5 @@
 
 ## Progress Log
 
+- 2025-10-11 | Aligned per-service databases and added baseline Flyway migrations (outbox, processed_events, sagas) for orders, payments, inventory, and notification services; standardized on `notifications` DB name and parameterized Flyway compose command; docs synced with Implementation Plan.
 - 2025-10-07 | Kotlin multi-module foundation, shared libraries, Debezium template, version catalog, and onboarding docs completed.

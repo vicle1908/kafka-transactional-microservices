@@ -4,6 +4,11 @@ spring:
     username: sa
     password: sa
     driver-class-name: org.h2.Driver
+  autoconfigure:
+    exclude:
+      - com.example.common.cache.RedisCacheAutoConfiguration
+  cache:
+    type: simple
   jpa:
     hibernate:
       ddl-auto: none
@@ -13,7 +18,9 @@ spring:
     show-sql: false
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations: classpath:db/test-migration
+    validate-migration-naming: true
+    clean-disabled: false
   kafka:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     consumer:
@@ -27,3 +34,7 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       transaction-id-prefix: notification-tx-
+
+logging:
+  level:
+    org.flywaydb: DEBUG
