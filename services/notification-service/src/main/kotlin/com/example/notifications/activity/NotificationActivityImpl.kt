@@ -9,7 +9,7 @@ import io.micrometer.core.instrument.Timer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 
 /**
  * Implementation of NotificationActivity for Temporal workflow integration.

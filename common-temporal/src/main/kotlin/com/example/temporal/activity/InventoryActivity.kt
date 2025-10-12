@@ -1,8 +1,6 @@
 package com.example.temporal.activity
 
-import com.example.inventory.proto.AdjustStockRequest
 import io.temporal.activity.ActivityInterface
-import java.util.List
 import java.util.UUID
 
 @ActivityInterface

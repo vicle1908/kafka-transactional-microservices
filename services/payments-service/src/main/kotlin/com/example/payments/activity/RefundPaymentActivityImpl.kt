@@ -9,7 +9,7 @@ import io.micrometer.core.instrument.Timer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 
 /**
  * Implementation of RefundPaymentActivity for Temporal workflow compensation.
@@ -18,26 +18,33 @@ import java.util.*
 @Component
 class RefundPaymentActivityImpl(
     private val paymentService: PaymentService,
-    private val meterRegistry: MeterRegistry
+    private val meterRegistry: MeterRegistry,
 ) : RefundPaymentActivity {
-
     private val logger = LoggerFactory.getLogger(RefundPaymentActivityImpl::class.java)
 
-    private val refundProcessedCounter: Counter = Counter.builder("temporal.activity.refund.processed")
-        .description("Number of refund processing activities")
-        .register(meterRegistry)
+    private val refundProcessedCounter: Counter =
+        Counter
+            .builder("temporal.activity.refund.processed")
+            .description("Number of refund processing activities")
+            .register(meterRegistry)
 
-    private val refundSuccessCounter: Counter = Counter.builder("temporal.activity.refund.success")
-        .description("Number of successful refund activities")
-        .register(meterRegistry)
+    private val refundSuccessCounter: Counter =
+        Counter
+            .builder("temporal.activity.refund.success")
+            .description("Number of successful refund activities")
+            .register(meterRegistry)
 
-    private val refundFailureCounter: Counter = Counter.builder("temporal.activity.refund.failure")
-        .description("Number of failed refund activities")
-        .register(meterRegistry)
+    private val refundFailureCounter: Counter =
+        Counter
+            .builder("temporal.activity.refund.failure")
+            .description("Number of failed refund activities")
+            .register(meterRegistry)
 
-    private val refundProcessingTimer: Timer = Timer.builder("temporal.activity.refund.duration")
-        .description("Duration of refund processing activities")
-        .register(meterRegistry)
+    private val refundProcessingTimer: Timer =
+        Timer
+            .builder("temporal.activity.refund.duration")
+            .description("Duration of refund processing activities")
+            .register(meterRegistry)
 
     override fun refundPayment(orderId: UUID): RefundResult {
         val startTime = System.currentTimeMillis()
@@ -60,7 +67,7 @@ class RefundPaymentActivityImpl(
                     refundId = refundOutcome.refundId,
                     amount = refundOutcome.amount,
                     currency = refundOutcome.currency,
-                    message = "Refund processed successfully"
+                    message = "Refund processed successfully",
                 )
             } else {
                 refundFailureCounter.increment()
@@ -71,7 +78,7 @@ class RefundPaymentActivityImpl(
                     refundId = null,
                     amount = refundOutcome.amount,
                     currency = refundOutcome.currency,
-                    message = refundOutcome.failureReason ?: "Refund processing failed"
+                    message = refundOutcome.failureReason ?: "Refund processing failed",
                 )
             }
         } catch (e: Exception) {
@@ -87,7 +94,7 @@ class RefundPaymentActivityImpl(
                 refundId = null,
                 amount = null,
                 currency = null,
-                message = "Error processing refund: ${e.message}"
+                message = "Error processing refund: ${e.message}",
             )
         }
     }

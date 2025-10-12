@@ -3,8 +3,11 @@ package com.example.temporal.workflow
 import com.example.temporal.OrderFulfillmentWorkflow
 import com.example.temporal.TaskQueues
 import com.example.temporal.activity.InventoryActivity
+import com.example.temporal.activity.InventoryReservationResult
 import com.example.temporal.activity.NotificationActivity
+import com.example.temporal.activity.NotificationResult
 import com.example.temporal.activity.PaymentActivity
+import com.example.temporal.activity.PaymentResult
 import com.example.temporal.activity.RefundPaymentActivity
 import com.example.temporal.workflow.SuccessParams
 import io.temporal.activity.ActivityOptions
@@ -16,7 +19,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.Instant
-import java.util.List
 import java.util.UUID
 
 /**
@@ -30,6 +32,18 @@ import java.util.UUID
  * Compensations are configured to run in parallel for faster recovery.
  * The workflow provides detailed logging and error handling for operational visibility.
  */
+
+/**
+ * Parameters for creating a successful OrderFulfillmentResult.
+ */
+data class CreateSuccessResultParams(
+    val orderId: UUID,
+    val paymentResult: PaymentResult,
+    val inventoryResult: InventoryReservationResult,
+    val notificationResult: NotificationResult,
+    val steps: MutableList<WorkflowStep>,
+    val workflowStartTime: Instant,
+)
 @Component
 class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
     private val logger = LoggerFactory.getLogger(OrderFulfillmentWorkflowImpl::class.java)
@@ -104,6 +118,10 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             .setRetryOptions(refundRetryOptions)
             .build()
 
+    override fun start(orderId: UUID) {
+        execute(orderId)
+    }
+
     override fun execute(orderId: UUID): OrderFulfillmentResult {
         val workflowStartTime = Instant.now()
         val steps = mutableListOf<WorkflowStep>()
@@ -121,17 +139,38 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         try {
             val paymentResult = processPaymentStep(orderId, saga, steps)
             if (!paymentResult.success) {
-                return handleWorkflowFailure(orderId, paymentResult.message ?: "Payment processing failed", saga, steps, workflowStartTime)
+                return handleWorkflowFailure(
+                    orderId,
+                    paymentResult.message ?: "Payment processing failed",
+                    saga,
+                    steps,
+                    workflowStartTime,
+                )
             }
 
             val inventoryResult = processInventoryStep(orderId, saga, steps)
             if (!inventoryResult.success) {
-                return handleWorkflowFailure(orderId, inventoryResult.message ?: "Inventory reservation failed", saga, steps, workflowStartTime)
+                return handleWorkflowFailure(
+                    orderId,
+                    inventoryResult.message ?: "Inventory reservation failed",
+                    saga,
+                    steps,
+                    workflowStartTime,
+                )
             }
 
             val notificationResult = processNotificationStep(orderId, steps)
 
-            return createSuccessResult(orderId, paymentResult, inventoryResult, notificationResult, steps, workflowStartTime)
+            return createSuccessResult(
+                CreateSuccessResultParams(
+                    orderId = orderId,
+                    paymentResult = paymentResult,
+                    inventoryResult = inventoryResult,
+                    notificationResult = notificationResult,
+                    steps = steps,
+                    workflowStartTime = workflowStartTime,
+                ),
+            )
         } catch (e: ActivityFailure) {
             logger.error("Activity failure in OrderFulfillmentWorkflow for orderId: $orderId", e)
             return handleActivityFailure(orderId, e, saga, steps, workflowStartTime)
@@ -144,7 +183,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
     private fun processPaymentStep(
         orderId: UUID,
         saga: Saga,
-        steps: MutableList<WorkflowStep>
+        steps: MutableList<WorkflowStep>,
     ): PaymentResult {
         val paymentStep = WorkflowStep.started("Payment Processing")
         steps.add(paymentStep)
@@ -155,12 +194,22 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         val paymentDuration = Duration.between(paymentStartTime, Instant.now()).toMillis()
 
         return if (paymentResult.success) {
-            val completedPaymentStep = WorkflowStep.completed("Payment Processing", "Payment successful", paymentDuration)
+            val completedPaymentStep =
+                WorkflowStep.completed(
+                    "Payment Processing",
+                    "Payment successful",
+                    paymentDuration,
+                )
             steps.add(completedPaymentStep)
             logger.info("Payment completed for orderId: $orderId, paymentId: ${paymentResult.paymentId}")
             paymentResult
         } else {
-            val failedStep = WorkflowStep.failed("Payment Processing", paymentResult.message ?: "Payment failed", paymentDuration)
+            val failedStep =
+                WorkflowStep.failed(
+                    "Payment Processing",
+                    paymentResult.message ?: "Payment failed",
+                    paymentDuration,
+                )
             steps.add(failedStep)
             logger.error("Payment failed for orderId: $orderId, reason: ${paymentResult.message}")
             paymentResult
@@ -170,7 +219,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
     private fun processInventoryStep(
         orderId: UUID,
         saga: Saga,
-        steps: MutableList<WorkflowStep>
+        steps: MutableList<WorkflowStep>,
     ): InventoryReservationResult {
         val inventoryStep = WorkflowStep.started("Inventory Reservation")
         steps.add(inventoryStep)
@@ -181,12 +230,22 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         val inventoryDuration = Duration.between(inventoryStartTime, Instant.now()).toMillis()
 
         return if (inventoryResult.success) {
-            val completedInventoryStep = WorkflowStep.completed("Inventory Reservation", "Inventory reserved", inventoryDuration)
+            val completedInventoryStep =
+                WorkflowStep.completed(
+                    "Inventory Reservation",
+                    "Inventory reserved",
+                    inventoryDuration,
+                )
             steps.add(completedInventoryStep)
             logger.info("Inventory reserved for orderId: $orderId, reservationId: ${inventoryResult.reservationId}")
             inventoryResult
         } else {
-            val failedStep = WorkflowStep.failed("Inventory Reservation", inventoryResult.message ?: "Inventory reservation failed", inventoryDuration)
+            val failedStep =
+                WorkflowStep.failed(
+                    "Inventory Reservation",
+                    inventoryResult.message ?: "Inventory reservation failed",
+                    inventoryDuration,
+                )
             steps.add(failedStep)
             logger.error("Inventory reservation failed for orderId: $orderId, reason: ${inventoryResult.message}")
             inventoryResult
@@ -195,7 +254,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
 
     private fun processNotificationStep(
         orderId: UUID,
-        steps: MutableList<WorkflowStep>
+        steps: MutableList<WorkflowStep>,
     ): NotificationResult {
         val notificationStep = WorkflowStep.started("Order Confirmation")
         steps.add(notificationStep)
@@ -204,35 +263,41 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         val notificationResult = notificationActivities.sendOrderConfirmation(orderId, getCustomerEmail(orderId))
         val notificationDuration = Duration.between(notificationStartTime, Instant.now()).toMillis()
 
-        val completedNotificationStep = if (notificationResult.success) {
-            WorkflowStep.completed("Order Confirmation", "Confirmation sent", notificationDuration)
-        } else {
-            WorkflowStep.failed("Order Confirmation", notificationResult.message ?: "Notification failed", notificationDuration)
-        }
+        val completedNotificationStep =
+            if (notificationResult.success) {
+                WorkflowStep.completed("Order Confirmation", "Confirmation sent", notificationDuration)
+            } else {
+                WorkflowStep.failed(
+                    "Order Confirmation",
+                    notificationResult.message ?: "Notification failed",
+                    notificationDuration,
+                )
+            }
         steps.add(completedNotificationStep)
 
         return notificationResult
     }
 
     private fun createSuccessResult(
-        orderId: UUID,
-        paymentResult: PaymentResult,
-        inventoryResult: InventoryReservationResult,
-        notificationResult: NotificationResult,
-        steps: MutableList<WorkflowStep>,
-        workflowStartTime: Instant
+        params: CreateSuccessResultParams,
     ): OrderFulfillmentResult {
-        val executionDuration = Duration.between(workflowStartTime, Instant.now()).toMillis()
-        val successParams = SuccessParams(
-            orderId = orderId,
-            paymentId = paymentResult.paymentId!!,
-            reservationId = inventoryResult.reservationId!!,
-            confirmationNotificationId = if (notificationResult.success) notificationResult.notificationId else null,
-            steps = steps,
-            executionDuration = executionDuration,
-        )
+        val executionDuration = Duration.between(params.workflowStartTime, Instant.now()).toMillis()
+        val successParams =
+            SuccessParams(
+                orderId = params.orderId,
+                paymentId = params.paymentResult.paymentId!!,
+                reservationId = params.inventoryResult.reservationId!!,
+                confirmationNotificationId =
+                    if (params.notificationResult.success) {
+                        params.notificationResult.notificationId
+                    } else {
+                        null
+                    },
+                steps = params.steps,
+                executionDuration = executionDuration,
+            )
 
-        logger.info("OrderFulfillmentWorkflow completed successfully for orderId: $orderId")
+        logger.info("OrderFulfillmentWorkflow completed successfully for orderId: ${params.orderId}")
         return OrderFulfillmentResult.success(successParams)
     }
 
@@ -241,7 +306,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         failureReason: String,
         saga: Saga,
         steps: MutableList<WorkflowStep>,
-        workflowStartTime: Instant
+        workflowStartTime: Instant,
     ): OrderFulfillmentResult {
         try {
             saga.compensate()
@@ -263,13 +328,14 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         e: ActivityFailure,
         saga: Saga,
         steps: MutableList<WorkflowStep>,
-        workflowStartTime: Instant
+        workflowStartTime: Instant,
     ): OrderFulfillmentResult {
-        val failedStep = WorkflowStep.failed(
-            "Activity Execution",
-            e.message ?: "Activity failed",
-            Duration.between(workflowStartTime, Instant.now()).toMillis(),
-        )
+        val failedStep =
+            WorkflowStep.failed(
+                "Activity Execution",
+                e.message ?: "Activity failed",
+                Duration.between(workflowStartTime, Instant.now()).toMillis(),
+            )
         steps.add(failedStep)
 
         try {
@@ -295,13 +361,14 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         orderId: UUID,
         e: Exception,
         steps: MutableList<WorkflowStep>,
-        workflowStartTime: Instant
+        workflowStartTime: Instant,
     ): OrderFulfillmentResult {
-        val failedStep = WorkflowStep.failed(
-            "Workflow Execution",
-            e.message ?: "Unexpected error",
-            Duration.between(workflowStartTime, Instant.now()).toMillis(),
-        )
+        val failedStep =
+            WorkflowStep.failed(
+                "Workflow Execution",
+                e.message ?: "Unexpected error",
+                Duration.between(workflowStartTime, Instant.now()).toMillis(),
+            )
         steps.add(failedStep)
 
         return OrderFulfillmentResult.failure(

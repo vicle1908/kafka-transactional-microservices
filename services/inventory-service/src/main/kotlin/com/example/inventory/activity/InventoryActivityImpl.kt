@@ -1,7 +1,7 @@
 package com.example.inventory.activity
 
 import com.example.inventory.InventoryService
-import com.example.inventory.proto.AdjustStockRequest
+import com.example.temporal.activity.AdjustStockRequest
 import com.example.temporal.activity.InventoryActivity
 import com.example.temporal.activity.InventoryReservationResult
 import com.example.temporal.activity.InventoryStockLevel
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 /**
  * Implementation of InventoryActivity for Temporal workflow integration.
@@ -151,11 +151,11 @@ class InventoryActivityImpl(
         logger.info("Adjusting stock for orderId: ${request.orderId}")
 
         return try {
-            for (adjustment in request.adjustmentsList) {
+            request.adjustments.forEach { adjustment ->
                 inventoryService.adjustStock(
                     productId = adjustment.productId,
                     quantityAdjustment = adjustment.quantityAdjustment,
-                    reason = adjustment.reason.name,
+                    reason = adjustment.reason,
                 )
             }
 
