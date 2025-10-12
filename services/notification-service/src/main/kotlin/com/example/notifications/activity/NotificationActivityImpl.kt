@@ -18,28 +18,38 @@ import java.util.*
 @Component
 class NotificationActivityImpl(
     private val notificationService: NotificationService,
-    private val meterRegistry: MeterRegistry
+    private val meterRegistry: MeterRegistry,
 ) : NotificationActivity {
-
     private val logger = LoggerFactory.getLogger(NotificationActivityImpl::class.java)
 
-    private val notificationSentCounter: Counter = Counter.builder("temporal.activity.notification.sent")
-        .description("Number of notification sending activities")
-        .register(meterRegistry)
+    private val notificationSentCounter: Counter =
+        Counter
+            .builder("temporal.activity.notification.sent")
+            .description("Number of notification sending activities")
+            .register(meterRegistry)
 
-    private val notificationSuccessCounter: Counter = Counter.builder("temporal.activity.notification.success")
-        .description("Number of successful notification activities")
-        .register(meterRegistry)
+    private val notificationSuccessCounter: Counter =
+        Counter
+            .builder("temporal.activity.notification.success")
+            .description("Number of successful notification activities")
+            .register(meterRegistry)
 
-    private val notificationFailureCounter: Counter = Counter.builder("temporal.activity.notification.failure")
-        .description("Number of failed notification activities")
-        .register(meterRegistry)
+    private val notificationFailureCounter: Counter =
+        Counter
+            .builder("temporal.activity.notification.failure")
+            .description("Number of failed notification activities")
+            .register(meterRegistry)
 
-    private val notificationProcessingTimer: Timer = Timer.builder("temporal.activity.notification.duration")
-        .description("Duration of notification processing activities")
-        .register(meterRegistry)
+    private val notificationProcessingTimer: Timer =
+        Timer
+            .builder("temporal.activity.notification.duration")
+            .description("Duration of notification processing activities")
+            .register(meterRegistry)
 
-    override fun sendOrderConfirmation(orderId: UUID, customerEmail: String): NotificationResult {
+    override fun sendOrderConfirmation(
+        orderId: UUID,
+        customerEmail: String,
+    ): NotificationResult {
         val startTime = System.currentTimeMillis()
         logger.info("Sending order confirmation for orderId: $orderId to email: $customerEmail")
 
@@ -52,21 +62,25 @@ class NotificationActivityImpl(
 
             if (notificationOutcome.success) {
                 notificationSuccessCounter.increment()
-                logger.info("Order confirmation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}")
+                logger.info(
+                    "Order confirmation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}",
+                )
 
                 NotificationResult(
                     success = true,
                     notificationId = notificationOutcome.notificationId,
-                    message = "Order confirmation sent successfully"
+                    message = "Order confirmation sent successfully",
                 )
             } else {
                 notificationFailureCounter.increment()
-                logger.error("Failed to send order confirmation for orderId: $orderId, reason: ${notificationOutcome.failureReason}")
+                logger.error(
+                    "Failed to send order confirmation for orderId: $orderId, reason: ${notificationOutcome.failureReason}",
+                )
 
                 NotificationResult(
                     success = false,
                     notificationId = null,
-                    message = notificationOutcome.failureReason ?: "Failed to send order confirmation"
+                    message = notificationOutcome.failureReason ?: "Failed to send order confirmation",
                 )
             }
         } catch (e: Exception) {
@@ -80,12 +94,15 @@ class NotificationActivityImpl(
             NotificationResult(
                 success = false,
                 notificationId = null,
-                message = "Error sending order confirmation: ${e.message}"
+                message = "Error sending order confirmation: ${e.message}",
             )
         }
     }
 
-    override fun sendPaymentConfirmation(orderId: UUID, customerPhone: String): NotificationResult {
+    override fun sendPaymentConfirmation(
+        orderId: UUID,
+        customerPhone: String,
+    ): NotificationResult {
         val startTime = System.currentTimeMillis()
         logger.info("Sending payment confirmation for orderId: $orderId to phone: $customerPhone")
 
@@ -98,21 +115,25 @@ class NotificationActivityImpl(
 
             if (notificationOutcome.success) {
                 notificationSuccessCounter.increment()
-                logger.info("Payment confirmation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}")
+                logger.info(
+                    "Payment confirmation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}",
+                )
 
                 NotificationResult(
                     success = true,
                     notificationId = notificationOutcome.notificationId,
-                    message = "Payment confirmation sent successfully"
+                    message = "Payment confirmation sent successfully",
                 )
             } else {
                 notificationFailureCounter.increment()
-                logger.error("Failed to send payment confirmation for orderId: $orderId, reason: ${notificationOutcome.failureReason}")
+                logger.error(
+                    "Failed to send payment confirmation for orderId: $orderId, reason: ${notificationOutcome.failureReason}",
+                )
 
                 NotificationResult(
                     success = false,
                     notificationId = null,
-                    message = notificationOutcome.failureReason ?: "Failed to send payment confirmation"
+                    message = notificationOutcome.failureReason ?: "Failed to send payment confirmation",
                 )
             }
         } catch (e: Exception) {
@@ -126,12 +147,15 @@ class NotificationActivityImpl(
             NotificationResult(
                 success = false,
                 notificationId = null,
-                message = "Error sending payment confirmation: ${e.message}"
+                message = "Error sending payment confirmation: ${e.message}",
             )
         }
     }
 
-    override fun sendShippingConfirmation(orderId: UUID, customerDeviceToken: String): NotificationResult {
+    override fun sendShippingConfirmation(
+        orderId: UUID,
+        customerDeviceToken: String,
+    ): NotificationResult {
         val startTime = System.currentTimeMillis()
         logger.info("Sending shipping confirmation for orderId: $orderId to device: $customerDeviceToken")
 
@@ -144,21 +168,25 @@ class NotificationActivityImpl(
 
             if (notificationOutcome.success) {
                 notificationSuccessCounter.increment()
-                logger.info("Shipping confirmation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}")
+                logger.info(
+                    "Shipping confirmation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}",
+                )
 
                 NotificationResult(
                     success = true,
                     notificationId = notificationOutcome.notificationId,
-                    message = "Shipping confirmation sent successfully"
+                    message = "Shipping confirmation sent successfully",
                 )
             } else {
                 notificationFailureCounter.increment()
-                logger.error("Failed to send shipping confirmation for orderId: $orderId, reason: ${notificationOutcome.failureReason}")
+                logger.error(
+                    "Failed to send shipping confirmation for orderId: $orderId, reason: ${notificationOutcome.failureReason}",
+                )
 
                 NotificationResult(
                     success = false,
                     notificationId = null,
-                    message = notificationOutcome.failureReason ?: "Failed to send shipping confirmation"
+                    message = notificationOutcome.failureReason ?: "Failed to send shipping confirmation",
                 )
             }
         } catch (e: Exception) {
@@ -172,17 +200,28 @@ class NotificationActivityImpl(
             NotificationResult(
                 success = false,
                 notificationId = null,
-                message = "Error sending shipping confirmation: ${e.message}"
+                message = "Error sending shipping confirmation: ${e.message}",
             )
         }
     }
 
-    override fun sendOrderCancellation(orderId: UUID, customerEmail: String, cancellationReason: String): NotificationResult {
+    override fun sendOrderCancellation(
+        orderId: UUID,
+        customerEmail: String,
+        cancellationReason: String,
+    ): NotificationResult {
         val startTime = System.currentTimeMillis()
-        logger.info("Sending order cancellation for orderId: $orderId to email: $customerEmail, reason: $cancellationReason")
+        logger.info(
+            "Sending order cancellation for orderId: $orderId to email: $customerEmail, reason: $cancellationReason",
+        )
 
         return try {
-            val notificationOutcome = notificationService.sendOrderCancellation(orderId, customerEmail, cancellationReason)
+            val notificationOutcome =
+                notificationService.sendOrderCancellation(
+                    orderId,
+                    customerEmail,
+                    cancellationReason,
+                )
             val duration = System.currentTimeMillis() - startTime
 
             notificationSentCounter.increment()
@@ -190,21 +229,25 @@ class NotificationActivityImpl(
 
             if (notificationOutcome.success) {
                 notificationSuccessCounter.increment()
-                logger.info("Order cancellation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}")
+                logger.info(
+                    "Order cancellation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}",
+                )
 
                 NotificationResult(
                     success = true,
                     notificationId = notificationOutcome.notificationId,
-                    message = "Order cancellation sent successfully"
+                    message = "Order cancellation sent successfully",
                 )
             } else {
                 notificationFailureCounter.increment()
-                logger.error("Failed to send order cancellation for orderId: $orderId, reason: ${notificationOutcome.failureReason}")
+                logger.error(
+                    "Failed to send order cancellation for orderId: $orderId, reason: ${notificationOutcome.failureReason}",
+                )
 
                 NotificationResult(
                     success = false,
                     notificationId = null,
-                    message = notificationOutcome.failureReason ?: "Failed to send order cancellation"
+                    message = notificationOutcome.failureReason ?: "Failed to send order cancellation",
                 )
             }
         } catch (e: Exception) {
@@ -218,12 +261,16 @@ class NotificationActivityImpl(
             NotificationResult(
                 success = false,
                 notificationId = null,
-                message = "Error sending order cancellation: ${e.message}"
+                message = "Error sending order cancellation: ${e.message}",
             )
         }
     }
 
-    override fun sendRefundConfirmation(orderId: UUID, customerEmail: String, refundAmount: Long): NotificationResult {
+    override fun sendRefundConfirmation(
+        orderId: UUID,
+        customerEmail: String,
+        refundAmount: Long,
+    ): NotificationResult {
         val startTime = System.currentTimeMillis()
         logger.info("Sending refund confirmation for orderId: $orderId to email: $customerEmail, amount: $refundAmount")
 
@@ -236,21 +283,25 @@ class NotificationActivityImpl(
 
             if (notificationOutcome.success) {
                 notificationSuccessCounter.increment()
-                logger.info("Refund confirmation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}")
+                logger.info(
+                    "Refund confirmation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}",
+                )
 
                 NotificationResult(
                     success = true,
                     notificationId = notificationOutcome.notificationId,
-                    message = "Refund confirmation sent successfully"
+                    message = "Refund confirmation sent successfully",
                 )
             } else {
                 notificationFailureCounter.increment()
-                logger.error("Failed to send refund confirmation for orderId: $orderId, reason: ${notificationOutcome.failureReason}")
+                logger.error(
+                    "Failed to send refund confirmation for orderId: $orderId, reason: ${notificationOutcome.failureReason}",
+                )
 
                 NotificationResult(
                     success = false,
                     notificationId = null,
-                    message = notificationOutcome.failureReason ?: "Failed to send refund confirmation"
+                    message = notificationOutcome.failureReason ?: "Failed to send refund confirmation",
                 )
             }
         } catch (e: Exception) {
@@ -264,17 +315,30 @@ class NotificationActivityImpl(
             NotificationResult(
                 success = false,
                 notificationId = null,
-                message = "Error sending refund confirmation: ${e.message}"
+                message = "Error sending refund confirmation: ${e.message}",
             )
         }
     }
 
-    override fun sendCustomNotification(orderId: UUID, recipient: String, channel: String, template: String, payload: String): NotificationResult {
+    override fun sendCustomNotification(
+        orderId: UUID,
+        recipient: String,
+        channel: String,
+        template: String,
+        payload: String,
+    ): NotificationResult {
         val startTime = System.currentTimeMillis()
         logger.info("Sending custom notification for orderId: $orderId to recipient: $recipient via channel: $channel")
 
         return try {
-            val notificationOutcome = notificationService.sendCustomNotification(orderId, recipient, channel, template, payload)
+            val notificationOutcome =
+                notificationService.sendCustomNotification(
+                    orderId,
+                    recipient,
+                    channel,
+                    template,
+                    payload,
+                )
             val duration = System.currentTimeMillis() - startTime
 
             notificationSentCounter.increment()
@@ -282,21 +346,25 @@ class NotificationActivityImpl(
 
             if (notificationOutcome.success) {
                 notificationSuccessCounter.increment()
-                logger.info("Custom notification sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}")
+                logger.info(
+                    "Custom notification sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}",
+                )
 
                 NotificationResult(
                     success = true,
                     notificationId = notificationOutcome.notificationId,
-                    message = "Custom notification sent successfully"
+                    message = "Custom notification sent successfully",
                 )
             } else {
                 notificationFailureCounter.increment()
-                logger.error("Failed to send custom notification for orderId: $orderId, reason: ${notificationOutcome.failureReason}")
+                logger.error(
+                    "Failed to send custom notification for orderId: $orderId, reason: ${notificationOutcome.failureReason}",
+                )
 
                 NotificationResult(
                     success = false,
                     notificationId = null,
-                    message = notificationOutcome.failureReason ?: "Failed to send custom notification"
+                    message = notificationOutcome.failureReason ?: "Failed to send custom notification",
                 )
             }
         } catch (e: Exception) {
@@ -310,7 +378,7 @@ class NotificationActivityImpl(
             NotificationResult(
                 success = false,
                 notificationId = null,
-                message = "Error sending custom notification: ${e.message}"
+                message = "Error sending custom notification: ${e.message}",
             )
         }
     }

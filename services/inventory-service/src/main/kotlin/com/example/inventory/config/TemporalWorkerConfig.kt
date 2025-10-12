@@ -19,7 +19,6 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @ConditionalOnProperty(name = ["temporal.worker.enabled"], havingValue = "true", matchIfMissing = false)
 class TemporalWorkerConfig {
-
     private val logger = LoggerFactory.getLogger(TemporalWorkerConfig::class.java)
 
     @Bean(destroyMethod = "shutdown")
@@ -27,13 +26,18 @@ class TemporalWorkerConfig {
         workflowServiceStubs: WorkflowServiceStubs,
         workflowClient: WorkflowClient,
         inventoryActivityImpl: InventoryActivityImpl,
-        meterRegistry: MeterRegistry
+        meterRegistry: MeterRegistry,
     ): WorkerFactory {
         logger.info("Creating Temporal worker factory for inventory service")
 
-        val factory = WorkerFactory.newInstance(workflowServiceStubs, workflowClient.options.toBuilder()
-            .setNamespace(workflowClient.options.namespace)
-            .build())
+        val factory =
+            WorkerFactory.newInstance(
+                workflowServiceStubs,
+                workflowClient.options
+                    .toBuilder()
+                    .setNamespace(workflowClient.options.namespace)
+                    .build(),
+            )
 
         // Create worker for inventory task queue
         val inventoryWorker: Worker = factory.newWorker(TaskQueues.INVENTORY_TASK_QUEUE)
@@ -46,7 +50,9 @@ class TemporalWorkerConfig {
         val activitiesRegisteredGauge = meterRegistry.gauge("temporal.worker.activities.registered", 1)
 
         workerStartCounter.increment()
-        logger.info("Started Temporal worker for inventory task queue with ${activitiesRegisteredGauge.toInt()} activities")
+        logger.info(
+            "Started Temporal worker for inventory task queue with ${activitiesRegisteredGauge.toInt()} activities",
+        )
 
         // Start the factory
         factory.start()

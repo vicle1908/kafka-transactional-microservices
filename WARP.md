@@ -26,16 +26,16 @@
 ## Version Management Practices
 
 - Regularly check for newer versions of key dependencies using authoritative sources:
-    - MavenCentral Repository (<https://mvnrepository.com/>) for Java/Kotlin libraries
-    - Gradle Plugin Portal (<https://plugins.gradle.org/>) for Gradle plugins
-    - Google's Maven Repository (<https://maven.google.com/web/index.html>) for Android libraries
-    - Official project release pages and GitHub repositories
+  - MavenCentral Repository (<https://mvnrepository.com/>) for Java/Kotlin libraries
+  - Gradle Plugin Portal (<https://plugins.gradle.org/>) for Gradle plugins
+  - Google's Maven Repository (<https://maven.google.com/web/index.html>) for Android libraries
+  - Official project release pages and GitHub repositories
 - When evaluating version upgrades, consider:
-    - Compatibility with existing dependencies
-    - Security fixes and vulnerability patches
-    - Performance improvements and new features
-    - Migration effort and breaking changes
-    - LTS vs. latest version tradeoffs
+  - Compatibility with existing dependencies
+  - Security fixes and vulnerability patches
+  - Performance improvements and new features
+  - Migration effort and breaking changes
+  - LTS vs. latest version tradeoffs
 - Document version decisions in `docs/version-matrix.md` with rationale for selections
 - Run comprehensive tests (unit, integration, contract) after version upgrades
 - Update the Gradle version catalog (`gradle/libs.versions.toml`) with new versions following semantic versioning conventions
@@ -191,38 +191,38 @@ docker manifest inspect <image>:<tag>
 
   **Common Linting Issues and Fixes**:
 
-    - **YAML**: Line length (>80 chars), indentation, trailing whitespace
-    - **Markdown**: Missing fence languages, list formatting, heading duplication
-    - **GitHub Actions**: Outdated actions, missing required fields, syntax errors
+  - **YAML**: Line length (>80 chars), indentation, trailing whitespace
+  - **Markdown**: Missing fence languages, list formatting, heading duplication
+  - **GitHub Actions**: Outdated actions, missing required fields, syntax errors
 
 ## Database & CDC Setup (Standardized Docker Compose)
 
 - Local baseline uses PostgreSQL 18 with logical decoding enabled; Compose mounts init scripts under `infra/postgres/init` to create service DBs (orders, payments, inventory, notification) and `pgcrypto`.
 - Schema is codified with Flyway migrations per service (`services/*/src/main/resources/db/migration`). A dedicated Compose profile `migrate` runs four one-off Flyway containers:
-    - flyway-orders, flyway-payments, flyway-inventory, flyway-notification - Apply with: `make migrate`
+  - flyway-orders, flyway-payments, flyway-inventory, flyway-notification - Apply with: `make migrate`
 - Kafka 4.1 (KRaft) is used locally. Healthcheck calls the bundled broker tool. Auto-create topics is disabled for parity with production; the internal `__consumer_offsets` topic is created explicitly.
 - Debezium Connect 3.3 is the CDC default:
-    - Connectors: orders, payments, inventory, notification
-    - `topic.prefix` set per DB, `snapshot.mode=no_data` (3.x compliant)
-    - Outbox Event Router routes to `outbox.${routedByValue}` with key=`aggregate_id`
-    - `transforms.outbox.table.fields.additional.placement` excludes payload to avoid schema duplication
+  - Connectors: orders, payments, inventory, notification
+  - `topic.prefix` set per DB, `snapshot.mode=no_data` (3.x compliant)
+  - Outbox Event Router routes to `outbox.${routedByValue}` with key=`aggregate_id`
+  - `transforms.outbox.table.fields.additional.placement` excludes payload to avoid schema duplication
 - Connector-side `topic.creation.default.*` is enabled for local dev so outbox topics are created when producing
 - Outbox table is "lean Debezium-only" (no status column). If enabling a custom outbox relay, add `status` via a migration.
 - Standardized workflows:
-    - Start local stack: `make up`
-    - Run migrations: `make migrate`
-    - Register/refresh connectors: `make connectors`
-    - Smoke test (insert outbox row → read from Kafka): `make smoke`
-    - Tear down: `make down` (or `make clean-volumes` for a full reset)
+  - Start local stack: `make up`
+  - Run migrations: `make migrate`
+  - Register/refresh connectors: `make connectors`
+  - Smoke test (insert outbox row → read from Kafka): `make smoke`
+  - Tear down: `make down` (or `make clean-volumes` for a full reset)
 
 ## Documentation & Context Best Practices
 
 - Before adding or editing code, use documentation tools to understand existing patterns and libraries:
-    - Use `get_code_context_exa` to search for relevant API/library contexts before implementing new features
-    - Use `searchGitHub` to find real-world examples and implementation patterns from similar projects
-    - Use `resolve-library-id` and `get-library-docs` to access up-to-date library documentation via Context7
-    - Use `read_wiki_structure` and `read_wiki_contents` to explore GitHub repository documentation
-    - Use DeepWiki for comprehensive documentation exploration before implementing complex features
+  - Use `get_code_context_exa` to search for relevant API/library contexts before implementing new features
+  - Use `searchGitHub` to find real-world examples and implementation patterns from similar projects
+  - Use `resolve-library-id` and `get-library-docs` to access up-to-date library documentation via Context7
+  - Use `read_wiki_structure` and `read_wiki_contents` to explore GitHub repository documentation
+  - Use DeepWiki for comprehensive documentation exploration before implementing complex features
 - Always verify implementation approaches against existing code patterns in the repository before writing new code
 - When using external libraries, first research their correct usage patterns and configuration through documentation tools
 - Follow established patterns in shared modules (`common-*`) as templates for new implementations
@@ -647,8 +647,8 @@ The project implements comprehensive observability with the following components
 - Standardize saga step markers via `SagaStepNames` and the helper `SagaStepFormatter` so logs, monitoring, and replay tooling can parse step history consistently.
 - Provide compensating helpers (`paymentsService.compensate`, `inventoryService.release`) that transition sagas to `COMPENSATING`/`FAILED` with clear step annotations (`payment-compensated`, `inventory-released`) while downstream actions (refunds, stock release) are stubbed for future integrations.
 - Adopt Temporal (self-hosted or cloud) as the orchestrator for complex, multi-domain sagas. The implementation uses a distributed worker model:
-    - A dedicated workflow service (`temporal-pilot`) hosts the workflow logic, ensuring the orchestrator is isolated from other service deployments.
-    - Each participating microservice (`payments-service`, `inventory-service`, etc.) runs its own worker to process activities on a dedicated task queue.
+  - A dedicated workflow service (`temporal-pilot`) hosts the workflow logic, ensuring the orchestrator is isolated from other service deployments.
+  - Each participating microservice (`payments-service`, `inventory-service`, etc.) runs its own worker to process activities on a dedicated task queue.
 - Emit compensating commands/events from the application layer or Temporal activities when a step fails; include correlation identifiers and reason codes so downstream services can reconcile partial changes.
 - Provide idempotent handlers by combining processed-event ledgers with business keys (e.g., `order_id`); return early if the saga step has already completed.
 - Document saga flows with sequence diagrams in `docs/sagas/` and include contract tests that replay happy-path, compensating, and timeout scenarios.
@@ -676,9 +676,9 @@ The project implements comprehensive observability with the following components
 - Automate Debezium connector lifecycle using Infrastructure-as-Code (Terraform/Helm) alongside smoke tests that validate lag and schema mappings after each deployment.
 - For services using non-relational stores or polyglot runtimes, include adapter-specific health checks and replication monitoring in their runbooks; reference the shared version matrix to confirm driver compatibility.
 - Maintain comprehensive observability runbooks for all monitoring components:
-    - Service Mesh runbook (`docs/runbooks/service-mesh.md`) covering Istio configuration and troubleshooting
-    - Polyglot Datastore runbook (`docs/runbooks/polyglot-datastore.md`) covering database operations and maintenance
-    - OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`) covering distributed tracing implementation
+  - Service Mesh runbook (`docs/runbooks/service-mesh.md`) covering Istio configuration and troubleshooting
+  - Polyglot Datastore runbook (`docs/runbooks/polyglot-datastore.md`) covering database operations and maintenance
+  - OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`) covering distributed tracing implementation
 
 ## Security & Compliance
 

@@ -686,17 +686,20 @@ common-temporal/
 ### Key Features
 
 **1. Saga Pattern with Parallel Compensation**
+
 - Distributed transaction coordination across services (Payment → Inventory → Notification)
 - Parallel compensation execution for faster recovery
 - Comprehensive error handling and logging
 - Activity-specific timeout and retry configurations
 
 **2. Type-Safe Activity Interfaces**
+
 - Structured result types (`PaymentResult`, `InventoryReservationResult`, `NotificationResult`)
 - Proper error propagation with detailed failure reasons
 - Metrics integration with Micrometer for all activities
 
 **3. Service Activity Workers**
+
 - Each microservice runs its own activity worker on dedicated task queues:
   - `payments-service`: PaymentActivityImpl, RefundPaymentActivityImpl
   - `inventory-service`: InventoryActivityImpl
@@ -704,11 +707,13 @@ common-temporal/
 - Workers integrate with existing domain logic and service patterns
 
 **4. Comprehensive Testing**
+
 - Activity tests using Temporal TestActivityEnvironment
 - Workflow tests covering success, failure, and compensation scenarios
 - Integration tests with real database and Kafka interactions
 
 **5. Observability & Monitoring**
+
 - Temporal metrics collection with Prometheus
 - Distributed tracing integration via OpenTelemetry
 - Health indicators for Temporal connectivity
@@ -750,16 +755,19 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
 ### Configuration & Deployment
 
 **Task Queue Configuration:**
+
 - `PAYMENTS_TASK_QUEUE`: Payment processing activities
 - `INVENTORY_TASK_QUEUE`: Inventory management activities
 - `NOTIFICATIONS_TASK_QUEUE`: Notification delivery activities
 
 **Worker Setup:**
+
 - Each service configures `TemporalWorkerConfig` with proper activity registration
 - Workers connect to Temporal server and poll for activities on their assigned queues
 - Health checks monitor worker connectivity and Temporal server availability
 
 **Integration with Orders Service:**
+
 - `OrderService` triggers workflows via `WorkflowClient` integration
 - Metrics recorded for workflow starts and completions
 - `WorkflowController` provides REST endpoints for workflow management
@@ -767,24 +775,28 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
 ### Best Practices
 
 **1. Activity Design:**
+
 - Activities should be idempotent and handle retries gracefully
 - Include comprehensive logging for operational visibility
 - Use structured result types instead of primitive returns
 - Integrate with existing service domain logic
 
 **2. Error Handling:**
+
 - Define specific exception types for different failure scenarios
 - Provide meaningful error messages for debugging
 - Configure appropriate retry policies per activity type
 - Ensure compensation actions are also idempotent
 
 **3. Monitoring:**
+
 - Track workflow execution duration and success rates
 - Monitor activity retry counts and failure patterns
 - Set up alerts for workflow timeouts and compensation failures
 - Log correlation IDs for end-to-end tracing
 
 **4. Testing:**
+
 - Write unit tests for activities using TestActivityEnvironment
 - Test workflow failure scenarios and compensation paths
 - Include integration tests with real Temporal server

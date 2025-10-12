@@ -1,7 +1,8 @@
 package com.example.temporal.activity
 
 import java.time.Instant
-import java.util.*
+import java.util.List
+import java.util.UUID
 
 /**
  * Result data classes for Temporal activities.
@@ -14,27 +15,27 @@ data class PaymentResult(
     val amountCents: Long,
     val currency: String,
     val processedAt: Instant?,
-    val message: String
+    val message: String,
 )
 
 data class RefundResult(
     val success: Boolean,
     val refundId: UUID?,
     val refundedAt: Instant?,
-    val message: String
+    val message: String,
 )
 
 data class InventoryReservationResult(
     val success: Boolean,
     val reservationId: UUID?,
     val reservedItems: List<ReservedItem>,
-    val message: String
+    val message: String,
 )
 
 data class ReservedItem(
     val productId: String,
     val quantity: Int,
-    val reservationId: UUID
+    val reservationId: UUID,
 )
 
 data class InventoryStockLevel(
@@ -42,7 +43,7 @@ data class InventoryStockLevel(
     val availableQuantity: Int,
     val reservedQuantity: Int,
     val totalQuantity: Int,
-    val version: Long
+    val version: Long,
 )
 
 data class NotificationResult(
@@ -51,5 +52,5 @@ data class NotificationResult(
     val channel: String,
     val recipient: String,
     val sentAt: Instant?,
-    val message: String
+    val message: String,
 )
