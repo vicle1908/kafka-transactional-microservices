@@ -35,8 +35,12 @@ class OutboxRepositoryTest {
             .configure()
             .dataSource(dataSource)
             .locations("classpath:db/migration")
+            .cleanDisabled(false)
             .load()
-            .migrate()
+            .also {
+                it.clean()
+                it.migrate()
+            }
     }
 
     @Test
@@ -62,7 +66,7 @@ class OutboxRepositoryTest {
     companion object {
         @Container
         private val postgres =
-            PostgreSQLContainer("postgres:18-alpine").apply {
+            PostgreSQLContainer("postgres:16.3-alpine").apply {
                 withDatabaseName("outbox_test")
                 withUsername("postgres")
                 withPassword("postgres")
@@ -76,8 +80,8 @@ class OutboxRepositoryTest {
             registry.add("spring.datasource.password", postgres::getPassword)
             registry.add("spring.datasource.driver-class-name") { "org.postgresql.Driver" }
             registry.add("spring.jpa.hibernate.ddl-auto") { "none" }
-            registry.add("spring.flyway.enabled") { "true" }
-            registry.add("spring.flyway.locations") { "classpath:db/migration" }
+            // Disable Spring Boot's auto Flyway runner; we invoke Flyway manually in @BeforeEach
+            registry.add("spring.flyway.enabled") { "false" }
         }
     }
 }
