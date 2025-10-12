@@ -9,7 +9,6 @@ import com.example.temporal.activity.NotificationResult
 import com.example.temporal.activity.PaymentActivity
 import com.example.temporal.activity.PaymentResult
 import com.example.temporal.activity.RefundPaymentActivity
-import com.example.temporal.workflow.SuccessParams
 import io.temporal.activity.ActivityOptions
 import io.temporal.common.RetryOptions
 import io.temporal.failure.ActivityFailure
@@ -44,9 +43,14 @@ data class CreateSuccessResultParams(
     val steps: MutableList<WorkflowStep>,
     val workflowStartTime: Instant,
 )
+
 @Component
 class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
     private val logger = LoggerFactory.getLogger(OrderFulfillmentWorkflowImpl::class.java)
+
+    companion object {
+        private const val DEFAULT_CUSTOMER_EMAIL = "customer@example.com"
+    }
 
     // Payment activity configuration - 3 attempts with exponential backoff, 30s timeout
     private val paymentRetryOptions =
@@ -136,48 +140,65 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
                     .build(),
             )
 
+        var result: OrderFulfillmentResult? = null
+        var shouldContinue = true
+        var paymentResult: PaymentResult? = null
+        var inventoryResult: InventoryReservationResult? = null
+
         try {
-            val paymentResult = processPaymentStep(orderId, saga, steps)
-            if (!paymentResult.success) {
-                return handleWorkflowFailure(
-                    orderId,
-                    paymentResult.message ?: "Payment processing failed",
-                    saga,
-                    steps,
-                    workflowStartTime,
-                )
+            if (shouldContinue) {
+                paymentResult = processPaymentStep(orderId, saga, steps)
+                if (!paymentResult.success) {
+                    result = handleWorkflowFailure(
+                        orderId,
+                        paymentResult.message ?: "Payment processing failed",
+                        saga,
+                        steps,
+                    )
+                    shouldContinue = false
+                }
             }
 
-            val inventoryResult = processInventoryStep(orderId, saga, steps)
-            if (!inventoryResult.success) {
-                return handleWorkflowFailure(
-                    orderId,
-                    inventoryResult.message ?: "Inventory reservation failed",
-                    saga,
-                    steps,
-                    workflowStartTime,
-                )
+            if (shouldContinue) {
+                inventoryResult = processInventoryStep(orderId, saga, steps)
+                if (!inventoryResult.success) {
+                    result = handleWorkflowFailure(
+                        orderId,
+                        inventoryResult.message ?: "Inventory reservation failed",
+                        saga,
+                        steps,
+                    )
+                    shouldContinue = false
+                }
             }
 
-            val notificationResult = processNotificationStep(orderId, steps)
-
-            return createSuccessResult(
-                CreateSuccessResultParams(
-                    orderId = orderId,
-                    paymentResult = paymentResult,
-                    inventoryResult = inventoryResult,
-                    notificationResult = notificationResult,
-                    steps = steps,
-                    workflowStartTime = workflowStartTime,
-                ),
-            )
+            if (shouldContinue) {
+                val notificationResult = processNotificationStep(orderId, steps)
+                result = createSuccessResult(
+                    CreateSuccessResultParams(
+                        orderId = orderId,
+                        paymentResult = paymentResult!!,
+                        inventoryResult = inventoryResult!!,
+                        notificationResult = notificationResult,
+                        steps = steps,
+                        workflowStartTime = workflowStartTime,
+                    ),
+                )
+            }
         } catch (e: ActivityFailure) {
             logger.error("Activity failure in OrderFulfillmentWorkflow for orderId: $orderId", e)
-            return handleActivityFailure(orderId, e, saga, steps, workflowStartTime)
+            result = handleActivityFailure(orderId, e, saga, steps, workflowStartTime)
         } catch (e: Exception) {
             logger.error("Unexpected error in OrderFulfillmentWorkflow for orderId: $orderId", e)
-            return handleUnexpectedError(orderId, e, steps, workflowStartTime)
+            result = handleUnexpectedError(orderId, e, steps, workflowStartTime)
         }
+
+        return result ?: handleUnexpectedError(
+            orderId,
+            IllegalStateException("Unexpected null result"),
+            steps,
+            workflowStartTime,
+        )
     }
 
     private fun processPaymentStep(
@@ -260,7 +281,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         steps.add(notificationStep)
 
         val notificationStartTime = Instant.now()
-        val notificationResult = notificationActivities.sendOrderConfirmation(orderId, getCustomerEmail(orderId))
+        val notificationResult = notificationActivities.sendOrderConfirmation(orderId, DEFAULT_CUSTOMER_EMAIL)
         val notificationDuration = Duration.between(notificationStartTime, Instant.now()).toMillis()
 
         val completedNotificationStep =
@@ -278,9 +299,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         return notificationResult
     }
 
-    private fun createSuccessResult(
-        params: CreateSuccessResultParams,
-    ): OrderFulfillmentResult {
+    private fun createSuccessResult(params: CreateSuccessResultParams): OrderFulfillmentResult {
         val executionDuration = Duration.between(params.workflowStartTime, Instant.now()).toMillis()
         val successParams =
             SuccessParams(
@@ -306,7 +325,6 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         failureReason: String,
         saga: Saga,
         steps: MutableList<WorkflowStep>,
-        workflowStartTime: Instant,
     ): OrderFulfillmentResult {
         try {
             saga.compensate()
@@ -403,12 +421,4 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             refundActivityOptions.toBuilder().setTaskQueue(TaskQueues.PAYMENTS_TASK_QUEUE).build(),
         )
 
-    /**
-     * Helper method to get customer email for an order.
-     * In a real implementation, this would query the orders database.
-     */
-    private fun getCustomerEmail(orderId: UUID): String {
-        // Placeholder implementation - in production, query the database
-        return "customer@example.com"
     }
-}

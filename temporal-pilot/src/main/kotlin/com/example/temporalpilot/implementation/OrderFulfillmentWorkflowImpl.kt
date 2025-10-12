@@ -69,22 +69,49 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         val steps = mutableListOf<WorkflowStep>()
         val saga = createSaga()
 
+        var result: OrderFulfillmentResult? = null
+        var shouldContinue = true
+        var paymentResult: PaymentResult? = null
+        var inventoryResult: InventoryReservationResult? = null
+
         try {
-            val paymentResult = processPayment(orderId, saga, steps)
-            if (!paymentResult.success) {
-                return handleWorkflowFailure(orderId, paymentResult.message, saga, steps)
+            if (shouldContinue) {
+                paymentResult = processPayment(orderId, saga, steps)
+                if (!paymentResult.success) {
+                    result = handleWorkflowFailure(orderId, paymentResult.message, saga, steps)
+                    shouldContinue = false
+                }
             }
 
-            val inventoryResult = processInventory(orderId, saga, steps)
-            if (!inventoryResult.success) {
-                return handleWorkflowFailure(orderId, inventoryResult.message, saga, steps)
+            if (shouldContinue) {
+                inventoryResult = processInventory(orderId, saga, steps)
+                if (!inventoryResult.success) {
+                    result = handleWorkflowFailure(orderId, inventoryResult.message, saga, steps)
+                    shouldContinue = false
+                }
             }
 
-            val notificationResult = processNotification(orderId, steps)
-            return createSuccessResult(orderId, paymentResult, inventoryResult, notificationResult, workflowStart, steps)
+            if (shouldContinue) {
+                val notificationResult = processNotification(orderId, steps)
+                result = createSuccessResult(
+                    orderId,
+                    paymentResult!!,
+                    inventoryResult!!,
+                    notificationResult,
+                    workflowStart,
+                    steps,
+                )
+            }
         } catch (ex: Exception) {
-            return handleUnexpectedError(orderId, ex, saga, steps)
+            result = handleUnexpectedError(orderId, ex, saga, steps)
         }
+
+        return result ?: handleUnexpectedError(
+            orderId,
+            IllegalStateException("Unexpected null result"),
+            saga,
+            steps,
+        )
     }
 
     private fun createSaga(): Saga =
@@ -95,7 +122,11 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
                 .build(),
         )
 
-    private fun processPayment(orderId: UUID, saga: Saga, steps: MutableList<WorkflowStep>): PaymentResult {
+    private fun processPayment(
+        orderId: UUID,
+        saga: Saga,
+        steps: MutableList<WorkflowStep>,
+    ): PaymentResult {
         val paymentStep = WorkflowStep.started("Payment Processing")
         steps += paymentStep
         val payment = paymentActivities.processPayment(orderId)
@@ -109,7 +140,11 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         }
     }
 
-    private fun processInventory(orderId: UUID, saga: Saga, steps: MutableList<WorkflowStep>): InventoryReservationResult {
+    private fun processInventory(
+        orderId: UUID,
+        saga: Saga,
+        steps: MutableList<WorkflowStep>,
+    ): InventoryReservationResult {
         val inventoryStep = WorkflowStep.started("Inventory Reservation")
         steps += inventoryStep
         val inventory = inventoryActivities.reserveInventory(orderId)
@@ -123,7 +158,10 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         }
     }
 
-    private fun processNotification(orderId: UUID, steps: MutableList<WorkflowStep>): NotificationResult {
+    private fun processNotification(
+        orderId: UUID,
+        steps: MutableList<WorkflowStep>,
+    ): NotificationResult {
         val notificationStep = WorkflowStep.started("Order Confirmation")
         steps += notificationStep
         return notificationActivities.sendOrderConfirmation(orderId, placeholderCustomerEmail(orderId))
