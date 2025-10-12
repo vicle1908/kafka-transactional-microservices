@@ -20,9 +20,10 @@ jobs:
           persist-credentials: false
 
       - name: Run actionlint (GitHub Action)
-        uses: rhysd/actionlint@v1
+        uses: reviewdog/action-actionlint@v1
         with:
-          flags: "-color -verbose"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          actionlint_flags: "-color -verbose"
 
   yamllint:
     runs-on: ubuntu-latest
