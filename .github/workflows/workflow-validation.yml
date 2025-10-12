@@ -38,6 +38,7 @@ jobs:
       - name: Run yamllint
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}:/repo" \
+            -v "${{ github.workspace }}:/data" \
+            -w /data \
             cytopia/yamllint \
             .github/workflows
