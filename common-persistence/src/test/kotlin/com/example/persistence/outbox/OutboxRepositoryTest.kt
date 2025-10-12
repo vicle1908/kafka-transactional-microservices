@@ -46,7 +46,7 @@ class OutboxRepositoryTest {
     companion object {
         @Container
         private val postgres =
-            PostgreSQLContainer("postgres:16.3-alpine").apply {
+            PostgreSQLContainer("postgres:18-alpine").apply {
                 withDatabaseName("outbox_test")
                 withUsername("postgres")
                 withPassword("postgres")
