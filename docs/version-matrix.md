@@ -16,7 +16,7 @@ This document lists the current, candidate, and fallback versions for all major 
 | PostgreSQL | 18 | 18.x patches | 17 | Test pg_upgrade paths before production rollout |
 | Temporal | 1.25.x (self-hosted) | Managed service evaluation | N/A | Decide in Phase 3 ADR |
 | Istio | 1.24.x ambient | 1.25/1.26 | N/A | Track ambient multicluster features |
-| Redis | 7.x | Managed options | N/A | Standardize TLS/auth config |
+| Redis | 8.2.2 | Managed options | N/A | Standardize TLS/auth config |
 | Vault | 1.15.x | 1.16 RC | N/A | Evaluate enterprise vs OSS; ensure auto-unseal |
 | CDN | TBD | Provider evaluation | N/A | Complete Phase 3 assessment |
 
@@ -52,13 +52,13 @@ This document lists the current, candidate, and fallback versions for all major 
 | Component | Version | Configuration File | Purpose |
 |-----------|---------|-------------------|---------|
 | Kafka Brokers | 4.1.0 | infra/compose.yml | Event streaming backbone |
-| Schema Registry | 7.7.0 | infra/compose.yml | Avro schema management |
-| PostgreSQL | 18 | infra/compose.yml | Primary data store |
-| Debezium Connect | 3.3.0 | infra/compose.yml | CDC and outbox event router |
-| AKHQ | 0.24.0 | infra/compose.yml | Kafka management UI |
-| Redis | 7-alpine | infra/compose.yml | Caching layer |
-| Prometheus | 2.54.0 | infra/prometheus/prometheus.yml | Metrics collection |
-| Grafana | 11.2.0 | infra/grafana/provisioning/ | Monitoring dashboards |
+| Schema Registry | 8.0.1 | infra/compose.yml | Avro schema management |
+| PostgreSQL | 18.0 | infra/compose.yml | Primary data store |
+| Debezium Connect | 3.3.0.Final | infra/compose.yml | CDC and outbox event router |
+| AKHQ | 0.25.0 | infra/compose.yml | Kafka management UI |
+| Redis | 8.2.2-alpine | infra/compose.yml | Caching layer |
+| Prometheus | 3.6.0 | infra/prometheus/prometheus.yml | Metrics collection |
+| Grafana | 12.2.0 | infra/grafana/provisioning/ | Monitoring dashboards |
 
 ## Compatibility Notes
 

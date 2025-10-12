@@ -41,7 +41,6 @@ dependencies {
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.kafka)
     testImplementation(libs.spring.kafka.test)
-    testImplementation(libs.h2)
     testImplementation(project(":common-proto"))
     testImplementation(libs.grpc.netty)
     testImplementation(libs.grpc.testing)

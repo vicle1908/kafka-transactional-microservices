@@ -1,0 +1,2 @@
+-- Migration intentionally removed to avoid conflict with V100__create_sagas_table.sql
+-- Kept for historical reference; do not execute.

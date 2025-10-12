@@ -14,16 +14,16 @@
 
 ## Task Board
 
-| ID | Task | Owner | Status | Notes |
-|----|------|-------|--------|-------|
-| P0.1 | Schedule discovery workshops with domain stakeholders | Architecture Team | Completed | See `docs/notes/phase-0-schedule.md`. |
-| P0.2 | Inventory microservice data stores and consistency needs | Architecture Team | Completed | Documented in `docs/architecture/service-catalog.md`. |
-| P0.3 | Confirm tech stack (Spring Boot LTS, Kafka LTS, Debezium, DB) | Platform Team | Completed | See `docs/notes/phase-0-tech-stack.md` and `docs/version-matrix.md`. |
-| P0.4 | Draft ADR: transactional outbox strategy (Debezium default) | Architecture Team | Completed | Recorded in `docs/adrs/0001-transactional-outbox.md`. |
-| P0.5 | Draft ADR: saga choreography vs orchestration | Architecture Team | Completed | See `docs/adrs/0002-saga-coordination.md`. |
-| P0.6 | Draft ADR: schema governance & compatibility policy | Architecture Team | Completed | See `docs/adrs/0003-schema-governance.md`. |
-| P0.7 | Update @AGENTS.md and IMPLEMENTATION_PLAN.md with decisions | Architecture Team | Completed | Documentation updated with discovery outcomes. |
-| P0.8 | Draft ADR: secrets management strategy | Architecture Team | Completed | See `docs/adrs/0004-secrets-management.md`. |
+| ID   | Task                                                          | Owner             | Status    | Notes                                                                |
+|------|---------------------------------------------------------------|-------------------|-----------|----------------------------------------------------------------------|
+| P0.1 | Schedule discovery workshops with domain stakeholders         | Architecture Team | Completed | See `docs/notes/phase-0-schedule.md`.                                |
+| P0.2 | Inventory microservice data stores and consistency needs      | Architecture Team | Completed | Documented in `docs/architecture/service-catalog.md`.                |
+| P0.3 | Confirm tech stack (Spring Boot LTS, Kafka LTS, Debezium, DB) | Platform Team     | Completed | See `docs/notes/phase-0-tech-stack.md` and `docs/version-matrix.md`. |
+| P0.4 | Draft ADR: transactional outbox strategy (Debezium default)   | Architecture Team | Completed | Recorded in `docs/adrs/0001-transactional-outbox.md`.                |
+| P0.5 | Draft ADR: saga choreography vs orchestration                 | Architecture Team | Completed | See `docs/adrs/0002-saga-coordination.md`.                           |
+| P0.6 | Draft ADR: schema governance & compatibility policy           | Architecture Team | Completed | See `docs/adrs/0003-schema-governance.md`.                           |
+| P0.7 | Update @AGENTS.md and IMPLEMENTATION_PLAN.md with decisions   | Architecture Team | Completed | Documentation updated with discovery outcomes.                       |
+| P0.8 | Draft ADR: secrets management strategy                        | Architecture Team | Completed | See `docs/adrs/0004-secrets-management.md`.                          |
 
 ## Research & References
 

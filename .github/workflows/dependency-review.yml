@@ -1,8 +1,11 @@
+---
+# yamllint disable rule:line-length
 name: Dependency Review
 
-on:
-  push:
-    branches: [ main ]
+"on":
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -10,26 +13,28 @@ permissions:
 
 jobs:
   dependency-review:
-    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
+        with:
+          egress-policy: audit
 
       # Lightweight GitHub-native dependency review (no build)
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@5194ced0a6f398b5acd35d8917d81e4f5d5f04cf
         with:
           config-file: .github/dependency-review-config.yml
           fail-on-severity: high
-          warn-only: true
-          deny-identified-vulnerabilities: true
 
       - name: Upload version catalog for context
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: dependency-version-catalog

@@ -60,6 +60,9 @@ class SagaStateService(
         newState: SagaStatus,
         options: SagaTransitionOptions = SagaTransitionOptions(),
     ): SagaStateEntity {
+        require(sagaType.isNotBlank()) { "sagaType must not be blank" }
+        require(correlationId.isNotBlank()) { "correlationId must not be blank" }
+
         val entity =
             repository.findBySagaTypeAndCorrelationId(sagaType, correlationId)
                 ?: throw SagaNotFoundException("$sagaType:$correlationId")
@@ -75,6 +78,7 @@ class SagaStateService(
     }
 
     @Transactional
+    @Suppress("unused")
     fun complete(
         sagaId: UUID,
         dataTransformer: (String?) -> String? = { it },
@@ -85,6 +89,19 @@ class SagaStateService(
             newState = SagaStatus.COMPLETED,
             dataTransformer = dataTransformer,
             at = at,
+        )
+
+    @Transactional
+    fun completeByCorrelation(
+        sagaType: String,
+        correlationId: String,
+        options: SagaTransitionOptions = SagaTransitionOptions(),
+    ): SagaStateEntity =
+        transitionByCorrelation(
+            sagaType = sagaType,
+            correlationId = correlationId,
+            newState = SagaStatus.COMPLETED,
+            options = options,
         )
 
     @Transactional
@@ -100,7 +117,22 @@ class SagaStateService(
             at = at,
         )
 
+    @Transactional
+    fun failByCorrelation(
+        sagaType: String,
+        correlationId: String,
+        reason: String?,
+        options: SagaTransitionOptions = SagaTransitionOptions(),
+    ): SagaStateEntity =
+        transitionByCorrelation(
+            sagaType = sagaType,
+            correlationId = correlationId,
+            newState = SagaStatus.FAILED,
+            options = options.copy(dataTransformer = { existing -> mergeFailure(existing, reason) }),
+        )
+
     @Transactional(readOnly = true)
+    @Suppress("unused")
     fun findById(sagaId: UUID): SagaStateEntity? = repository.findByIdOrNull(sagaId)
 
     private fun mergeFailure(

@@ -1,0 +1,2 @@
+-- Failure reason column is created as part of V1002__create_payments_table.sql.
+-- Migration retained for Flyway history; no-op.

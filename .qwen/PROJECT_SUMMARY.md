@@ -1,36 +1,37 @@
 # Project Summary
 
 ## Overall Goal
-Build Spring Boot microservices that coordinate business state changes with Kafka events using transactional outbox patterns to guarantee exactly-once semantics without dual writes, while maintaining observability, resiliency, and comprehensive testing.
+
+Set up and configure OpenTelemetry infrastructure to fix gRPC connection errors in Qwen Code that were occurring due to unavailable OpenTelemetry collector endpoints.
 
 ## Key Knowledge
-- **Tech Stack**: Spring Boot 3.5.6, Kotlin 2.2.20 on Java 25, Kafka 4.1.0 with pure KRaft mode (no ZooKeeper), PostgreSQL 18, Debezium 3.3.0.Final
-- **Architecture**: Transactional outbox pattern with Debezium CDC relays, hexagonal architecture with domain/application/adapter layers, saga choreography with compensating actions
-- **Build System**: Gradle 9.1.0 with multi-module structure (`common-events`, `common-kafka`, `common-persistence`, `common-observability`, `common-sagas`)
-- **Key Commands**: `./gradlew clean test`, `./gradlew check`, `./gradlew schemaCompatibilityCheck`, `./gradlew versionCheck`, `docker compose up -d kafka postgres schema-registry debezium`
-- **Version Management**: Latest stable versions maintained in `docs/version-matrix.md` with fallbacks, quarterly dependency reviews required
-- **Infrastructure**: Docker Compose for local dev (`infra/compose.yml`), Istio ambient mesh, Spring Cloud Gateway at edge
+
+- Qwen Code version 0.0.14 was attempting to export OpenTelemetry data to localhost:4317 but no collector was running
+- The project uses Docker Compose with a local profile for OpenTelemetry services (otel-collector and jaeger)
+- OpenTelemetry collector configuration was initially incorrect - using invalid exporter type "jaeger" instead of "otlp"
+- The Jaeger service in the compose file has `COLLECTOR_OTLP_ENABLED=true` environment variable
+- OpenTelemetry collector port: 4317 (gRPC), 4318 (HTTP), Jaeger port: 14250 (gRPC), 16686 (UI)
+- The docker-compose.yml file defines all infrastructure services for the Kafka-based microservices project
 
 ## Recent Actions
-- Enhanced CI/CD with security scanning (OWASP Dependency Check, Trivy, CodeQL) and dependency license compliance workflows
-- Added static analysis tools (SpotBugs, Error Prone) integrated into Gradle build and CI pipeline
-- Created `common-observability` module with OpenTelemetry tracing, Micrometer metrics, and Prometheus integration
-- Fixed unused imports across the codebase and updated all service modules to use the observability module
-- Updated documentation to reflect new development practices and tooling integration
-- All phase documents updated to show completed tasks and current status
+
+- [DONE] Identified the root cause of the Qwen Code error - OpenTelemetry collector was not running
+- [DONE] Fixed the OpenTelemetry collector configuration file at `/infra/otel/otel-collector-config.yaml` to use correct exporter type
+- [DONE] Cleaned up Docker resources to free up disk space that was preventing containers from starting
+- [DONE] Successfully started both otel-collector and jaeger services using Docker Compose
+- [DONE] Verified both services are running and accessible (collector on 4317/4318, jaeger on 14250/16686)
+- [DONE] Confirmed Qwen Code now works properly without the gRPC connection error
 
 ## Current Plan
-1. [DONE] Set up security scanning workflows with OWASP, Trivy, and CodeQL
-2. [DONE] Integrate SpotBugs and Error Prone into Gradle build and CI
-3. [DONE] Create common observability module with OpenTelemetry/Micrometer
-4. [DONE] Update documentation and phase tracking documents
-5. [IN PROGRESS] Enhance service template with observability integration
-6. [TODO] Implement comprehensive integration tests with full Kafka/DB Testcontainers environments
-7. [TODO] Complete saga pilot implementation with Temporal workflow orchestration
-8. [TODO] Finalize API gateway and Debezium connector operational runbooks
-9. [TODO] Conduct load testing and chaos engineering drills for resilience validation
+
+- [DONE] Set up OpenTelemetry infrastructure to resolve Qwen Code connection errors
+- [DONE] Fix configuration issues in OpenTelemetry collector
+- [DONE] Verify all components are working properly
+- [TODO] Continue with Qwen Code development work without the OpenTelemetry errors
+- [TODO] Monitor OpenTelemetry services to ensure stable operation during Qwen Code usage
 
 ---
 
 ## Summary Metadata
-**Update time**: 2025-10-10T09:19:46.908Z 
+
+**Update time**: 2025-10-11T14:03:08.769Z

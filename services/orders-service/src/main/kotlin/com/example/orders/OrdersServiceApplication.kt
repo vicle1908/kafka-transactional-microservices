@@ -1,6 +1,7 @@
 package com.example.orders
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.autoconfigure.domain.EntityScan
 import org.springframework.boot.runApplication
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.scheduling.annotation.EnableScheduling
@@ -13,9 +14,16 @@ import org.springframework.scheduling.annotation.EnableScheduling
         "com.example.kafka",
     ],
 )
+@EntityScan(
+    basePackages = [
+        "com.example.orders.domain",
+        "com.example.outbox.entity",
+        "com.example.saga",
+    ],
+)
 @EnableJpaRepositories(
     basePackages = [
-        "com.example.orders.repository",
+        "com.example.orders.domain",
         "com.example.outbox.repository",
         "com.example.saga",
     ],

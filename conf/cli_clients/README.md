@@ -4,7 +4,7 @@ This directory contains the configuration for the Zen MCP server's `clink` tool,
 
 ## Directory Structure
 
-```
+```text
 conf/
   cli_clients/
     ├── gemini.json    # Google Gemini CLI configuration
@@ -35,6 +35,7 @@ These configurations should only be used in trusted environments. For production
 ## Usage
 
 The clink tool can be used to:
+
 - Spawn isolated AI subagents from within the current session
 - Enable cross-CLI orchestration between different AI models
 - Maintain conversation continuity while leveraging external tools
@@ -44,6 +45,7 @@ The clink tool can be used to:
 ## Configuration Options
 
 Each CLI client configuration includes:
+
 - `command`: The CLI command to execute
 - `args`: Arguments to pass to the command
 - `description`: Brief description of the client

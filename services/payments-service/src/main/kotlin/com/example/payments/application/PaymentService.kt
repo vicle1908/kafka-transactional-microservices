@@ -59,7 +59,7 @@ class PaymentService(
     private val logger = StructuredLogger.getLogger(PaymentService::class.java)
 
     @Transactional
-    @Suppress("LongMethod", "ReturnCount")
+    @Suppress("ReturnCount")
     fun handle(command: ProcessPaymentCommand): PaymentProcessingOutcome {
         logger.info(
             "Processing payment",
@@ -69,79 +69,14 @@ class PaymentService(
         )
 
         validate(command)
-        val eventId = command.eventId
-        if (eventId != null && processedEventRepository.existsById(eventId)) {
-            logger.debug(
-                "Event already processed, skipping",
-                "eventId" to eventId,
-            )
-            val existing =
-                paymentRepository.findTopByOrderIdOrderByProcessedAtDesc(command.orderId)
-                    ?: return PaymentProcessingOutcome.AlreadyProcessed(null)
-            return PaymentProcessingOutcome.AlreadyProcessed(existing.id)
-        }
+        findDuplicateOutcome(command)?.let { return it }
 
         val createdAt = Instant.now()
+        val payment = createPendingPayment(command, createdAt)
+        val chargeResult = executeCharge(payment.id ?: error("Payment id missing after save"), command)
+        val outcome = applyChargeOutcome(payment, command.orderId, chargeResult)
 
-        val payment =
-            PaymentEntity(
-                orderId = command.orderId,
-                amount = command.amount,
-                status = PaymentStatus.PENDING,
-                processedAt = createdAt,
-            )
-        paymentRepository.save(payment)
-
-        logger.info(
-            "Payment entity created",
-            "paymentId" to payment.id,
-            "orderId" to command.orderId,
-            "amount" to command.amount,
-        )
-
-        val persistedId = payment.id ?: throw IllegalStateException("Payment id should be available after save")
-
-        logger.info(
-            "Initiating payment charge",
-            "paymentId" to persistedId,
-            "orderId" to command.orderId,
-            "amount" to command.amount,
-        )
-
-        val chargeResult =
-            paymentGateway.charge(
-                PaymentChargeRequest(
-                    paymentId = persistedId,
-                    orderId = command.orderId,
-                    amount = command.amount,
-                    metadata = command.metadata,
-                ),
-            )
-
-        logger.info(
-            "Payment charge result received",
-            "paymentId" to persistedId,
-            "chargeResult" to
-                when (chargeResult) {
-                    is Approved -> "approved"
-                    is Declined -> "declined"
-                },
-        )
-
-        val outcome =
-            when (chargeResult) {
-                is Approved -> recordSuccessfulCharge(payment, command.orderId, chargeResult)
-                is Declined -> recordFailedCharge(payment, command.orderId, chargeResult.reason)
-            }
-
-        eventId?.let {
-            processedEventRepository.save(
-                ProcessedEventEntity(
-                    eventId = it,
-                    processedAt = Instant.now(),
-                ),
-            )
-        }
+        recordProcessedEvent(command.eventId)
 
         logger.info(
             "Payment processing completed",
@@ -212,6 +147,94 @@ class PaymentService(
         logger.info(
             "Payment compensation completed",
             "orderId" to orderId,
+        )
+    }
+
+    private fun findDuplicateOutcome(command: ProcessPaymentCommand): PaymentProcessingOutcome? {
+        val eventId = command.eventId
+        if (eventId == null || !processedEventRepository.existsById(eventId)) {
+            return null
+        }
+        logger.debug(
+            "Event already processed, skipping",
+            "eventId" to eventId,
+        )
+        val existing = paymentRepository.findTopByOrderIdOrderByProcessedAtDesc(command.orderId)
+        return PaymentProcessingOutcome.AlreadyProcessed(existing?.id)
+    }
+
+    private fun createPendingPayment(
+        command: ProcessPaymentCommand,
+        createdAt: Instant,
+    ): PaymentEntity {
+        val payment =
+            PaymentEntity(
+                orderId = command.orderId,
+                amount = command.amount,
+                status = PaymentStatus.PENDING,
+                processedAt = createdAt,
+            )
+        paymentRepository.save(payment)
+
+        logger.info(
+            "Payment entity created",
+            "paymentId" to payment.id,
+            "orderId" to command.orderId,
+            "amount" to command.amount,
+        )
+        return payment
+    }
+
+    private fun executeCharge(
+        paymentId: UUID,
+        command: ProcessPaymentCommand,
+    ): PaymentChargeResult {
+        logger.info(
+            "Initiating payment charge",
+            "paymentId" to paymentId,
+            "orderId" to command.orderId,
+            "amount" to command.amount,
+        )
+
+        val result =
+            paymentGateway.charge(
+                PaymentChargeRequest(
+                    paymentId = paymentId,
+                    orderId = command.orderId,
+                    amount = command.amount,
+                    metadata = command.metadata,
+                ),
+            )
+
+        logger.info(
+            "Payment charge result received",
+            "paymentId" to paymentId,
+            "chargeResult" to
+                when (result) {
+                    is Approved -> "approved"
+                    is Declined -> "declined"
+                },
+        )
+        return result
+    }
+
+    private fun applyChargeOutcome(
+        payment: PaymentEntity,
+        orderId: UUID,
+        chargeResult: PaymentChargeResult,
+    ): PaymentProcessingOutcome =
+        when (chargeResult) {
+            is Approved -> recordSuccessfulCharge(payment, orderId, chargeResult)
+            is Declined -> recordFailedCharge(payment, orderId, chargeResult.reason)
+        }
+
+    private fun recordProcessedEvent(eventId: UUID?) {
+        eventId ?: return
+        processedEventRepository.save(
+            ProcessedEventEntity(
+                eventId = eventId,
+                processedAt = Instant.now(),
+            ),
         )
     }
 

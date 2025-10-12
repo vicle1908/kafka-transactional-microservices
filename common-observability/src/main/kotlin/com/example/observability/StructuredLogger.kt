@@ -1,10 +1,7 @@
 package com.example.observability
 
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -14,14 +11,12 @@ import java.time.Instant
 
 /**
  * Structured logging utility for consistent log formatting across microservices.
- * Provides methods to log events with consistent structure including trace IDs,
- * service context, and structured data.
+ * Provides methods to log events with consistent structure.
  */
 class StructuredLogger(
-    private val clazz: Class<*>,
+    clazz: Class<*>,
 ) {
     private val logger: Logger = LoggerFactory.getLogger(clazz)
-    private val json = Json { encodeDefaults = true }
 
     /**
      * Log an INFO level message with structured data
@@ -29,7 +24,9 @@ class StructuredLogger(
     fun info(
         message: String,
         vararg keyValuePairs: Pair<String, Any?>,
-    ) = logger.info(formatMessage(message, *keyValuePairs))
+    ) {
+        logger.info(formatMessage(message, *keyValuePairs))
+    }
 
     /**
      * Log a WARN level message with structured data
@@ -37,7 +34,9 @@ class StructuredLogger(
     fun warn(
         message: String,
         vararg keyValuePairs: Pair<String, Any?>,
-    ) = logger.warn(formatMessage(message, *keyValuePairs))
+    ) {
+        logger.warn(formatMessage(message, *keyValuePairs))
+    }
 
     /**
      * Log an ERROR level message with structured data
@@ -45,7 +44,9 @@ class StructuredLogger(
     fun error(
         message: String,
         vararg keyValuePairs: Pair<String, Any?>,
-    ) = logger.error(formatMessage(message, *keyValuePairs))
+    ) {
+        logger.error(formatMessage(message, *keyValuePairs))
+    }
 
     /**
      * Log a DEBUG level message with structured data
@@ -53,7 +54,9 @@ class StructuredLogger(
     fun debug(
         message: String,
         vararg keyValuePairs: Pair<String, Any?>,
-    ) = logger.debug(formatMessage(message, *keyValuePairs))
+    ) {
+        logger.debug(formatMessage(message, *keyValuePairs))
+    }
 
     /**
      * Create a structured log entry with consistent fields
@@ -62,7 +65,7 @@ class StructuredLogger(
         message: String,
         vararg keyValuePairs: Pair<String, Any?>,
     ): String {
-        val payload: JsonObject =
+        val payload =
             buildJsonObject {
                 put("timestamp", JsonPrimitive(Instant.now().toString()))
                 put("message", JsonPrimitive(message))
@@ -71,7 +74,7 @@ class StructuredLogger(
                 }
             }
 
-        return json.encodeToString(JsonObject.serializer(), payload)
+        return payload.toString()
     }
 
     companion object {
@@ -90,24 +93,26 @@ class StructuredLogger(
             is Boolean -> JsonPrimitive(this)
             is Instant -> JsonPrimitive(this.toString())
             is Enum<*> -> JsonPrimitive(this.name)
-            is Iterable<*> ->
-                buildJsonArray {
-                    this@toJsonElement.forEach { add(it.toJsonElement()) }
-                }
-
-            is Array<*> ->
-                buildJsonArray {
-                    @Suppress("UNCHECKED_CAST")
-                    (this@toJsonElement as Array<Any?>).forEach { add(it.toJsonElement()) }
-                }
-
-            is Map<*, *> ->
-                buildJsonObject {
-                    this@toJsonElement.forEach { (key, value) ->
-                        put(key?.toString() ?: "null", value.toJsonElement())
-                    }
-                }
-
+            is Iterable<*> -> this.toJsonArray()
+            is Array<*> -> this.toJsonArray()
+            is Map<*, *> -> this.toJsonObject()
             else -> JsonPrimitive(this.toString())
+        }
+
+    private fun Iterable<*>.toJsonArray(): JsonElement =
+        buildJsonArray {
+            forEach { add(it.toJsonElement()) }
+        }
+
+    private fun Array<*>.toJsonArray(): JsonElement =
+        buildJsonArray {
+            forEach { add(it.toJsonElement()) }
+        }
+
+    private fun Map<*, *>.toJsonObject(): JsonElement =
+        buildJsonObject {
+            forEach { (key, value) ->
+                put(key?.toString() ?: "null", value.toJsonElement())
+            }
         }
 }

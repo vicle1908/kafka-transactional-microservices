@@ -1,0 +1,294 @@
+services:
+  kafka:
+    image: ${KAFKA_IMAGE:-apache/kafka:4.1.0}
+    container_name: kafka
+    profiles:
+      - local
+    ports:
+      - "${KAFKA_PLAINTEXT_PORT:-9092}:9092"
+      - "${KAFKA_CONTROLLER_PORT:-9093}:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      # EOS configuration: Transaction state log replication for exactly-once semantics
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # EOS configuration: Idempotence settings
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "kafka:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  schema-registry:
+    image: ${SCHEMA_REGISTRY_IMAGE:-confluentinc/cp-schema-registry:8.0.1}
+    container_name: schema-registry
+    profiles:
+      - local
+    depends_on:
+      - kafka
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+    ports:
+      - "${SCHEMA_REGISTRY_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:18.0}
+    container_name: postgres
+    profiles:
+      - local
+      - migrate
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      POSTGRES_DB: ${POSTGRES_DB_ORDERS:-orders}
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
+      - "-c"
+      - "max_wal_senders=10"
+      - "-c"
+      - "max_replication_slots=10"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB_ORDERS:-orders}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:8.2.2-alpine}
+    container_name: redis
+    profiles:
+      - local
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  debezium-connect:
+    image: ${DEBEZIUM_IMAGE:-quay.io/debezium/connect:3.3.0.Final}
+    container_name: debezium-connect
+    profiles:
+      - local
+    depends_on:
+      - kafka
+      - schema-registry
+    ports:
+      - "${DEBEZIUM_PORT:-8083}:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: debezium_config
+      OFFSET_STORAGE_TOPIC: debezium_offsets
+      STATUS_STORAGE_TOPIC: debezium_status
+      KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  akhq:
+    image: ${AKHQ_IMAGE:-tchiotludo/akhq:0.25.0}
+    container_name: akhq
+    profiles:
+      - local
+    depends_on:
+      - kafka
+      - schema-registry
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            microservices:
+              properties:
+                bootstrap.servers: kafka:9092
+                schema.registry.url: http://schema-registry:8081
+    ports:
+      - "${AKHQ_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flyway-orders:
+    image: flyway/flyway:11.13.2
+    container_name: flyway-orders
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../services/orders-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/orders -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+
+  flyway-payments:
+    image: flyway/flyway:11.13.2
+    container_name: flyway-payments
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../services/payments-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/payments -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+
+  flyway-inventory:
+    image: flyway/flyway:11.13.2
+    container_name: flyway-inventory
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../services/inventory-service/src/main/resources/db/migration:/migrations:ro
+    command: -url=jdbc:postgresql://postgres:5432/inventory -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+
+  flyway-notification:
+    image: flyway/flyway:11.13.2
+    container_name: flyway-notification
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../services/notification-service/src/main/resources/db/migration:/migrations:ro
+    # Use plural notifications DB to match application.yml defaults and env-reference
+    command: -url=jdbc:postgresql://postgres:5432/${NOTIFICATIONS_DB_NAME:-notifications} -user=${POSTGRES_USER:-app} -password=${POSTGRES_PASSWORD:-app} -locations=filesystem:/migrations -baselineOnMigrate=${FLYWAY_BASELINE_ON_MIGRATE:-true} migrate
+
+  # ELK Stack for centralized logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.8
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.18.8
+    container_name: logstash
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.18.8
+    container_name: kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=["http://elasticsearch:9200"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.18.8
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/usr/share/filebeat/logs:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      logstash:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "filebeat", "test", "config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # OpenTelemetry Collector and Jaeger for distributed tracing
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.137.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "13133:13133" # Health check
+    depends_on:
+      - jaeger
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.74.0
+    container_name: jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # gRPC server
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+volumes:
+  kafka-data:
+  pg-data:
+  redis-data:
+  elasticsearch-data:

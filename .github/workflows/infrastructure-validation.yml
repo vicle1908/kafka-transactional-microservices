@@ -1,14 +1,16 @@
+---
+# yamllint disable rule:line-length
 name: Infrastructure Validation
 
-on:
+"on":
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'infra/**'
       - 'docker-compose*.yml'
       - '.github/workflows/**'
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'infra/**'
       - 'docker-compose*.yml'
@@ -19,10 +21,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
+        with:
+          egress-policy: audit
 
       - name: Set up Docker Compose
-        uses: docker/setup-compose-action@v1
+        uses: docker/setup-compose-action@364cc21a5de5b1ee4a7f5f9d3fa374ce0ccde746
 
       - name: Validate Docker Compose files
         run: |
@@ -47,10 +54,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
+        with:
+          egress-policy: audit
 
       - name: Run Dockerfile security scan with Trivy
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
           scan-type: 'config'
           scan-ref: 'infra'
@@ -58,7 +70,7 @@ jobs:
           output: 'trivy-config-results.sarif'
 
       - name: Upload Trivy config results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: trivy-config-results
@@ -68,10 +80,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
+        with:
+          egress-policy: audit
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
         if: hashFiles('**/*.tf') != ''
 
       - name: Terraform fmt
@@ -88,17 +105,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
+        with:
+          egress-policy: audit
 
       - name: Set up Kubeconform
-        uses: bmuschko/setup-kubeconform@v1
-        with:
-          version: 'v0.6.4'
+        uses: bmuschko/setup-kubeconform@5ccaecbbf012bcb1eeeab66e649db64a477ade8f
 
       - name: Validate Kubernetes manifests
         run: |
           if [ -d "infra/k8s" ]; then
-            find infra/k8s -name "*.yaml" -o -name "*.yml" | xargs -n 1 -I {} kubeconform -strict -summary
+            find infra/k8s \( -name "*.yaml" -o -name "*.yml" \) -print0 | xargs -0 -n 1 -I {} kubeconform -strict -summary {}
           else
             echo "No k8s manifests found"
           fi
@@ -110,7 +130,12 @@ jobs:
         service: [orders-service, payments-service, inventory-service, notification-service]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
+        with:
+          egress-policy: audit
 
       - name: Build Docker image for ${{ matrix.service }}
         run: |
@@ -123,7 +148,7 @@ jobs:
           fi
 
       - name: Run Trivy image scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
           scan-type: 'fs'
           scan-ref: 'infra'

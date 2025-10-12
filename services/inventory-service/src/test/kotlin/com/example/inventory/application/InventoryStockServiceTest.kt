@@ -16,7 +16,7 @@ import org.springframework.test.context.DynamicPropertySource
 
 @SpringBootTest(classes = [InventoryServiceApplication::class])
 @ActiveProfiles("test")
-@Import(InventoryFlywayTestConfig::class)
+@Import(InventoryFlywayTestConfig::class, com.example.inventory.testsupport.TestCacheConfig::class)
 class InventoryStockServiceTest {
     @Autowired
     private lateinit var inventoryStockService: InventoryStockService

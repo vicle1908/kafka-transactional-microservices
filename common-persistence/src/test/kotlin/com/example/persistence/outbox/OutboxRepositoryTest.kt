@@ -80,6 +80,8 @@ class OutboxRepositoryTest {
             registry.add("spring.datasource.password", postgres::getPassword)
             registry.add("spring.datasource.driver-class-name") { "org.postgresql.Driver" }
             registry.add("spring.jpa.hibernate.ddl-auto") { "none" }
+            // Disable Spring Boot's auto Flyway runner; we invoke Flyway manually in @BeforeEach
+            registry.add("spring.flyway.enabled") { "false" }
         }
     }
 }

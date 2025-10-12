@@ -24,7 +24,7 @@ open class SagaStateEntity(
     @Enumerated(EnumType.STRING)
     @Column(name = "state", nullable = false)
     private var state: SagaStatus,
-    @Column(name = "data", columnDefinition = "TEXT")
+    @Column(name = "data", columnDefinition = "text")
     private var data: String?,
     @Column(name = "created_at", nullable = false)
     val createdAt: Instant,
@@ -52,7 +52,13 @@ open class SagaStateEntity(
         updatedAt = at
     }
 
-    constructor() : this(
+    /**
+     * No-arg constructor for JPA only.
+     * This constructor should not be used directly in application code.
+     * Use the primary constructor instead.
+     */
+    @Deprecated("Only for JPA. Use the primary constructor instead.", level = DeprecationLevel.WARNING)
+    protected constructor() : this(
         sagaId = UUID.randomUUID(),
         sagaType = "unknown",
         correlationId = UUID.randomUUID().toString(),

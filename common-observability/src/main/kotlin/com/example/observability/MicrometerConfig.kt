@@ -1,4 +1,4 @@
-package com.example.observability.config
+package com.example.observability
 
 import io.micrometer.core.instrument.binder.MeterBinder
 import io.micrometer.observation.ObservationRegistry

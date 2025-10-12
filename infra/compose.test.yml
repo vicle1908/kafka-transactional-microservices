@@ -1,11 +1,11 @@
-version: "3.9"
+---
 
 # Docker Compose file for integration testing environment
 # This matches the setup used in GitHub Actions for consistent local and CI testing
 
 services:
   postgres-test:
-    image: postgres:18
+    image: postgres:18.0
     container_name: postgres-test
     environment:
       POSTGRES_USER: app
@@ -34,7 +34,7 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-      # EOS configuration: Transaction state log replication for exactly-once semantics
+      # EOS: Transaction state log replication for exactly-once semantics
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_MIN_INSYNC_REPLICAS: 1
@@ -49,7 +49,7 @@ services:
       retries: 5
 
   schema-registry-test:
-    image: confluentinc/cp-schema-registry:7.7.0
+    image: confluentinc/cp-schema-registry:8.0.1
     container_name: schema-registry-test
     depends_on:
       kafka-test:
@@ -67,7 +67,7 @@ services:
       retries: 5
 
   debezium-connect-test:
-    image: debezium/connect:3.3
+    image: quay.io/debezium/connect:3.3.0.Final
     container_name: debezium-connect-test
     depends_on:
       kafka-test:
@@ -96,7 +96,7 @@ services:
       retries: 5
 
   redis-test:
-    image: redis:7-alpine
+    image: redis:8.2.2-alpine
     container_name: redis-test
     ports:
       - "6379:6379"
@@ -107,7 +107,7 @@ services:
       retries: 3
 
   akhq-test:
-    image: tchiotludo/akhq:0.24.0
+    image: tchiotludo/akhq:0.25.0
     container_name: akhq-test
     depends_on:
       kafka-test:

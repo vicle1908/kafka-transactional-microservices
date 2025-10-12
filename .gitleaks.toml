@@ -1,0 +1,35 @@
+title = "Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+  description = "Allowlisted paths and files that are not secrets."
+  paths = [
+    '''^build/''',
+    '''^\.gradle/''',
+    '''^target/''',
+    '''^node_modules/''',
+    '''^tmp/''',
+    '''^cache/''',
+    '''^generated/''',
+    '''^out/''',
+    '''\.class$''',
+    '''\.jar$''',
+    '''\.war$''',
+    '''\.ear$''',
+    '''\.aar$''',
+    '''\.so$''',
+    '''\.dylib$''',
+    '''\.dll$''',
+    '''\.exe$''',
+    '''\.log$''',
+    '''\.tmp$''',
+    '''\.cache$''',
+    '''^reports/''',
+    '''^test-results/''',
+    '''^jacoco/''',
+    '''^configuration-cache/''',
+    '''^gradle/wrapper/''',
+    '''gitleaks-report\.json$'''
+  ]

@@ -9,10 +9,16 @@ dependencies {
     implementation(libs.spring.boot.starter)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.aop)
+
+    // OpenTelemetry core + tracing + metrics (versions managed via BOM in root)
     implementation(libs.opentelemetry.api)
+    implementation("io.opentelemetry:opentelemetry-context")
     implementation("io.opentelemetry:opentelemetry-sdk")
     implementation("io.opentelemetry:opentelemetry-sdk-trace")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
+    implementation("io.opentelemetry:opentelemetry-sdk-metrics")
+
+    // Micrometer + JSON
     implementation("io.micrometer:micrometer-registry-prometheus:1.13.0")
     implementation(libs.kotlinx.serialization.json)
 }

@@ -11,7 +11,7 @@ import org.springframework.test.context.DynamicPropertySource
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Import(InventoryFlywayTestConfig::class)
+@Import(InventoryFlywayTestConfig::class, com.example.inventory.testsupport.TestCacheConfig::class)
 class InventoryServiceApplicationTests {
     companion object {
         @JvmStatic

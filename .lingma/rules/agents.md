@@ -30,7 +30,7 @@ trigger: always_on
 ## Version Management Practices
 
 - Regularly check for newer versions of key dependencies using authoritative sources:
-    - Maven Central Repository (<https://mvnrepository.com/>) for Java/Kotlin libraries
+    - MavenCentral Repository (<https://mvnrepository.com/>) for Java/Kotlin libraries
     - Gradle Plugin Portal (<https://plugins.gradle.org/>) for Gradle plugins
     - Google's Maven Repository (<https://maven.google.com/web/index.html>) for Android libraries
     - Official project release pages and GitHub repositories
@@ -43,6 +43,7 @@ trigger: always_on
 - Document version decisions in `docs/version-matrix.md` with rationale for selections
 - Run comprehensive tests (unit, integration, contract) after version upgrades
 - Update the Gradle version catalog (`gradle/libs.versions.toml`) with new versions following semantic versioning conventions
+- Enforce the use of the Gradle version catalog for all plugins and dependencies in build files to ensure consistent version management across all modules
 
 ## Architecture Blueprint
 
@@ -80,6 +81,43 @@ trigger: always_on
 - Run a quarterly dependency review (see Research Backlog) to validate new maintenance drops; require smoke tests, upgrade playbooks, and rollback plans before updating production baselines.
 - Use CI checks (Gradle task `versionCheck`) to flag mismatched runtime versions across services; merge is blocked until the matrix is updated or the mismatch is resolved.
 
+## Docker & Container Image Management
+
+### Docker CLI Version Verification
+
+When managing Docker infrastructure components, use the Docker CLI directly to verify latest versions rather than relying solely on web searches.
+
+#### Core Commands
+
+```bash
+# Search for official repositories
+docker search --limit 5 postgres
+docker search --limit 5 redis
+docker search --limit 5 apache/kafka
+
+# Query Docker Hub API directly for accurate tags
+curl -s "https://registry.hub.docker.com/v2/repositories/library/postgres/tags?page_size=10" | jq -r '.results[] | "\(.name): \(.last_updated)"'
+
+# Verify multi-architecture support
+docker manifest inspect redis:latest
+```
+
+#### Best Practices
+
+1. **Prefer Official Images**: Use `docker search` to identify official repositories marked with `[OK]`
+2. **Version Selection**: Use major version tags (e.g., `postgres:18`, `redis:8-alpine`), avoid `latest` in production
+3. **Cross-Reference Sources**: Combine Docker CLI results with Docker Hub API calls and local cache verification
+4. **Environment Management**: Maintain image versions in `infra/.env` and use environment variables in `compose.yml`
+
+#### Verification Workflow
+
+```bash
+# Research new versions
+docker search <service_name>
+curl -s "https://registry.hub.docker.com/v2/repositories/library/<service>/tags?page_size=10" | jq '.results[0:3] | .name'
+docker manifest inspect <image>:<tag>
+```
+
 ## Dev Workflow & Commands
 
 - Bootstrap infra with env: `cp infra/.env.example infra/.env && docker compose --env-file infra/.env -f infra/compose.yml up -d`.
@@ -92,21 +130,88 @@ trigger: always_on
 - Export Avro schemas with `./gradlew exportAvroSchemas` and publish via `scripts/schema-publish.sh` before enabling Debezium connectors; registry compatibility is enforced in CI.
 - Service modules live under `services/<name>` (e.g., `orders-service`) and follow the hexagonal template documented in `docs/dev/service-template.md`; depend on shared modules for events, Kafka, persistence, sagas, and observability.
 - Launch disposable CLI subagents with `clink` when fresh context windows are needed for specific tasks. Currently, only claude, codex, and gemini are supported by clink due to a hardcoded allowlist. For tasks requiring other CLIs like qwen, temporarily remap an existing client or use the CLI directly.
+- Always use the Gradle version catalog (`gradle/libs.versions.toml`) when adding new plugins or dependencies to build files to ensure consistent version management across all modules
+- **Local Workflow & Document Validation**: Before committing changes, especially to GitHub Actions workflows or documentation, run local validation tools to catch errors early. These tools are typically installed via package managers like `npm`, `pip`, or `brew`.
+
+  **Post-Edit Validation Practice**: After editing any `.yml`, `.yaml`, or `.md` files, always run the appropriate linting tools to ensure quality and consistency:
+
+  ```bash
+  # After editing YAML files (.yml, .yaml)
+  yamllint <filename>.yml                    # Check single file
+  yamllint .                                 # Check all YAML files in project
+  yamllint infra/ .github/                   # Check specific directories
+
+  # After editing Markdown files (.md)
+  npx markdownlint <filename>.md             # Check single file
+  npx markdownlint "**/*.md"                 # Check all markdown files
+  npx markdownlint docs/**/*.md              # Check specific directories
+
+  # After editing GitHub Actions workflows
+  actionlint .github/workflows/*.yml         # Check workflow files
+  ```
+
+  **Automatic Fixing Workflow**: Many linting issues can be automatically fixed:
+
+  ```bash
+  # Auto-fix markdownlint issues
+  npx markdownlint "**/*.md" --fix
+
+  # Auto-fix YAML formatting issues (requires yamllint config)
+  yamllint -d relaxed .github/workflows/*.yml
+
+  # Format Kotlin code (after editing .kt files)
+  ./gradlew ktlintFormat
+  ```
+
+  **Comprehensive Validation Commands**:
+
+  ```bash
+  # Validate all documentation and configuration files
+  make lint-all                             # Custom make command (if available)
+  npx markdownlint "**/*.md" --fix && yamllint . --no-warnings
+
+  # Check specific file types
+  find . -name "*.yml" -o -name "*.yaml" | xargs yamllint --no-warnings
+  find . -name "*.md" -not -path "./build/*" | xargs npx markdownlint --fix
+  ```
+
+  **Tool Installation**:
+
+  ```bash
+  # Install required tools (macOS)
+  brew install yamllint actionlint
+  npm install -g markdownlint-cli
+
+  # Or use npx for markdownlint without global installation
+  # npx markdownlint is recommended for project consistency
+  ```
+
+  **Integration with Development Workflow**:
+
+    1. **After any file edit**: Run the appropriate linter immediately
+    2. **Before commits**: Run comprehensive lint check across all modified files
+    3. **CI/CD alignment**: Use the same tools and configurations as CI pipelines
+    4. **Error handling**: Review and fix all linting issues before pushing changes
+
+  **Common Linting Issues and Fixes**:
+
+    - **YAML**: Line length (>80 chars), indentation, trailing whitespace
+    - **Markdown**: Missing fence languages, list formatting, heading duplication
+    - **GitHub Actions**: Outdated actions, missing required fields, syntax errors
 
 ## Database & CDC Setup (Standardized Docker Compose)
 
 - Local baseline uses PostgreSQL 18 with logical decoding enabled; Compose mounts init scripts under `infra/postgres/init` to create service DBs (orders, payments, inventory, notification) and `pgcrypto`.
 - Schema is codified with Flyway migrations per service (`services/*/src/main/resources/db/migration`). A dedicated Compose profile `migrate` runs four one-off Flyway containers:
-    - flyway-orders, flyway-payments, flyway-inventory, flyway-notification
-    - Apply with: `make migrate` (after `make up`)
+    - flyway-orders, flyway-payments, flyway-inventory, flyway-notification - Apply with: `make migrate`
 - Kafka 4.1 (KRaft) is used locally. Healthcheck calls the bundled broker tool. Auto-create topics is disabled for parity with production; the internal `__consumer_offsets` topic is created explicitly.
 - Debezium Connect 3.3 is the CDC default:
     - Connectors: orders, payments, inventory, notification
     - `topic.prefix` set per DB, `snapshot.mode=no_data` (3.x compliant)
     - Outbox Event Router routes to `outbox.${routedByValue}` with key=`aggregate_id`
     - `transforms.outbox.table.fields.additional.placement` excludes payload to avoid schema duplication
-    - Connector-side `topic.creation.default.*` is enabled for local dev so outbox topics are created when producing
-- Outbox table is “lean Debezium-only” (no status column). If enabling a custom outbox relay, add `status` via a migration.
+- Connector-side `topic.creation.default.*` is enabled for local dev so outbox topics are created when producing
+- Outbox table is "lean Debezium-only" (no status column). If enabling a custom outbox relay, add `status` via a migration.
 - Standardized workflows:
     - Start local stack: `make up`
     - Run migrations: `make migrate`
@@ -126,25 +231,328 @@ trigger: always_on
 - When using external libraries, first research their correct usage patterns and configuration through documentation tools
 - Follow established patterns in shared modules (`common-*`) as templates for new implementations
 
-## MCP Search Practice
+## GitHub CLI Integration
+
+The GitHub CLI (`gh`) is essential for managing repository operations, monitoring CI/CD workflows, and handling pull requests efficiently. Below are common practices and commands for the microservices project.
+
+### Installation & Authentication
+
+```bash
+# Install GitHub CLI (macOS)
+brew install gh
+
+# Authenticate with GitHub (choose HTTPS + browser or PAT)
+gh auth login
+
+# Confirm scopes and active host
+gh auth status
+
+# Reuse credentials for git fetch/push
+gh auth setup-git
+
+# Set default editor for PR descriptions and issues
+gh config set editor <editor-name>
+
+# Optional: configure frequently used aliases
+gh alias set prd 'pr create --draft'
+```
+
+> **Token hygiene**: when scripting, export `GH_TOKEN`/`GITHUB_TOKEN` with minimal scopes (for CI logs use `actions:read`; reruns need `actions:write`). Rotate PATs alongside other credentials.
+
+### Monitoring Actions & Workflows
+
+**View recent workflow runs:**
+
+```bash
+# List recent workflow runs
+gh run list
+
+# View runs for a specific workflow
+gh run list --workflow="ci.yml"
+
+# View detailed information about a specific run and fail the shell on errors
+gh run view <run-id> --exit-status
+
+# View logs for a specific job and only show failed steps
+gh run view <run-id> --log --job=<job-name> --log-failed
+
+# Watch a running workflow in real-time
+gh run watch <run-id> --compact --exit-status --interval 5
+
+# Emit structured data for dashboards / scripts
+gh run view <run-id> --json conclusion,workflowName,url --jq '.workflowName + " → " + .conclusion'
+```
+
+**Workflow debugging and troubleshooting:**
+
+```bash
+# Download artifacts from a workflow run
+gh run download <run-id> --dir artifacts/ --pattern '*report*'
+
+# Rerun a failed workflow
+gh run rerun <run-id> --failed
+
+# Rerun a specific job (obtain job databaseId from --json jobs)
+gh run rerun <run-id> --job <job-database-id>
+
+# Cancel a running workflow
+gh run cancel <run-id>
+
+# Trigger workflow_dispatch with parameters
+gh workflow run path/to/workflow.yml --ref main -f smoke=true
+
+# Fallback when run names break log downloads: fetch archive directly
+gh api repos/<owner>/<repo>/actions/runs/<run-id>/logs > run-logs.zip
+
+# Enable debug logging (requires repository variables or rerun option)
+gh run rerun <run-id> --debug
+```
+
+### Pull Request Management
+
+**Create and manage pull requests:**
+
+```bash
+# Create a pull request from current branch
+gh pr create
+
+# Create PR with title and body
+gh pr create --title "feat: add transactional outbox" --body "Implement outbox pattern for orders service"
+
+# List pull requests
+gh pr list
+
+# View PR details and status checks
+gh pr view <pr-number>
+
+# Check PR status and CI results
+gh pr checks <pr-number> --watch
+
+# Merge a PR (with various merge methods)
+gh pr merge <pr-number> --merge
+gh pr merge <pr-number> --squash
+gh pr merge <pr-number> --rebase
+```
+
+**PR review and collaboration:**
+
+```bash
+# Request review from team members
+gh pr edit <pr-number> --add-reviewer vicle1908
+
+# Add labels to PR
+gh pr edit <pr-number> --add-label "dependencies"
+
+# Approve a PR
+gh pr review <pr-number> --approve
+
+# Request changes
+gh pr review <pr-number> --request-changes
+
+# View PR diff
+gh pr diff <pr-number>
+
+# View files changed in PR
+gh pr view <pr-number> --json files --jq '.files[].path'
+
+# Apply PR locally for testing without switching branches
+gh pr checkout <pr-number>
+```
+
+### Issue Management
+
+**Create and manage issues:**
+
+```bash
+# Create an issue
+gh issue create --title "Bug: Kafka consumer not processing messages" --body "Detailed description..."
+
+# List issues
+gh issue list
+
+# View issue details
+gh issue view <issue-number>
+
+# Assign issue to yourself
+gh issue edit <issue-number> --assignee vicle1908
+
+# Add labels to issue
+gh issue edit <issue-number> --add-label "bug,kafka"
+```
+
+### Repository Management
+
+**View repository information:**
+
+```bash
+# View repository overview
+gh repo view
+
+# View repository with specific fields
+gh repo view --json name,description,defaultBranch,createdAt
+
+# List repository collaborators
+gh repo list --json owner,name
+
+# View repository traffic
+gh repo view --json cloneTraffic,viewTraffic
+```
+
+### Configuration & Settings
+
+**Manage repository and branch settings:**
+
+```bash
+# View repository settings
+gh repo edit --json settings
+
+# Set default branch
+gh repo edit --default-branch main
+
+# Manage branch protection rules (requires GitHub CLI v2.0+)
+gh api repos/:owner/:repo/branches/:branch/protection
+
+# View repository secrets (requires admin access)
+gh secret list
+
+# Set repository environment secrets
+gh secret set ENV_VAR_NAME --body "secret_value"
+```
+
+### Project-Specific Workflows
+
+**Common patterns for this microservices project:**
+
+1. **Monitor CI/CD pipelines after Dependabot updates:**
+
+   ```bash
+   # Watch Dependabot PR builds
+   gh pr list --author "app/dependabot[bot]"
+   gh pr checks <pr-number>
+   ```
+
+2. **Verify deployment pipelines:**
+
+   ```bash
+   # Check deployment workflow status
+   gh run list --workflow="deploy.yml"
+   gh run view <run-id> --log
+   ```
+
+3. **Review dependency updates:**
+
+   ```bash
+   # Review Dependabot PR changes
+   gh pr diff --repo vicle1908/kafka-transactional-microservices <pr-number>
+   ```
+
+4. **Security and compliance:**
+
+   ```bash
+   # View security scan results
+   gh run list --workflow="security.yml"
+
+   # Check code scanning alerts
+   gh code scanning list
+   ```
+
+### Integration with Development Workflow
+
+**Pre-commit checks:**
+
+```bash
+# Run local checks before pushing
+make lint
+make test
+
+# Push and create PR with checks
+git push -u origin feature-branch
+gh pr create --fill --head feature-branch
+```
+
+**Post-merge cleanup:**
+
+```bash
+# Delete merged branches locally
+git branch --merged | grep -v main | xargs git branch -d
+
+# Sync with remote and clean up
+git fetch origin --prune
+```
+
+### Automation Script Examples
+
+**Batch operations for multiple PRs:**
+
+```bash
+# View all open Dependabot PRs with their status
+gh pr list --author "app/dependabot[bot]" --json number,state,title,mergeable --jq '.[] | "\(.number): \(.title) - \(.state) (mergeable: \(.mergeable))"'
+
+# Approve all passing Dependabot PRs
+gh pr list --author "app/dependabot[bot]" --json number --jq '.[].number' | xargs -I {} gh pr review {} --approve
+```
+
+**Workflow monitoring scripts:**
+
+```bash
+# Monitor CI status for current PR
+current_pr=$(gh pr view --json number --jq '.number')
+gh pr checks $current_pr --watch
+
+# Get workflow duration statistics
+gh run list --json databaseId,status,conclusion,createdAt,completedAt --jq '.[] | select(.status == "completed") | "\(.databaseId): \(.conclusion) - duration: \((.completedAt | fromdateiso8601) - (.createdAt | fromdateiso8601)) seconds"'
+```
+
+### GitHub CLI Best Practices
+
+1. **Always authenticate before use**: `gh auth login`
+2. **Use PR templates**: Leverage `.github/PULL_REQUEST_TEMPLATE.md`
+3. **Monitor CI closely**: Use `gh run watch` for long-running workflows
+4. **Review Dependabot PRs promptly**: Automated dependencies need timely review
+5. **Use meaningful commit messages**: They become PR titles with `gh pr create --fill`
+6. **Leverage GitHub Actions**: Automate repetitive tasks with workflows
+7. **Stay updated**: `gh --version` and `gh help` for latest features
+
+### Integration with Claude Code
+
+When working with Claude Code, you can use GitHub CLI commands to:
+
+- Verify workflow runs after making changes
+- Check PR status before starting new work
+- Review merge conflicts and resolve them
+- Monitor deployment pipelines after infrastructure changes
+- Validate configuration changes in CI/CD workflows
+
+The GitHub CLI is particularly valuable for this microservices project where frequent dependency updates, multiple services, and complex CI/CD pipelines require efficient repository management.
+
+## Research & Knowledge Management
+
+### MCP Search Practice
 
 - Triage query type first: use `mcp-router__brave_web_search` for broad web research, switching to `mcp-router__brave_news_search` when freshness (≤7 days) matters and `mcp-router__brave_image_search` for visual assets.
-- For deep-dive investigations build a map→extract pipeline: `mcp-router__tavily_map` to enumerate relevant docs, then `mcp-router__tavily_extract` (or `mcp-router__tavily_search` with `search_depth='advanced'`) for full-text pulls; request `include_raw_content` when evaluating technical specs.
-- When questions target repository docs or architecture notes, reach for DeepWiki (GitHub doc crawler) before general search; follow with `mcp-router__brave_web_search` only if the repo lacks internal docs.
+- For deep-dive investigations build a map→extract pipeline: `mcp-router__tavily_map` to enumerate relevant docs, then `mcp-router__tavily_extract` for full-text pulls; request `include_raw_content` when evaluating technical specs.
 - For library and framework-specific research, use `mcp-router__resolve-library-id` to find the correct Context7-compatible library ID, then `mcp-router__get-library-docs` to retrieve up-to-date documentation.
-- For real-world code examples and implementation patterns, leverage `mcp-router__searchGitHub` to find relevant code from over a million public repositories.
-- Prefer Brave over raw Google for low-latency fact checks; fall back to Tavily advanced search or `mcp-router__web_search_exa` when Brave results are thin or contradictory.
+- For real-world code examples, leverage `mcp-router__searchGitHub` to find relevant code from over a million public repositories.
 - For programming-related questions, leverage `mcp-router__get_code_context_exa` to find relevant context for APIs, libraries, and SDKs with the highest quality and freshest context.
-- When validating internal knowledge, use `mcp-router__search_in_files_by_text` (grep-mcp) or `mcp-router__start_search` with `searchType='content'` to cross-check local docs before escalating to web tools.
-- Leverage Medium-focused research with `mcp-router__search_medium_topic` for comprehensive topic-based research, `mcp-router__search_by_author` to find insights from domain experts, and `mcp-router__research_compilation` for multi-topic synthesis with citations.
-- Always capture tool outputs in the working note, link to `@IMPLEMENTATION_PLAN.md` action items, and record gaps in the Research Backlog when sources are inconclusive.
-- For complex decisions, use `mcp-router__consensus` (consulting Gemini, OpenAI, Grok-4 via Zen MCP) to gather multiple AI perspectives, then apply `mcp-router__thinkdeep` when deeper reasoning or resolution is required.
-- When researching, combine available search MCP tools (`mcp-router__brave_web_search`, `mcp-router__tavily_search`, `mcp-router__web_search_exa`, `mcp-router__searchGitHub`, `mcp-router__search_medium_topic`) to gather evidence before consulting Zen MCP (`consensus`, `thinkdeep`) for multi-model evaluation.
-- Launch disposable CLI subagents with `clink` when we need fresh context windows: codex uses the non-interactive `exec` path (`conf/cli_clients/codex.json`) and **requires a Zen MCP server restart** after config edits to pick up the new flags. Qwen is not yet first-class in upstream clink; either remap an existing client (e.g., temporarily wire `claude` to the `qwen` CLI) or track the upstream update before calling `cli_name='qwen'`.
-- Use `clink` to delegate tasks to external AI CLIs like Gemini, Claude, or Codex when a task is better suited for another model's specific strengths. Note that `clink` has a hardcoded allowlist for supported CLIs; only 'claude', 'codex', and 'gemini' are currently accepted, which prevents integration with other CLIs like Qwen even if configuration files exist.
-- When using `clink`, you can pass context to the external CLI including files, images, and conversation history. Use the `role` parameter to invoke a pre-configured persona or skill for the target CLI (e.g., `codereviewer` for code review tasks).
-- For complex tasks requiring multiple tools, combine `clink` with other MCP tools in a tiered approach: use `clink` for CLI-specific tasks, `mcp-router__search_medium_topic` for comprehensive research, and `mcp-router__consensus` for multi-model evaluation.
-- When experiencing issues with `clink` argument forwarding (e.g., Codex not receiving the `--skip-git-repo-check` flag), consider using direct CLI execution or wrapper scripts to ensure flags are properly applied.
+- Use `mcp-router__consensus` for complex decisions to gather multiple AI perspectives, then apply `mcp-router__thinkdeep` when deeper reasoning is required.
+- Use `clink` to delegate tasks to external AICLIs when a task is better suited for another model's specific strengths.
+
+### Quarterly Research Priorities
+
+- Schedule quarterly version reviews using `mcp-router__brave_web_search` and `mcp-router__tavily_extract` to capture changelog highlights for Spring Boot, Kafka, Debezium, and Gradle
+- Evaluate OpenTelemetry tracing implementations and best practices for distributed systems
+- Research advanced Grafana dashboard patterns for microservices monitoring
+- Investigate service mesh integration with observability platforms
+- Review Debezium high-availability patterns and Spring Kafka EOS guidance
+
+### Key References
+
+- Spring Kafka exactly-once & transactions documentation
+- Confluent Platform release notes (KRaft-first transactions & licensing updates)
+- Debezium release notes and outbox pattern implementations
+- OpenTelemetry documentation and implementation guides
+- Istio service mesh documentation for ambient mode
+- ELK stack documentation for centralized logging
 
 ## Knowledge Memory Practice
 
@@ -173,81 +581,53 @@ trigger: always_on
 - **Dependency Management**: Added dependency review with license compliance checking and vulnerability scanning through GitHub's Dependency Review Action.
 - **Infrastructure Validation**: Implemented Docker Compose, Kubernetes, and Terraform configuration validation workflows.
 - **Static Analysis**: Integrated SpotBugs and Error Prone for enhanced code quality assurance.
-- **Observability**: Configured OpenTelemetry tracing for distributed tracing across services with context propagation.
 - Gradle builds must run with configuration cache and build cache enabled (`org.gradle.configuration-cache=true`, `org.gradle.caching=true`); CI invokes `./gradlew --configuration-cache` and developers should prefer the same for local workflows.
 - Run `./gradlew schemaCompatibilityCheck` to validate Avro schemas before publishing; CI executes the task alongside `check`.
-- Observability-first: enforce OpenTelemetry instrumentation, centralize logs/metrics, and maintain dashboards/alerts for latency, errors, saturation, and business SLIs.
 - Resilience engineering: run regular chaos drills (broker restarts, mesh failures, cache outages) and record findings in runbooks.
 
-## Enhanced Observability Implementation
+## Observability & Monitoring
 
-### Current State
+### Current Implementation
 
-The project has a partial observability implementation with the following components:
+The project implements comprehensive observability with the following components:
 
-1. **Metrics Collection**:
-    - Prometheus for metrics collection
-    - Micrometer for instrumentation in services
-    - Grafana for dashboard visualization
-    - Pre-built dashboards for various components
+**Metrics & Dashboards**:
 
-2. **Distributed Tracing**:
-    - OpenTelemetry SDK integrated in services through the `common-observability` module
-    - Additional OpenTelemetry dependencies in `common-temporal`
-    - Dedicated OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`) with configuration details
-    - Configuration for OpenTelemetry collector and Jaeger backend documented
+- Prometheus for metrics collection with Micrometer instrumentation
+- Grafana dashboards for service performance and business metrics
+- Pre-built dashboards for Kafka, databases, and application metrics
 
-3. **Health Checks**:
-    - Health check implementations for services
-    - Dedicated health check runbook
+**Distributed Tracing**:
 
-### Missing Components
+- OpenTelemetry SDK integrated via `common-observability` module
+- Context propagation across service boundaries
+- Configuration for OpenTelemetry collector and Jaeger backend
 
-1. **Centralized Logging**:
-    - Currently missing centralized logging solution
-    - Need to implement ELK (Elasticsearch, Logstash, Kibana) stack for:
-        - Centralized log aggregation from all services
-        - Advanced log search capabilities
-        - Real-time log visualization
-        - Structured log analysis
+**Health Checks**:
 
-2. **Complete OpenTelemetry Implementation**:
-    - Missing OpenTelemetry collector configuration in docker-compose
-    - Missing Jaeger backend for trace visualization
-    - Need to implement tracing across service boundaries, especially with Kafka
+- Service health endpoints with dependency status
+- Dedicated health check runbooks and monitoring procedures
 
-### Implementation Plan
+### Implementation Roadmap
 
-#### Phase 1: Implement Centralized Logging with ELK Stack
+#### Phase 1: Centralized Logging (ELK Stack)
 
-1. Add ELK stack components to `infra/compose.yml`:
-    - Elasticsearch for log storage
-    - Logstash for log processing
-    - Kibana for log visualization
+- Add Elasticsearch, Logstash, Kibana to `infra/compose.yml`
+- Configure Filebeat for log shipping from services
+- Create dashboards for service logs, error patterns, and performance analysis
 
-2. Configure log shipping from services:
-    - Add Filebeat to each service container
-    - Configure log format standardization
+#### Phase 2: Enhanced Tracing
 
-3. Create Kibana dashboards for:
-    - Service logs
-    - Error patterns
-    - Performance logs
+- Deploy OpenTelemetry Collector and Jaeger
+- Implement cross-service tracing (HTTP, Kafka, database)
+- Integrate trace data with existing dashboards
 
-#### Phase 2: Complete OpenTelemetry Implementation
+### Integration with Development
 
-1. Add OpenTelemetry Collector and Jaeger to `infra/compose.yml`
-2. Implement cross-service tracing:
-    - HTTP request tracing
-    - Kafka message tracing
-    - Database query tracing
-3. Enhance existing dashboards with trace data
-
-#### Phase 3: Documentation Updates
-
-1. Update `AGENTS.md` with complete observability setup
-2. Create implementation guides for new components
-3. Update existing runbooks with new integration points
+- Enforce OpenTelemetry instrumentation in all services
+- Centralize logs/metrics with configurable endpoints
+- Maintain dashboards/alerts for latency, errors, saturation, and business SLIs
+- Run chaos drills regularly to test monitoring resilience
 
 ## Data Consistency Workflow
 
@@ -307,7 +687,7 @@ The project has a partial observability implementation with the following compon
 ## Security & Compliance
 
 - Enforce TLS and SASL for Kafka brokers; manage ACLs so services only access their topics.
-- Store credentials with Vault or AWS Secrets Manager; never commit secrets.
+- Store credentials with Vault or AWS SecretsManager; never commit secrets.
 - Classify events that carry PII; mask or tokenize sensitive fields before publishing.
 - Kubernetes secrets: prefer Vault Agent Injector or Secrets Operator to deliver short-lived credentials; enforce RBAC and audit logging around secret access.
 
@@ -329,22 +709,418 @@ The project has a partial observability implementation with the following compon
 - Ensure `docs/dev/getting-started.md` stays current with tooling and workflow changes.
 - Keep runbooks up-to-date with implementation changes and regularly review for accuracy
 
-## Research Backlog & References
+## Transactional Outbox Pattern Implementation
 
-- Review Debezium high-availability sample for relay failover patterns (see GitHub repo linked below).
-- Follow Spring Kafka EOS guidance to avoid regression in transactional containers.
-- Track Confluent Platform release notes for broker-side transaction updates and licensing changes.
-- Schedule a quarterly version review using `mcp-router__brave_web_search` (with `freshness='pm'`) and `mcp-router__tavily_extract` to capture changelog highlights for Spring Boot, Kafka, Debezium, and Gradle.
-- Evaluate OpenTelemetry tracing implementations and best practices for distributed systems
-- Research advanced Grafana dashboard patterns for microservices monitoring
-- Investigate service mesh integration with observability platforms.
-- Research ELK stack implementation for centralized logging in microservices
-- Key references:
-    - Spring Kafka exactly-once & transactions documentation.
-    - Spring Cloud Stream blog on EOS patterns with JPA transactions.
-    - Confluent Platform 8.0 release notes (KRaft-first transactions & licensing updates).
-    - Debezium 3.3 release notes (EOS support and connector updates).
-    - Debezium outbox pattern implementations (anarefin/high-availability-debezium, YunusEmreNalbant/transactional-outbox-pattern-with-debezium, chfern/debezium-outbox-pgkafka).
-    - OpenTelemetry documentation and implementation guides.
-    - Istio service mesh documentation for ambient mode.
-    - ELK stack documentation for centralized logging.
+### Overview
+
+The project implements the transactional outbox pattern using both Debezium as the primary mechanism and a polling relay as a fallback. This approach ensures that domain data changes and event publications happen atomically within the same database transaction, eliminating the risk of inconsistency between the database and the message broker.
+
+### Implementation Approaches
+
+The implementation provides two mechanisms for event publication:
+
+1. **Primary: Debezium CDC with Outbox Event Router SMT**
+    - Uses Debezium to capture changes from the outbox table
+    - Routes events to appropriate Kafka topics based on aggregate type
+    - Provides low-latency, exactly-once delivery semantics
+
+2. **Fallback: Polling Relay**
+    - Scheduled service that polls the outbox table for pending messages
+    - Publishes events to Kafka using transactional producers
+    - REST endpoints for manual processing and replay
+
+### Components
+
+#### 1. Outbox Entity Structure
+
+The `OutboxMessage` entity in `common-outbox-relay` defines the structure for storing events:
+
+```kotlin
+@Entity
+@Table(name = "outbox")
+open class OutboxMessage(
+    @Column(name = "aggregate_id", nullable = false)
+    val aggregateId: String,
+    @Column(name = "aggregate_type", nullable = false)
+    val aggregateType: String,
+    @Column(name = "event_type", nullable = false)
+    val eventType: String,
+    @Column(name = "payload", nullable = false, columnDefinition = "TEXT")
+    val payload: String,
+    @Column(name = "headers", columnDefinition = "TEXT")
+    val headers: String? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    var status: OutboxStatus = OutboxStatus.PENDING,
+    @Column(name = "occurred_at", nullable = false)
+    val occurredAt: Instant = Instant.now(),
+    @Column(name = "published_at")
+    var publishedAt: Instant? = null,
+) {
+    @Id
+    @GeneratedValue
+    @UuidGenerator
+    var id: UUID? = null
+        protected set
+
+    @Version
+    @Column(name = "version", nullable = false)
+    var version: Long = 0
+        private set
+}
+
+enum class OutboxStatus {
+    PENDING,
+    SENT,
+    FAILED,
+}
+```
+
+#### 2. Outbox Table Schema
+
+Each service's database contains an `outbox` table defined in Flyway migrations:
+
+```sql
+CREATE TABLE IF NOT EXISTS public.outbox (
+                                             id UUID PRIMARY KEY,
+                                             aggregate_type TEXT NOT NULL,
+                                             aggregate_id TEXT NOT NULL,
+                                             event_type TEXT NOT NULL,
+                                             payload TEXT NOT NULL,
+                                             headers TEXT NULL,
+                                             status TEXT NOT NULL DEFAULT 'PENDING',
+                                             occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                                             published_at TIMESTAMP WITH TIME ZONE NULL,
+                                             version BIGINT NOT NULL DEFAULT 0
+);
+```
+
+#### 3. How Services Use the Outbox Pattern
+
+In the `orders-service`, when handling a `CreateOrderCommand`:
+
+```kotlin
+@Transactional
+fun handle(command: CreateOrderCommand): UUID {
+    validate(command)
+    val occurredAt = Instant.now()
+
+    // Save domain entity
+    val order = OrderEntity(/* ... */)
+    val saved = orderRepository.save(order)
+
+    // Create outbox record
+    val event = OrderCreatedEvent.newBuilder()
+        .setEventId(UUID.randomUUID())
+        .setAggregateId(saved.id!!)
+        .setOccurredAt(occurredAt)
+        .setPayload(serializePayload(saved.id!!, command))
+        .build()
+
+    val payload = encodeEvent(event)
+
+    val outbox = OutboxMessage(
+        aggregateId = saved.id!!.toString(),
+        aggregateType = "Order",
+        eventType = "OrderCreated",
+        payload = payload,
+        headers = null,
+        status = OutboxStatus.PENDING,
+        occurredAt = occurredAt,
+    )
+    outboxRepository.save(outbox)
+
+    // Rest of the method...
+    return saved.id!!
+}
+```
+
+This ensures that both the domain data and the event are persisted atomically within the same transaction.
+
+### Debezium Implementation (Primary Approach)
+
+The Debezium connectors are configured with the Outbox Event Router SMT to process outbox table changes:
+
+```json
+{
+    "name": "orders-outbox-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "tasks.max": "1",
+        "database.hostname": "postgres",
+        "database.port": "5432",
+        "database.user": "app",
+        "database.password": "app",
+        "database.dbname": "orders",
+        "topic.prefix": "orders",
+        "table.include.list": "public.outbox",
+        "plugin.name": "pgoutput",
+        "publication.name": "outbox_publication",
+        "publication.autocreate.mode": "filtered",
+        "slot.name": "orders_outbox_slot",
+        "snapshot.mode": "no_data",
+        "transforms": "outbox",
+        "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+        "transforms.outbox.table.field.event.key": "aggregate_id",
+        "transforms.outbox.table.fields.additional.placement": "id:envelope:eventId,aggregate_id:envelope:aggregateId,aggregate_type:envelope:aggregateType,event_type:envelope:eventType,headers:envelope:headers",
+        "transforms.outbox.route.topic.replacement": "outbox.${routedByValue}",
+        "transforms.outbox.route.by.field": "aggregate_type",
+        "transforms.outbox.operation.routing.enabled": "false",
+        "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter.schemas.enable": "false",
+        "internal.key.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "internal.value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "internal.key.converter.schemas.enable": "false",
+        "internal.value.converter.schemas.enable": "false",
+        "topic.creation.default.partitions": "1",
+        "topic.creation.default.replication.factor": "1"
+    }
+}
+```
+
+When an outbox record is inserted into the database:
+
+1. Debezium captures the change through PostgreSQL's logical replication
+2. The Outbox Event Router transforms the change into a Kafka message
+3. The message is routed to a topic based on the `aggregate_type` (e.g., "Order" → "outbox.Order")
+4. The message is published to Kafka with the `aggregate_id` as the key
+
+### Polling Relay Implementation (Fallback Approach)
+
+The polling relay is implemented in the `common-outbox-relay` module and provides both scheduled and on-demand processing:
+
+#### Scheduled Processing
+
+The `ScheduledOutboxProcessor` runs every 5 seconds to check for pending messages:
+
+```kotlin
+@Component
+class ScheduledOutboxProcessor(
+    private val outboxRelayService: OutboxRelayService,
+    meterRegistry: MeterRegistry,
+) {
+    private val logger = LoggerFactory.getLogger(ScheduledOutboxProcessor::class.java)
+    private val pendingMessagesGauge = AtomicLong(0)
+
+    init {
+        Gauge
+            .builder("outbox.pending.messages", pendingMessagesGauge) { it.toDouble() }
+            .description("Number of pending outbox messages awaiting processing")
+            .register(meterRegistry)
+    }
+
+    @Scheduled(fixedDelay = 5000, initialDelay = 10000)
+    fun processPendingMessages() {
+        try {
+            logger.debug("Scheduled outbox processing starting...")
+            val processedCount = outboxRelayService.processPendingMessages()
+            logger.debug("Scheduled outbox processing completed. Processed $processedCount messages")
+
+            // Update the gauge with current pending count
+            val pendingCount = outboxRelayService.getPendingMessageCount()
+            pendingMessagesGauge.set(pendingCount)
+        } catch (e: Exception) {
+            logger.error("Error during scheduled outbox processing", e)
+        }
+    }
+}
+```
+
+#### Outbox Relay Service
+
+The `OutboxRelayService` processes messages in batches:
+
+```kotlin
+@Service
+class OutboxRelayService(
+    private val outboxRepository: OutboxRepository,
+    private val kafkaTemplate: KafkaTemplate<String, Any>,
+    private val transactionTemplate: TransactionTemplate,
+    private val kafkaTransactionManager: KafkaTransactionManager<String, Any>,
+    private val metricsService: OutboxMetricsService,
+) {
+    private val logger = LoggerFactory.getLogger(OutboxRelayService::class.java)
+    private val batchSize = 100
+
+    @Transactional
+    fun processPendingMessages(): Int {
+        logger.info("Starting outbox relay processing")
+
+        var processedCount = 0
+        var hasMoreMessages = true
+
+        while (hasMoreMessages) {
+            val pendingMessages =
+                outboxRepository.findByStatusOrderByOccurredAtAsc(
+                    OutboxStatus.PENDING,
+                    PageRequest.of(0, batchSize),
+                )
+
+            if (pendingMessages.isEmpty()) {
+                hasMoreMessages = false
+                continue
+            }
+
+            logger.info("Processing batch of ${pendingMessages.size} pending outbox messages")
+
+            pendingMessages.forEach { message ->
+                try {
+                    val startTime = System.currentTimeMillis()
+                    processMessage(message)
+                    val endTime = System.currentTimeMillis()
+
+                    metricsService.recordProcessedMessage()
+                    metricsService.recordEndToEndLatency(endTime - startTime)
+                    processedCount++
+                } catch (e: Exception) {
+                    logger.error("Failed to process outbox message with id: ${message.id}", e)
+                    markMessageAsFailed(message)
+                    metricsService.recordFailedMessage()
+                }
+            }
+
+            // If we got less than batch size, there are no more messages
+            if (pendingMessages.size < batchSize) {
+                hasMoreMessages = false
+            }
+        }
+
+        // Update pending count metric
+        updatePendingMessageCountMetric()
+
+        logger.info("Finished outbox relay processing. Processed $processedCount messages")
+        return processedCount
+    }
+
+    private fun processMessage(message: OutboxMessage) {
+        try {
+            // Determine the topic based on the aggregate type or event type
+            val topic = determineTopic(message)
+
+            // Extract key from the message if available, otherwise use aggregate ID
+            val key = extractKey(message) ?: message.aggregateId
+
+            // Convert payload to the appropriate object or keep as string
+            val payload = convertPayload(message)
+
+            // Send message within Kafka transaction
+            val sendStartTime = System.currentTimeMillis()
+            kafkaTemplate.executeInTransaction { operations ->
+                operations.send(topic, key, payload)
+                logger.debug("Sent message to topic $topic with key $key")
+                true
+            }
+            val sendEndTime = System.currentTimeMillis()
+
+            metricsService.recordRelayLatency(sendEndTime - sendStartTime)
+
+            // Mark message as sent in the database
+            markMessageAsSent(message)
+        } catch (e: Exception) {
+            logger.error("Failed to process outbox message with id: ${message.id}", e)
+            markMessageAsFailed(message)
+            metricsService.recordFailedMessage()
+            throw e
+        }
+    }
+
+    // Other methods...
+}
+```
+
+#### REST API Endpoints
+
+The relay also provides REST endpoints for manual processing:
+
+```kotlin
+@RestController
+@RequestMapping("/api/outbox")
+class OutboxController(
+    private val outboxRelayService: OutboxRelayService,
+) {
+    @PostMapping("/process")
+    fun processPendingMessages(): ResponseEntity<Map<String, Any>> {
+        val processedCount = outboxRelayService.processPendingMessages()
+        return ResponseEntity.ok(
+            mapOf(
+                "processedCount" to processedCount,
+                "message" to "Processed $processedCount pending messages",
+            ),
+        )
+    }
+
+    @PostMapping("/replay/{messageId}")
+    fun replayMessage(
+        @PathVariable messageId: String,
+    ): ResponseEntity<Map<String, Any>> {
+        val success = outboxRelayService.replayMessage(messageId)
+        return if (success) {
+            ResponseEntity.ok(
+                mapOf(
+                    "message" to "Successfully replayed message $messageId",
+                ),
+            )
+        } else {
+            ResponseEntity.badRequest().body(
+                mapOf(
+                    "error" to "Failed to replay message $messageId",
+                ),
+            )
+        }
+    }
+
+    // Other endpoints...
+}
+```
+
+### Kafka Configuration
+
+The Kafka configuration in `common-kafka` ensures proper transactional behavior:
+
+```kotlin
+@Configuration
+class KafkaProducerConfig {
+    companion object {
+        private const val MAX_IN_FLIGHT_REQUESTS = 5
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ProducerFactory::class)
+    fun producerFactory(kafkaProperties: KafkaProperties): ProducerFactory<String, Any> {
+        val props = kafkaProperties.buildProducerProperties()
+        props.putIfAbsent(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java)
+        props.putIfAbsent(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer::class.java)
+        props[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] = true
+        props[ProducerConfig.ACKS_CONFIG] = "all"
+        props[ProducerConfig.RETRIES_CONFIG] = Integer.MAX_VALUE
+        props[ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION] = MAX_IN_FLIGHT_REQUESTS
+
+        val transactionIdPrefix =
+            kafkaProperties.producer.transactionIdPrefix?.takeIf { it.isNotBlank() } ?: "payments-tx-"
+
+        return DefaultKafkaProducerFactory<String, Any>(props).apply {
+            setTransactionIdPrefix(transactionIdPrefix)
+        }
+    }
+
+    // Other beans...
+}
+```
+
+### Key Features
+
+1. **Exactly-Once Semantics**: Achieved through Kafka transactions and Debezium's Outbox Event Router
+2. **High Availability**: The polling relay serves as a fallback when Debezium is unavailable
+3. **Monitoring**: Metrics collection for pending messages, processed messages, and failures
+4. **Replay Capability**: Ability to replay specific messages for recovery scenarios
+5. **Idempotency**: Consumers can check a processed events table to avoid duplicate processing
+6. **Flexible Routing**: Events are routed based on aggregate type to appropriate Kafka topics
+
+### Outbox Pattern Best Practices
+
+1. **Event Design**: Events should be designed to be immutable and backward compatible
+2. **Idempotency**: Consumers should be designed to handle duplicate events idempotently by checking a processed events table
+3. **Monitoring**: Monitor outbox table depth and Debezium connector lag to ensure healthy operation
+4. **Error Handling**: Implement proper error handling and dead letter queues for event processing failures
+5. **Configuration**: Enable the polling relay with `outbox.relay.enabled=true` when Debezium is not available

@@ -1,3 +1,8 @@
+plugins {
+    alias(libs.plugins.kotlin.spring)
+    alias(libs.plugins.kotlin.jpa)
+}
+
 dependencies {
     api(libs.spring.boot.starter.data.jpa)
     implementation(libs.flyway.core)

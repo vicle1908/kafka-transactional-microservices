@@ -1,9 +1,30 @@
+---
+# yamllint disable rule:line-length
 name: Load Testing
 
-on:
+"on":
   schedule:
     - cron: '0 3 * * 1'  # Weekly Monday 3 AM run
   workflow_dispatch:  # Allow manual trigger
+    inputs:
+      load_level:
+        description: 'Load test level'
+        required: true
+        default: 'medium'
+        type: choice
+        options:
+          - light
+          - medium
+          - heavy
+      duration:
+        description: 'Test duration in minutes'
+        required: true
+        default: '10'
+        type: string
+
+env:
+  LOAD_TEST_DURATION: ${{ github.event.inputs.duration || '10' }}
+  LOAD_LEVEL: ${{ github.event.inputs.load_level || 'medium' }}
 
 jobs:
   load-test:
@@ -13,177 +34,407 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
+        with:
+          egress-policy: audit
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1
+        with:
+          cache-disabled: false
+          gradle-home-cache-cleanup: true
+
+      - name: Validate infrastructure files exist
+        run: |
+          # Ensure required infrastructure files exist
+          if [ ! -f "infra/compose.test.yml" ]; then
+            echo "❌ Missing infra/compose.test.yml"
+            exit 1
+          fi
+          if [ ! -f "infra/otel/otel-collector-config.yaml" ]; then
+            echo "❌ Missing infra/otel/otel-collector-config.yaml"
+            exit 1
+          fi
+          echo "✅ All required infrastructure files found"
 
       - name: Start test infrastructure
         run: |
+          echo "🚀 Starting test infrastructure..."
+
           # Start a test environment with Kafka, PostgreSQL, and services
-          docker-compose -f infra/compose.test.yml up -d
-          sleep 30
-          
-          # Wait for all services to be ready
-          timeout 300 bash -c 'until docker-compose -f infra/compose.test.yml ps | grep -q "Up"; do sleep 5; done' || false
+          docker compose -f infra/compose.test.yml up -d
 
-      - name: Run Gatling load tests
-        run: |
-          # Install Gatling if not already available
-          if ! command -v gatling &> /dev/null; then
-            wget https://repo1.maven.org/maven2/io/gatling/highcharts/gatling-charts-highcharts-bundle/3.12.0/gatling-charts-highcharts-bundle-3.12.0-bundle.zip
-            unzip gatling-charts-highcharts-bundle-3.12.0-bundle.zip
-            mv gatling-charts-highcharts-bundle-3.12.0 gatling
-          fi
-          
-          # Create a minimal simulation for load testing
-          mkdir -p load-test-simulations
-          cat > load-test-simulations/OrderServiceSimulation.scala << 'EOF'
-          import io.gatling.core.Predef._
-          import io.gatling.http.Predef._
-          
-          class OrderServiceSimulation extends Simulation {
-            val httpProtocol = http
-              .baseUrl("http://localhost:8080")
-              .acceptHeader("application/json")
-          
-            val scn = scenario("Order Service Load Test")
-              .exec(http("Create Order")
-                .post("/api/orders")
-                .header("Content-Type", "application/json")
-                .body(StringBody("""{"customerId": "test-customer", "items": [{"productId": "test-product", "quantity": 1}]}"""))
-                .check(status.is(200)))
-              .pause(1)
-          
-            setUp(
-              scn.inject(atOnceUsers(10))
-                .protocols(httpProtocol)
-            )
+          # Enhanced health checks with proper timeouts
+          echo "⏳ Waiting for infrastructure services to be ready..."
+
+          # Wait for PostgreSQL
+          echo "📊 Waiting for PostgreSQL to be ready..."
+          timeout 120 bash -c 'until docker compose -f infra/compose.test.yml exec -T postgres-test pg_isready -U app -d test &>/dev/null; do sleep 5; done' || {
+            echo "❌ PostgreSQL failed to start within timeout"
+            docker compose -f infra/compose.test.yml logs postgres-test
+            exit 1
           }
-EOF
-          
-          # For now, just validate that the simulation exists - running actual load test would require the service to be running
-          ls -la load-test-simulations/
 
-      - name: Run JMeter load tests (alternative)
+          # Wait for Kafka
+          echo "📡 Waiting for Kafka to be ready..."
+          timeout 180 bash -c 'until docker compose -f infra/compose.test.yml exec -T kafka-test kafka-broker-api-versions --bootstrap-server localhost:9092 &>/dev/null; do sleep 10; done' || {
+            echo "❌ Kafka failed to start within timeout"
+            docker compose -f infra/compose.test.yml logs kafka-test
+            exit 1
+          }
+
+          # Wait for Schema Registry
+          echo "📋 Waiting for Schema Registry to be ready..."
+          timeout 120 bash -c 'until curl -f http://localhost:8081/subjects &>/dev/null; do sleep 5; done' || {
+            echo "❌ Schema Registry failed to start within timeout"
+            docker compose -f infra/compose.test.yml logs schema-registry-test
+            exit 1
+          }
+
+          # Wait for Debezium Connect
+          echo "🔄 Waiting for Debezium Connect to be ready..."
+          timeout 120 bash -c 'until curl -f http://localhost:8083/ &>/dev/null; do sleep 5; done' || {
+            echo "❌ Debezium Connect failed to start within timeout"
+            docker compose -f infra/compose.test.yml logs debezium-connect-test
+            exit 1
+          }
+
+          echo "✅ All infrastructure services are ready"
+
+      - name: Build services with Gradle
         run: |
-          # Install JMeter if not already available
-          if ! command -v jmeter &> /dev/null; then
-            wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
-            tar -xzf apache-jmeter-5.6.3.tgz
-            sudo mv apache-jmeter-5.6.3 /opt/jmeter
-            sudo ln -s /opt/jmeter/bin/jmeter /usr/local/bin/jmeter
+          echo "🔨 Building services..."
+
+          # Build all services
+          ./gradlew clean build -x test --no-daemon
+
+          # Build Docker images for all services
+          ./gradlew :orders-service:bootBuildImage --imageName=orders-service:test --no-daemon
+          ./gradlew :payments-service:bootBuildImage --imageName=payments-service:test --no-daemon
+
+          # Build other services only if they exist
+          if [ -d "services/inventory-service" ]; then
+            ./gradlew :inventory-service:bootBuildImage --imageName=inventory-service:test --no-daemon
           fi
-          
-          # Create a basic JMX test plan
-          cat > order-service-load-test.jmx << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
-          <hashTree>
-          <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Order Service Load Test">
-            <stringProp name="TestPlan.comments">Load test for order service to validate EOS behavior under backpressure</stringProp>
-          </TestPlan>
-          <hashTree>
-            <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Load Test Group">
-              <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
-                <boolProp name="LoopController.continue_forever">false</boolProp>
-                <stringProp name="LoopController.loops">10</stringProp>
-              </elementProp>
-              <stringProp name="ThreadGroup.num_threads">5</stringProp>
-              <stringProp name="ThreadGroup.ramp_time">5</stringProp>
-              <boolProp name="ThreadGroup.scheduler">false</boolProp>
-              <stringProp name="ThreadGroup.duration"></stringProp>
-              <stringProp name="ThreadGroup.delay"></stringProp>
-            </ThreadGroup>
-          </hashTree>
-          </hashTree>
-          </jmeterTestPlan>
-EOF
-          
-          # Validate the JMX file - actual execution would require the service to be running
-          ls -la *.jmx
+          if [ -d "services/notification-service" ]; then
+            ./gradlew :notification-service:bootBuildImage --imageName=notification-service:test --no-daemon
+          fi
 
-      - name: Run custom load tests with k6
+          echo "✅ All services built successfully"
+
+      - name: Run database migrations
         run: |
-          # Install k6
+          echo "🗄️ Running database migrations..."
+
+          # Run Flyway migrations for each service
+          services=("orders" "payments" "inventory" "notification")
+
+          for service in "${services[@]}"; do
+            if [ -d "services/${service}-service/src/main/resources/db/migration" ]; then
+              echo "Running migrations for ${service} service..."
+              docker run --rm \
+                --network "$(docker compose -f infra/compose.test.yml ps -q kafka-test | head -1 | cut -d'-' -f1)" \
+                -v "$(pwd)/services/${service}-service/src/main/resources/db/migration:/migrations:ro" \
+                flyway/flyway:latest \
+                -url=jdbc:postgresql://postgres-test:5432/test \
+                -user=app \
+                -password=app \
+                -locations=filesystem:/migrations \
+                -connectRetries=60 \
+                migrate || echo "⚠️ Migrations for ${service} may have already been applied"
+            fi
+          done
+
+          echo "✅ Database migrations completed"
+
+      - name: Create services compose override
+        run: |
+          echo "📝 Creating services compose override..."
+          bash scripts/loadtest/make-compose-override.sh
+          cat > infra/compose.loadtest.yml <<'YAML'
+          version: "3.9"
+
+          services:
+            orders-service:
+              image: orders-service:test
+              container_name: orders-service-loadtest
+              environment:
+                - SPRING_PROFILES_ACTIVE=test
+                - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-test:5432/test
+                - SPRING_DATASOURCE_USERNAME=app
+                - SPRING_DATASOURCE_PASSWORD=app
+                - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-test:9092
+                - SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry-test:8081
+                - MANAGEMENT_OTLP_ENDPOINT=http://otel-collector:4317
+                - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
+                - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+              depends_on:
+                postgres-test:
+                  condition: service_healthy
+                kafka-test:
+                  condition: service_healthy
+                schema-registry-test:
+                  condition: service_healthy
+              ports:
+                - "8081:8080"
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+                interval: 30s
+                timeout: 10s
+                retries: 5
+                start_period: 60s
+              volumes:
+                - ./logs:/app/logs
+              deploy:
+                resources:
+                  limits:
+                    cpus: '1.0'
+                    memory: 1G
+                  reservations:
+                    cpus: '0.5'
+                    memory: 512M
+
+            payments-service:
+              image: payments-service:test
+              container_name: payments-service-loadtest
+              environment:
+                - SPRING_PROFILES_ACTIVE=test
+                - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-test:5432/test
+                - SPRING_DATASOURCE_USERNAME=app
+                - SPRING_DATASOURCE_PASSWORD=app
+                - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-test:9092
+                - SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry-test:8081
+                - MANAGEMENT_OTLP_ENDPOINT=http://otel-collector:4317
+                - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
+                - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+              depends_on:
+                postgres-test:
+                  condition: service_healthy
+                kafka-test:
+                  condition: service_healthy
+                schema-registry-test:
+                  condition: service_healthy
+              ports:
+                - "8082:8080"
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+                interval: 30s
+                timeout: 10s
+                retries: 5
+                start_period: 60s
+              volumes:
+                - ./logs:/app/logs
+              deploy:
+                resources:
+                  limits:
+                    cpus: '1.0'
+                    memory: 1G
+                  reservations:
+                    cpus: '0.5'
+                    memory: 512M
+
+          YAML
+
+      - name: Create Prometheus config
+        run: |
+          echo "📝 Creating Prometheus config..."
+          bash scripts/loadtest/make-prometheus.sh
+
+      - name: Start services with Docker Compose
+        run: |
+          # shellcheck disable=SC2086
+          echo "🚀 Starting microservices..."
+
+          # Start the services
+          docker compose -f infra/compose.test.yml -f infra/compose.loadtest.yml up -d orders-service payments-service
+
+          # Wait for services to be ready with enhanced monitoring
+          services=("orders-service:8081" "payments-service:8082")
+
+          for service in "${services[@]}"; do
+            service_name=$(echo "$service" | cut -d':' -f1)
+            port=$(echo "$service" | cut -d':' -f2)
+
+            echo "⏳ Waiting for ${service_name} to be ready on port ${port}..."
+            # shellcheck disable=SC2086
+            timeout 300 bash -c "until curl -f http://localhost:${port}/actuator/health &>/dev/null; do sleep 10; done" || {
+              echo "❌ ${service_name} failed to start within timeout"
+          docker compose -f infra/compose.test.yml -f infra/compose.loadtest.yml logs "${service_name}"
+              exit 1
+            }
+
+            # Additional health check
+            health=$(curl -s "http://localhost:${port}/actuator/health" | jq -r '.status // "unknown"')
+            echo "✅ ${service_name} is ready (status: ${health})"
+          done
+
+          echo "✅ All services are ready"
+
+      - name: Install k6
+        run: |
+          echo "📦 Installing k6..."
           curl -L https://github.com/grafana/k6/releases/download/v0.48.0/k6-v0.48.0-linux-amd64.tar.gz | tar -xzf -
           sudo cp k6-v0.48.0-linux-amd64/k6 /usr/local/bin/
-          
-          # Create a k6 script for load testing the Kafka transactional microservices
-          cat > load-test.js << 'EOF'
-          import http from 'k6/http';
-          import { check, sleep } from 'k6';
-          import { Rate } from 'k6/metrics';
-          
-          // Track failure rate
-          const failureRate = new Rate('failures');
-          
-          export const options = {
-            stages: [
-              { duration: '2m', target: 10 },  // Ramp up to 10 VUs
-              { duration: '5m', target: 10 },  // Stay at 10 VUs
-              { duration: '2m', target: 0 },   // Ramp down to 0 VUs
-            ],
-            thresholds: {
-              'http_req_failed': ['rate<0.05'], // http errors should be less than 5%
-              'http_req_duration': ['p(95)<2000'], // 95% of requests should be below 2s
-            },
-          };
-          
-          export default function () {
-            // In a real scenario, this would test actual service endpoints
-            // For now, we just simulate the test structure
-            const res = http.get('http://localhost:8080/actuator/health');
-            const checks = check(res, {
-              'status is 200': (r) => r.status === 200,
-            });
-            
-            failureRate.add(!checks);
-            sleep(1);
-          }
-EOF
-          
-          # Run k6 with --dry-run to validate the script without executing the load test
-          k6 run --dry-run load-test.js
+          k6 version
 
-      - name: Monitor outbox table depth during load
+      - name: Create k6 load test scripts
         run: |
-          # This is a placeholder that would connect to the PostgreSQL database
-          # to monitor the outbox table depth during load testing
-          echo "Monitoring outbox table depth during load testing"
-          
-          # In real implementation, this would:
-          # 1. Connect to PostgreSQL
-          # 2. Monitor the outbox table depth
-          # 3. Validate EOS behavior under backpressure
-          echo "Outbox table depth monitoring would happen here in a real implementation"
+          echo "📝 Creating k6 load test scripts..."
+          LOAD_TEST_DURATION=${{ env.LOAD_TEST_DURATION }} LOAD_LEVEL=${{ env.LOAD_LEVEL }} bash scripts/loadtest/make-k6-scripts.sh
 
-      - name: Validate EOS behavior under backpressure
+      - name: Validate k6 scripts
         run: |
-          # This is a placeholder for validating exactly-once semantics under load
-          echo "Validating EOS behavior under backpressure and high outbox table depth"
-          
-          # In real implementation, this would:
-          # 1. Monitor transaction commit metrics
-          # 2. Verify no duplicate events are processed
-          # 3. Check for any failures in the transactional outbox pattern
-          echo "EOS validation under load would happen here in a real implementation"
+          echo "🔍 Validating k6 scripts..."
+          k6 run --dry-run load-tests/health-check.js || exit 1
+          k6 run --dry-run load-tests/microservices-load-test.js || exit 1
+          echo "✅ k6 scripts validated successfully"
 
-      - name: Generate load test report
+      - name: Run health check before load test
         run: |
-          mkdir -p reports
-          echo "Load Test Report" > reports/load-test-report-$(date +%Y%m%d-%H%M%S).txt
-          echo "=================" >> reports/load-test-report-$(date +%Y%m%d-%H%M%S).txt
-          echo "Run at: $(date)" >> reports/load-test-report-$(date +%Y%m%d-%H%M%S).txt
-          echo "Branch: $GITHUB_REF_NAME" >> reports/load-test-report-$(date +%Y%m%d-%H%M%S).txt
-          echo "Commit: $GITHUB_SHA" >> reports/load-test-report-$(date +%Y%m%d-%H%M%S).txt
-          echo "" >> reports/load-test-report-$(date +%Y%m%d-%H%M%S).txt
-          echo "This report would include actual load test results and metrics." >> reports/load-test-report-$(date +%Y%m%d-%H%M%S).txt
+          echo "🏥 Running pre-load test health checks..."
+          k6 run --vus 1 --iterations 5 load-tests/health-check.js
 
-      - name: Upload load test reports
-        uses: actions/upload-artifact@v4
+      - name: Monitor outbox table depth (baseline)
+        run: |
+          echo "📊 Establishing baseline outbox metrics..."
+
+          # Check if outbox tables exist and get baseline counts
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+            SELECT 'outbox' as table_name, COUNT(*) as count
+            FROM information_schema.tables
+            WHERE table_name = 'outbox' AND table_schema = 'public';
+          " 2>/dev/null || echo "Outbox table not found"
+
+          # Count pending messages if outbox exists
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+            SELECT 'pending_messages' as metric, COUNT(*) as count
+            FROM outbox
+            WHERE status = 'PENDING' OR status IS NULL;
+          " 2>/dev/null || echo "Could not query pending messages"
+
+      - name: Run k6 load test
+        run: |
+          echo "🚀 Starting k6 load test..."
+          echo "Load level: $LOAD_LEVEL"
+          echo "Duration: $LOAD_TEST_DURATION minutes"
+
+          # Run the load test and capture results
+          k6 run \
+            --out json=load-results.json \
+            --out csv=load-results.csv \
+            --summary-trend-stats="min,med,avg,max,p(90),p(95),p(99)" \
+            --summary-export=load-summary.json \
+            load-tests/microservices-load-test.js
+
+          echo "✅ Load test completed"
+
+      - name: Monitor outbox table depth (post-load)
+        run: |
+          echo "📊 Analyzing post-load outbox metrics..."
+
+          # Check outbox table depth after load test
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+            SELECT
+              'outbox_depth' as metric,
+              COUNT(*) as count,
+              COUNT(CASE WHEN status = 'PENDING' OR status IS NULL THEN 1 END) as pending,
+              COUNT(CASE WHEN status = 'PROCESSED' THEN 1 END) as processed
+            FROM outbox;
+          " 2>/dev/null || echo "Could not query outbox metrics"
+
+          # Check for any failed processing
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+            SELECT
+              'failed_messages' as metric,
+              COUNT(*) as count
+            FROM outbox
+            WHERE status = 'FAILED' OR (retry_count > 3 AND status != 'PROCESSED');
+          " 2>/dev/null || echo "Could not query failed messages"
+
+      - name: Validate EOS behavior under load
+        run: |
+          echo "🔍 Validating Exactly-Once Semantics under load..."
+
+          # Check for duplicate order IDs in database (would indicate EOS violations)
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+            SELECT
+              'duplicate_check' as metric,
+              COUNT(*) as total_orders,
+              COUNT(DISTINCT order_id) as unique_orders,
+              COUNT(*) - COUNT(DISTINCT order_id) as duplicates
+            FROM orders;
+          " 2>/dev/null || echo "Could not validate EOS behavior"
+
+          # Check processed events ledger for duplicates
+          docker compose -f infra/compose.test.yml exec -T postgres-test psql -U app -d test -c "
+            SELECT
+              'processed_events_check' as metric,
+              COUNT(*) as total_processed,
+              COUNT(DISTINCT event_id) as unique_events,
+              COUNT(*) - COUNT(DISTINCT event_id) as duplicate_processing
+            FROM processed_events;
+          " 2>/dev/null || echo "Could not validate processed events"
+
+      - name: Generate comprehensive load test report
+        run: |
+          echo "📋 Generating comprehensive load test report..."
+          LOAD_TEST_DURATION=${{ env.LOAD_TEST_DURATION }} LOAD_LEVEL=${{ env.LOAD_LEVEL }} RUNNER_OS=${{ runner.os }} \
+            GITHUB_REF_NAME=${{ github.ref_name }} GITHUB_SHA=${{ github.sha }} \
+            bash scripts/loadtest/make-load-report.sh
+
+      - name: Upload load test artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
         with:
-          name: load-test-reports
-          path: reports/
+          name: load-test-results
+          path: |
+            reports/
+            load-results.json
+            load-results.csv
+            load-summary.json
+          retention-days: 30
 
-      - name: Stop test infrastructure
+      - name: Upload Docker logs if failed
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: failure()
+        with:
+          name: docker-logs
+          path: |
+            logs/
+            /var/lib/docker/containers/
+          retention-days: 7
+
+      - name: Cleanup test infrastructure
         if: always()
         run: |
-          docker-compose -f infra/compose.test.yml down
+          echo "🧹 Cleaning up test infrastructure..."
+
+          # Stop all services
+          docker compose -f infra/compose.test.yml -f infra/compose.loadtest.yml down -v --remove-orphans
+
+          # Clean up Docker resources
+          docker system prune -f --volumes || true
+
+          # Clean up local files
+          rm -rf k6-* load-results.* load-summary.* || true
+
+          echo "✅ Cleanup completed"

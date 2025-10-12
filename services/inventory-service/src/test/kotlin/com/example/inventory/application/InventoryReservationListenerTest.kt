@@ -46,7 +46,7 @@ import java.util.UUID
     bootstrapServersProperty = "spring.kafka.bootstrap-servers",
 )
 @ActiveProfiles("test")
-@Import(InventoryFlywayTestConfig::class)
+@Import(InventoryFlywayTestConfig::class, com.example.inventory.testsupport.TestCacheConfig::class)
 class InventoryReservationListenerTest {
     @Autowired
     private lateinit var kafkaTemplate: KafkaTemplate<String, Any>

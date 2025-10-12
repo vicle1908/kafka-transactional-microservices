@@ -1,4 +1,4 @@
-version: "3.9"
+---
 
 # Docker Compose file for production infrastructure setup using pure KRaft mode (no ZooKeeper)
 # This represents a modern deployment with proper replication factors for EOS
@@ -97,7 +97,7 @@ services:
       retries: 5
 
   schema-registry:
-    image: confluentinc/cp-schema-registry:7.7.0
+    image: confluentinc/cp-schema-registry:8.0.1
     container_name: schema-registry-prod
     depends_on:
       - kafka-1
@@ -117,7 +117,7 @@ services:
       retries: 5
 
   postgres:
-    image: postgres:18
+    image: postgres:18.0
     container_name: postgres-prod
     environment:
       POSTGRES_USER: app
@@ -137,7 +137,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:8.2.2-alpine
     container_name: redis-prod
     ports:
       - "6379:6379"
@@ -153,11 +153,11 @@ services:
       retries: 3
 
   debezium-connect:
-    image: debezium/connect:3.3
+    image: quay.io/debezium/connect:3.3.0.Final
     container_name: debezium-connect-prod
     depends_on:
       - kafka-1
-      - kafka-2  
+      - kafka-2
       - kafka-3
       - schema-registry
     ports:
@@ -184,7 +184,7 @@ services:
       retries: 5
 
   akhq:
-    image: tchiotludo/akhq:0.24.0
+    image: tchiotludo/akhq:0.25.0
     container_name: akhq-prod
     depends_on:
       - kafka-1
@@ -213,7 +213,7 @@ services:
 
   # Grafana for monitoring metrics
   grafana:
-    image: grafana/grafana:11.2.0
+    image: grafana/grafana:12.2.0
     container_name: grafana-prod
     ports:
       - "3000:3000"
@@ -233,7 +233,7 @@ services:
 
   # Prometheus for metrics collection
   prometheus:
-    image: prom/prometheus:v2.54.0
+    image: prom/prometheus:v3.6.0
     container_name: prometheus-prod
     ports:
       - "9090:9090"

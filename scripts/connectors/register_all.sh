@@ -16,8 +16,9 @@ register() {
   fi
   if [[ "$code" == "409" ]]; then
     echo "$name exists, updating config"
+    cfg=$(jq -c '.config' "$file")
     code=$(curl -s -o /tmp/connector.json -w "%{http_code}" -X PUT -H 'Content-Type: application/json' \
-      --data @"$file" "$CONNECT_URL/connectors/${name}/config" || true)
+      --data "$cfg" "$CONNECT_URL/connectors/${name}/config" || true)
     echo "Update $name -> $code"; jq . < /tmp/connector.json || cat /tmp/connector.json; return 0
   fi
   echo "Unexpected response ($code) for $name:"; cat /tmp/connector.json; return 1
@@ -36,8 +37,9 @@ done
 register orders-outbox-connector "$ROOT_DIR/infra/debezium/connectors/orders-outbox-connector.json"
 register payments-outbox-connector "$ROOT_DIR/infra/debezium/connectors/payments-outbox-connector.json"
 register inventory-outbox-connector "$ROOT_DIR/infra/debezium/connectors/inventory-outbox-connector.json"
+register notification-outbox-connector "$ROOT_DIR/infra/debezium/connectors/notification-outbox-connector.json"
 
 echo "Connector statuses:"
-for n in orders-outbox-connector payments-outbox-connector inventory-outbox-connector; do
+for n in orders-outbox-connector payments-outbox-connector inventory-outbox-connector notification-outbox-connector; do
   echo "-- $n"; curl -s "$CONNECT_URL/connectors/$n/status" | jq . || curl -s "$CONNECT_URL/connectors/$n/status"; echo
 done

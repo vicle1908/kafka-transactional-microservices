@@ -1,0 +1,19 @@
+// Init script to enable verbose test logging in CI without changing build files
+// Applied via: gradle -I .github/gradle-ci-test-logging.init.gradle
+allprojects {
+    tasks.withType(Test).configureEach {
+        testLogging {
+            // Show detailed events
+            events "passed", "skipped", "failed"
+            // Full stacktraces and causes
+            exceptionFormat = 'full'
+            showExceptions = true
+            showCauses = true
+            showStackTraces = true
+            // Include stdout/stderr from tests
+            showStandardStreams = true
+        }
+        // Ensure failing tests print immediately rather than only in reports
+        // (Gradle will already do so with the above logging + --console=plain -i)
+    }
+}

@@ -1,0 +1,45 @@
+---
+# yamllint disable rule:line-length
+name: Pinning Check
+
+"on":
+  schedule:
+    - cron: '0 1 * * 1'  # Weekly Monday 1 AM
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  pinning-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+        with:
+          persist-credentials: false
+
+      - name: Scan for unpinned actions
+        run: |
+          printf "%s\n" "Scanning workflows for unpinned actions..."
+          set -e
+          FAILED=0
+          while IFS= read -r line; do
+            FILE=$(printf "%s" "$line" | cut -d: -f1)
+            MATCH=$(printf "%s" "$line" | cut -d: -f2-)
+            # Skip local actions and docker:// images
+            if printf "%s" "$MATCH" | grep -Eqi 'uses: +\./|uses: +docker://'; then
+              continue
+            fi
+            # If not pinned to a 40-hex SHA, flag it
+            if ! printf "%s" "$MATCH" | grep -Eq 'uses: +[^@]+@[0-9a-fA-F]{40}'; then
+              printf "Unpinned action in %s: %s\n" "$FILE" "$MATCH"
+              FAILED=1
+            fi
+          done < <(grep -RIn "uses: " .github/workflows | grep -vE "pinning-check.yml|workflow-validation.yml")
+
+          if [ "$FAILED" -ne 0 ]; then
+            printf "\nUnpinned actions detected. Please pin to full-length commit SHAs per GitHub security best practices.\n"
+            exit 1
+          fi
+          printf "%s\n" "All actions are pinned to SHAs."

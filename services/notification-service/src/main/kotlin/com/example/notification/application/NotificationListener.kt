@@ -25,17 +25,8 @@ class NotificationListener(
 
     @KafkaListener(topics = [INVENTORY_RESERVED_TOPIC], containerFactory = "notificationKafkaListenerContainerFactory")
     @Transactional
-    @Suppress("LongMethod", "TooGenericExceptionCaught")
     fun onInventoryReserved(record: ConsumerRecord<String, String>) {
-        try {
-            logger.info(
-                "Received inventory reserved event",
-                "topic" to record.topic(),
-                "partition" to record.partition(),
-                "offset" to record.offset(),
-                "key" to record.key(),
-                "value" to record.value(),
-            )
+        runCatching {
             val event = InventoryReservedEventCodec.decode(record.value())
             val eventId = UUID.fromString(event.eventId.toString())
 
@@ -44,30 +35,24 @@ class NotificationListener(
                     "Event already processed, skipping",
                     "eventId" to eventId,
                 )
-                return
+                return@runCatching
             }
 
-            val payload = json.parseToJsonElement(event.payload).jsonObject
-            val orderId = UUID.fromString(payload["orderId"]!!.jsonPrimitive.content)
-            val channel = payload["channel"]?.jsonPrimitive?.content ?: DEFAULT_CHANNEL
-            val template = payload["template"]?.jsonPrimitive?.content ?: DEFAULT_TEMPLATE
-            val body =
-                payload["payload"]?.jsonPrimitive?.content
-                    ?: json.encodeToString(JsonObject.serializer(), payload)
+            val details = notificationDetails(event.payload)
 
             logger.info(
                 "Sending notification for reserved inventory",
-                "orderId" to orderId,
-                "channel" to channel,
-                "template" to template,
+                "orderId" to details.orderId,
+                "channel" to details.channel,
+                "template" to details.template,
             )
 
             notificationService.send(
                 SendNotificationCommand(
-                    orderId = orderId,
-                    channel = channel,
-                    template = template,
-                    payload = body,
+                    orderId = details.orderId,
+                    channel = details.channel,
+                    template = details.template,
+                    payload = details.body,
                 ),
             )
 
@@ -80,22 +65,40 @@ class NotificationListener(
 
             logger.info(
                 "Notification processed successfully",
-                "orderId" to orderId,
+                "orderId" to details.orderId,
                 "eventId" to eventId,
             )
-        } catch (e: Exception) {
+        }.onFailure { throwable ->
             logger.error(
                 "Failed to process inventory reserved event",
                 "topic" to record.topic(),
                 "partition" to record.partition(),
                 "offset" to record.offset(),
                 "key" to record.key(),
-                "error" to e.message,
-                "stackTrace" to e.stackTraceToString(),
+                "error" to throwable.message,
             )
-            throw e
+            throw throwable
         }
     }
+
+    private fun notificationDetails(payload: String): NotificationDetails {
+        val jsonPayload = json.parseToJsonElement(payload).jsonObject
+        val orderId = UUID.fromString(jsonPayload["orderId"]!!.jsonPrimitive.content)
+        val channel = jsonPayload["channel"]?.jsonPrimitive?.content ?: DEFAULT_CHANNEL
+        val template = jsonPayload["template"]?.jsonPrimitive?.content ?: DEFAULT_TEMPLATE
+        val body =
+            jsonPayload["payload"]?.jsonPrimitive?.content
+                ?: json.encodeToString(JsonObject.serializer(), jsonPayload)
+
+        return NotificationDetails(orderId, channel, template, body)
+    }
+
+    private data class NotificationDetails(
+        val orderId: UUID,
+        val channel: String,
+        val template: String,
+        val body: String,
+    )
 
     companion object {
         const val INVENTORY_RESERVED_TOPIC = "inventory.reserved"

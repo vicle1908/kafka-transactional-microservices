@@ -9,7 +9,6 @@ import org.hibernate.annotations.UuidGenerator
 import java.time.Instant
 import java.util.UUID
 
-@Suppress("JpaDataSourceORMInspection", "unused")
 @Entity
 @Table(name = "outbox")
 class OutboxMessage(

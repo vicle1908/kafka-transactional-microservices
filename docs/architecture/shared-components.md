@@ -40,9 +40,9 @@ Shared persistence components including:
 
 Saga pattern implementation for managing long-running business processes:
 
-- `SagaEntity`: JPA entity for storing saga state
-- `SagaRepository`: Repository for saga persistence
-- `SagaService`: Service for saga lifecycle management
+- `SagaStateEntity`: JPA entity for storing saga state
+- `SagaStateRepository`: Repository for saga persistence
+- `SagaStateService`: Service for saga lifecycle management and state transitions with optimistic locking
 
 ### 6. `common-proto`
 
