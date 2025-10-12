@@ -1,8 +1,16 @@
 import io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension
+import org.gradle.api.DefaultTask
 import org.gradle.api.JavaVersion
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.toolchain.JavaLanguageVersion
@@ -18,6 +26,61 @@ plugins {
     alias(libs.plugins.spring.dependency.management) apply false
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.detekt) apply false
+}
+
+abstract class FlywayLintTask : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    val migrations: ConfigurableFileCollection = project.objects.fileCollection()
+
+    @get:Internal
+    val repositoryRoot: DirectoryProperty = project.objects.directoryProperty()
+
+    @TaskAction
+    fun lint() {
+        val repoRoot = repositoryRoot.get().asFile
+        val migrationFiles = migrations.files.sortedBy { it.invariantSeparatorsPath }
+
+        val duplicates = mutableListOf<String>()
+
+        migrationFiles
+            .groupBy { file ->
+                val relative = file.relativeTo(repoRoot).invariantSeparatorsPath
+                relative.substringBefore("/src/")
+            }.forEach { (module, files) ->
+                val versions = mutableMapOf<String, MutableList<String>>()
+                files.forEach { file ->
+                    val match = Regex("^V([0-9]+)__(.+)\\.sql").find(file.name)
+                        ?: throw GradleException("Flyway migration has invalid naming: ${file.absolutePath}")
+                    val version = match.groupValues[1]
+                    versions.computeIfAbsent(version) { mutableListOf() }.add(file.name)
+                }
+                versions
+                    .filter { it.value.size > 1 }
+                    .forEach { (version, names) ->
+                        duplicates += "Module '$module' defines Flyway version $version multiple times: ${names.joinToString()}"
+                    }
+            }
+
+        if (duplicates.isNotEmpty()) {
+            throw GradleException(duplicates.joinToString(separator = "\n"))
+        }
+
+        val forbiddenTokens = listOf("IF NOT EXISTS", "DROP TABLE")
+        val offenders =
+            migrationFiles.filter { file ->
+                val sql = file.readText()
+                forbiddenTokens.any { token -> sql.contains(token, ignoreCase = true) }
+            }
+
+        if (offenders.isNotEmpty()) {
+            val message =
+                offenders.joinToString(separator = "\n") {
+                    "Forbidden DDL constructs found in ${it.relativeTo(repoRoot).invariantSeparatorsPath}"
+                }
+            throw GradleException(message)
+        }
+    }
 }
 
 val libsCatalog = extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
@@ -134,6 +197,7 @@ subprojects {
     tasks.named("check").configure {
         dependsOn("ktlintCheck", "jacocoTestReport")
         dependsOn(rootProject.tasks.named("detektAll"))
+        dependsOn(rootProject.tasks.named("flywayLint"))
     }
     extensions.configure(DependencyManagementExtension::class.java) {
         imports {
@@ -202,6 +266,20 @@ tasks.register("versionCheck") {
         }
     }
 }
+
+val flywayMigrationFiles =
+    layout.projectDirectory.asFileTree.matching {
+        include("**/src/main/resources/db/migration/V*.sql")
+        exclude("**/build/**")
+    }
+
+tasks.register<FlywayLintTask>("flywayLint") {
+    group = "verification"
+    description = "Validates Flyway migrations for duplicate versions and forbidden DDL patterns."
+    migrations.from(flywayMigrationFiles)
+    repositoryRoot.set(layout.projectDirectory)
+}
+
 
 tasks.register("schemaCompatibilityCheck") {
     group = "verification"

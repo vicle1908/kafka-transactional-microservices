@@ -50,6 +50,7 @@
   - Add `inventory_items` (and reservations if used) with pessimistic locking support.
   - Place migrations under each service at `src/main/resources/db/migration` and enable Flyway (`spring.flyway.enabled=true`).
   - 2025-10-11: Completed baseline migrations for orders, payments, inventory, and notification services; added `CREATE EXTENSION IF NOT EXISTS pgcrypto;` to support UUID defaults in local dev; aligned `notifications` DB naming across infra and Flyway.
+  - 2025-10-12: Audit surfaced duplicate Flyway version identifiers (`V1__*` appearing multiple times per service), overlapping shared-table DDL (`outbox`, `processed_events`, `sagas`) and repeatable seed scripts running in all environments. Introduced remediation backlog to (a) renumber migrations sequentially, (b) consolidate shared schema ownership in `common-persistence`/`common-sagas`, (c) move developer-only seed data behind profile-specific locations, and (d) enforce Flyway in test profiles to mirror production.
 - Wire `KafkaTransactionManager`, transactional `KafkaTemplate`, and error handling interceptors with proper `transactional.id` configuration.
 - Configure Kafka producers with `enable.idempotence=true`, `acks=all`, and unique `transactional.id`.
 - Configure Kafka consumers with `isolation.level=read_committed` and `enable.auto.commit=false` for manual offset management.
@@ -106,10 +107,46 @@
 - Establish saga workflows (Order → Payment → Inventory) with compensating events.
 - Deliver a saga pilot implementation documenting state machine persistence, compensation handlers, and idempotent consumers in `docs/sagas/`.
 - **Temporal Saga Pilot**:
-  - Refactor to granular, single-purpose Activity interfaces (`PaymentActivity`, `InventoryActivity`) in `common-temporal`.
-  - Designate a dedicated workflow worker service (from `temporal-pilot`) to host the `OrderFulfillmentWorkflow`.
-  - Implement and configure activity workers in each respective microservice (`payments-service`, `inventory-service`, etc.).
-  - Update integrationtests to focus on workflow invocation in `orders-service`.
+  - **P4.TEMP1**: Refactor to granular, single-purpose Activity interfaces in `common-temporal`:
+    - `PaymentActivity.processPayment(orderId: UUID)` with retry configuration (3 attempts, exponential backoff)
+    - `InventoryActivity.reserveInventory(orderId: UUID)` with timeout (15s) and retry policy
+    - `NotificationActivity.sendNotification(orderId: UUID)` with channel-specific retry templates
+    - `RefundPaymentActivity.refundPayment(orderId: UUID)` for payment compensation
+  - **P4.TEMP2**: Implement `OrderFulfillmentWorkflowImpl` with Saga pattern:
+    - Configure parallel compensation (`Saga.Options.Builder().setParallelCompensation(true)`)
+    - Add compensations before activity execution (refund → process → reserve → notify)
+    - Implement proper exception handling and compensation triggering
+    - Add workflow timeouts and retry policies
+  - **P4.TEMP3**: Configure dedicated workflow worker service (`temporal-pilot`):
+    - Set up WorkflowClient with proper task queue configuration
+    - Implement worker factory with Spring Boot auto-configuration
+    - Configure OpenTelemetry/OpenTracing integration for observability
+    - Add health checks and metrics endpoints
+  - **P4.TEMP4**: Implement activity workers in each microservice:
+    - `payments-service`: PaymentActivity + RefundPaymentActivity workers
+    - `inventory-service`: InventoryActivity worker with stock validation
+    - `notification-service`: NotificationActivity worker with channel routing
+    - Configure service-specific task queues and worker options
+  - **P4.TEMP5**: Integrate Temporal with orders-service workflow client:
+    - Add WorkflowClient bean for starting OrderFulfillmentWorkflow
+    - Trigger workflow on order creation with proper correlation IDs
+    - Implement workflow status querying and signaling
+    - Add integration tests for workflow initiation and monitoring
+  - **P4.TEMP6**: Add comprehensive Temporal testing:
+    - TestWorkflowEnvironment for unit testing workflows
+    - Activity implementation tests with mocked dependencies
+    - End-to-end workflow tests with Testcontainers
+    - Saga compensation path testing with failure scenarios
+  - **P4.TEMP7**: Implement Temporal observability and monitoring:
+    - Configure Micrometer metrics for workflow/activity executions
+    - Add OpenTelemetry tracing for workflow context propagation
+    - Create Grafana dashboards for Temporal metrics
+    - Set up alerting for workflow failures and timeouts
+  - **P4.TEMP8**: Document Temporal integration patterns:
+    - Activity implementation best practices
+    - Workflow retry and compensation strategies
+    - Worker configuration and deployment patterns
+    - Integration with existing saga state management
 - Execution board: [PHASE-4](docs/phases/PHASE-4.md)
 
 ### Phase 5 – Observability & Resilience (Weeks 7-9)
@@ -225,6 +262,13 @@
 
 ### 🚀 **Phase 7 Kickoff (Week 13 starting 2025-10-13)**
 
+- ⚠️ **New** – Flyway Schema Remediation (target start 2025-10-13):
+  - *P2.FW-1* Persistence Team: Produce normalized migration ladders per service (unique version numbers, no `IF NOT EXISTS` guards); update schema history via `flyway repair`.
+  - *P2.FW-2* Architecture Team: Decide and document ownership of shared tables (`outbox`, `processed_events`, `sagas`) in ADR 0007; remove duplicate service-level DDL and add follow-up `ALTER` migrations where needed.
+  - *P2.FW-3* Developer Experience & QA: Enable Flyway in integration test profiles, retire `ddl-auto=create-drop`, and align `spring.flyway.locations` between prod/test (include new dev-only seed path).
+  - *P2.FW-4* Platform Team: Relocate repeatable seed scripts to `db/dev-seed` (profile-scoped) or convert to application-level fixtures; ensure production migrations remain data-neutral.
+  - *P2.FW-5* DevOps: Add CI guardrail that fails builds when duplicate Flyway versions are detected or when migration directories contain `IF NOT EXISTS` statements.
+
 - `P7.2`/`P7.3` Platform Team (due 2025-10-14): Complete AGENTS research loop (Context7 Istio docs, DeepWiki repo scan) and draft Helm/Terraform ambient-profile modules plus Spring Cloud Gateway ingress blueprint.
 - `P7.5`/`P7.6` Security Team (due 2025-10-16): Model service-to-service access matrices, author `PeerAuthentication` + `AuthorizationPolicy` manifests, and submit ADR 0006 addendum for review.
 - `P7.7` DevOps Team (due 2025-10-17): Update `canary-deployment.yml` with Istio traffic shifting stages and mesh-aware smoke tests; validate CI run in non-prod environment.
@@ -238,4 +282,5 @@
 - Ensure CI environments include mesh components before running smoke tests; record adjustments in `docs/runbooks/service-mesh.md`.
 
 ---
-*Last updated: 2025-10-11*
+
+## Last updated: 2025-10-11

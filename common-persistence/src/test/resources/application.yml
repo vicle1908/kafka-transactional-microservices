@@ -6,10 +6,11 @@ spring:
     password: test
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
     show-sql: false
   flyway:
-    enabled: false
+    enabled: true
+    clean-disabled: false

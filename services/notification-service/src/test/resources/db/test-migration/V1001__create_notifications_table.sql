@@ -1,5 +1,5 @@
 -- V1001: notifications table
-CREATE TABLE IF NOT EXISTS notifications (
+CREATE TABLE notifications (
     id UUID PRIMARY KEY,
     order_id UUID NOT NULL,
     channel VARCHAR(100) NOT NULL,

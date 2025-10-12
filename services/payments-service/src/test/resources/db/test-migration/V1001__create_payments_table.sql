@@ -1,5 +1,5 @@
 -- V1001: payments table
-CREATE TABLE IF NOT EXISTS payments (
+CREATE TABLE payments (
     id UUID PRIMARY KEY,
     order_id UUID NOT NULL,
     amount NUMERIC(19,2) NOT NULL,

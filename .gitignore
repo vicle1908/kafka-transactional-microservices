@@ -41,7 +41,8 @@ coverage/
 # Redis / Kafka / Istio dumps
 *.rdb
 *.sql
-!common-persistence/src/main/resources/db/migration/*.sql
+!**/src/main/resources/db/**/*.sql
+!**/src/test/resources/db/**/*.sql
 /tmp/
 
 .kotlin

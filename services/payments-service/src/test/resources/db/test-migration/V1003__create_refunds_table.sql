@@ -1,5 +1,5 @@
 -- V1003: refunds table
-CREATE TABLE IF NOT EXISTS refunds (
+CREATE TABLE refunds (
     id UUID PRIMARY KEY,
     payment_id UUID NOT NULL,
     amount NUMERIC(19,2) NOT NULL,

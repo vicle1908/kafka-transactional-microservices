@@ -12,11 +12,12 @@ spring:
     type: simple
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
     show-sql: false
   flyway:
-    enabled: false
-    # spring.flyway.locations: classpath:db/migration
+    enabled: true
+    clean-disabled: false
+    locations: classpath:db/migration,classpath:db/dev-seed

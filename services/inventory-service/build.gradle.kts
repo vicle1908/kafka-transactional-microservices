@@ -44,6 +44,7 @@ dependencies {
     testImplementation(project(":common-proto"))
     testImplementation(libs.grpc.netty)
     testImplementation(libs.grpc.testing)
+    testImplementation(libs.temporal.testing)
     testRuntimeOnly(libs.grpc.netty.shaded)
 
     // Development dependencies

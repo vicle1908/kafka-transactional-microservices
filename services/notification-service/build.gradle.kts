@@ -38,6 +38,7 @@ dependencies {
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.kafka)
     testImplementation(libs.mockk)
+    testImplementation(libs.temporal.testing)
 
     // Development dependencies
     developmentOnly(libs.spring.boot.devtools)

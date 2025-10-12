@@ -12,7 +12,7 @@
 - Wire business transactions through Spring for Apache Kafka using `KafkaTransactionManager` so DB work and Kafka offset commits succeed or roll back together.
 - Enable idempotent Kafka producers (`enable.idempotence=true`, `acks=all`) and configure consumers with `isolation.level=read_committed`; persist idempotency keys to shield downstream side effects.
 - Configure Kafka consumers with proper transaction management by setting `containerProperties.kafkaAwareTransactionManager` instead of the deprecated `transactionManager` property.
-- Keep saga choreography lightweight: prefer domain events plus compensating actions over distributed 2PC; reserve orchestration for cross-domain long-running transitions.
+- Keep saga choreography lightweight: prefer domain events plus compensating actions over distributed 2PC; **reserve orchestration for cross-domain long-running transitions** using Temporal workflow orchestration implemented in `common-temporal`.
 
 ## Library & Framework Practices
 
@@ -646,13 +646,160 @@ The project implements comprehensive observability with the following components
 - Reuse `common-sagas` shared module for saga persistence: `SagaStateService` manages start/transition/complete/fail flows with optimistic locking and correlation-id uniqueness.
 - Standardize saga step markers via `SagaStepNames` and the helper `SagaStepFormatter` so logs, monitoring, and replay tooling can parse step history consistently.
 - Provide compensating helpers (`paymentsService.compensate`, `inventoryService.release`) that transition sagas to `COMPENSATING`/`FAILED` with clear step annotations (`payment-compensated`, `inventory-released`) while downstream actions (refunds, stock release) are stubbed for future integrations.
-- Adopt Temporal (self-hosted or cloud) as the orchestrator for complex, multi-domain sagas. The implementation uses a distributed worker model:
-  - A dedicated workflow service (`temporal-pilot`) hosts the workflow logic, ensuring the orchestrator is isolated from other service deployments.
-  - Each participating microservice (`payments-service`, `inventory-service`, etc.) runs its own worker to process activities on a dedicated task queue.
+- **Adopt Temporal (self-hosted or cloud) as the orchestrator for complex, multi-domain sagas**. The implementation uses a distributed worker model:
+  - Workflow definitions and implementations are centralized in `common-temporal` module for consistency and reusability
+  - Each participating microservice (`payments-service`, `inventory-service`, `notification-service`) runs its own worker to process activities on dedicated task queues
+  - Workflow orchestration integrates with existing service domain logic and maintains consistency with hexagonal architecture
+  - Comprehensive error handling, metrics collection, and parallel compensation support for reliable distributed transactions
+  - Type-safe activity interfaces with structured result types for better maintainability
 - Emit compensating commands/events from the application layer or Temporal activities when a step fails; include correlation identifiers and reason codes so downstream services can reconcile partial changes.
 - Provide idempotent handlers by combining processed-event ledgers with business keys (e.g., `order_id`); return early if the saga step has already completed.
 - Document saga flows with sequence diagrams in `docs/sagas/` and include contract tests that replay happy-path, compensating, and timeout scenarios.
 - Record step counters through `SagaMetricsRecorder` (`saga.step.processed` with `sagaType`, `step`, and `state` tags) and assert counter deltas in service tests to guard against double emission or missing compensations.
+
+## Temporal Workflow Orchestration
+
+### Overview
+
+The project implements **Temporal workflow orchestration** for complex, multi-domain business processes that require distributed transaction coordination and compensation patterns. This implementation provides reliable, observable, and maintainable workflow execution across microservice boundaries.
+
+### Architecture
+
+The Temporal implementation follows a **shared module approach** with the following structure:
+
+```
+common-temporal/
+├── activity/           # Activity interfaces and result types
+│   ├── PaymentActivity.kt
+│   ├── RefundPaymentActivity.kt
+│   ├── InventoryActivity.kt
+│   ├── NotificationActivity.kt
+│   └── ActivityResults.kt
+├── workflow/          # Workflow implementations
+│   ├── OrderFulfillmentWorkflowImpl.kt
+│   └── OrderFulfillmentResult.kt
+├── OrderFulfillmentWorkflow.kt  # Main workflow interface
+├── TaskQueues.kt          # Task queue definitions
+└── config/               # Observability and monitoring configuration
+```
+
+### Key Features
+
+**1. Saga Pattern with Parallel Compensation**
+- Distributed transaction coordination across services (Payment → Inventory → Notification)
+- Parallel compensation execution for faster recovery
+- Comprehensive error handling and logging
+- Activity-specific timeout and retry configurations
+
+**2. Type-Safe Activity Interfaces**
+- Structured result types (`PaymentResult`, `InventoryReservationResult`, `NotificationResult`)
+- Proper error propagation with detailed failure reasons
+- Metrics integration with Micrometer for all activities
+
+**3. Service Activity Workers**
+- Each microservice runs its own activity worker on dedicated task queues:
+  - `payments-service`: PaymentActivityImpl, RefundPaymentActivityImpl
+  - `inventory-service`: InventoryActivityImpl
+  - `notification-service`: NotificationActivityImpl
+- Workers integrate with existing domain logic and service patterns
+
+**4. Comprehensive Testing**
+- Activity tests using Temporal TestActivityEnvironment
+- Workflow tests covering success, failure, and compensation scenarios
+- Integration tests with real database and Kafka interactions
+
+**5. Observability & Monitoring**
+- Temporal metrics collection with Prometheus
+- Distributed tracing integration via OpenTelemetry
+- Health indicators for Temporal connectivity
+- Grafana dashboards for workflow performance
+
+### Workflow Example: Order Fulfillment
+
+The `OrderFulfillmentWorkflow` demonstrates the complete pattern:
+
+```kotlin
+@Component
+class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
+    override fun execute(orderId: UUID): OrderFulfillmentResult {
+        val saga = Saga(Saga.Options.Builder()
+            .setParallelCompensation(true)
+            .build())
+
+        try {
+            // Step 1: Process Payment
+            saga.addCompensation(refundActivities::refundPayment, orderId)
+            val paymentResult = paymentActivities.processPayment(orderId)
+
+            // Step 2: Reserve Inventory
+            saga.addCompensation(inventoryActivities::releaseInventory, orderId)
+            val inventoryResult = inventoryActivities.reserveInventory(orderId)
+
+            // Step 3: Send Notification
+            val notificationResult = notificationActivities.sendOrderConfirmation(orderId, customerEmail)
+
+            return OrderFulfillmentResult.success(orderId, paymentId, reservationId, notificationId)
+        } catch (e: ActivityFailure) {
+            saga.compensate()
+            return OrderFulfillmentResult.failure(orderId, failureReason)
+        }
+    }
+}
+```
+
+### Configuration & Deployment
+
+**Task Queue Configuration:**
+- `PAYMENTS_TASK_QUEUE`: Payment processing activities
+- `INVENTORY_TASK_QUEUE`: Inventory management activities
+- `NOTIFICATIONS_TASK_QUEUE`: Notification delivery activities
+
+**Worker Setup:**
+- Each service configures `TemporalWorkerConfig` with proper activity registration
+- Workers connect to Temporal server and poll for activities on their assigned queues
+- Health checks monitor worker connectivity and Temporal server availability
+
+**Integration with Orders Service:**
+- `OrderService` triggers workflows via `WorkflowClient` integration
+- Metrics recorded for workflow starts and completions
+- `WorkflowController` provides REST endpoints for workflow management
+
+### Best Practices
+
+**1. Activity Design:**
+- Activities should be idempotent and handle retries gracefully
+- Include comprehensive logging for operational visibility
+- Use structured result types instead of primitive returns
+- Integrate with existing service domain logic
+
+**2. Error Handling:**
+- Define specific exception types for different failure scenarios
+- Provide meaningful error messages for debugging
+- Configure appropriate retry policies per activity type
+- Ensure compensation actions are also idempotent
+
+**3. Monitoring:**
+- Track workflow execution duration and success rates
+- Monitor activity retry counts and failure patterns
+- Set up alerts for workflow timeouts and compensation failures
+- Log correlation IDs for end-to-end tracing
+
+**4. Testing:**
+- Write unit tests for activities using TestActivityEnvironment
+- Test workflow failure scenarios and compensation paths
+- Include integration tests with real Temporal server
+- Validate metrics and health check endpoints
+
+### Integration with Existing Architecture
+
+The Temporal implementation **enhances** rather than replaces existing patterns:
+
+- **Transactional Outbox**: Activities publish events via existing outbox pattern
+- **Domain Events**: Saga state changes are recorded in existing saga tables
+- **Service Boundaries**: Workflow orchestration respects microservice domain boundaries
+- **Observability**: Integrates with existing OpenTelemetry and metrics infrastructure
+
+This approach provides a **gradual migration path** from event choreography to workflow orchestration for complex business processes while maintaining consistency with the existing microservices architecture.
 
 ## Schema Evolution Policy
 

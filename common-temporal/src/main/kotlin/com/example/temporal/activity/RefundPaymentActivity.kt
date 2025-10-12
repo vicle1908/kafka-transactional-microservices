@@ -5,5 +5,5 @@ import java.util.UUID
 
 @ActivityInterface
 interface RefundPaymentActivity {
-    fun refundPayment(orderId: UUID)
+    fun refundPayment(orderId: UUID): RefundResult
 }
