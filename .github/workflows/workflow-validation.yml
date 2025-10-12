@@ -19,13 +19,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run actionlint
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/repo" \
-            -w /repo \
-            rhysd/actionlint:latest \
-            -color -verbose
+      - name: Run actionlint (GitHub Action)
+        uses: rhysd/actionlint@v1
+        with:
+          flags: "-color -verbose"
 
   yamllint:
     runs-on: ubuntu-latest
@@ -35,10 +32,9 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run yamllint
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/data" \
-            -w /data \
-            cytopia/yamllint \
-            .github/workflows
+      - name: Run yamllint (GitHub Action)
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: .github/workflows
+          format: github
+          strict: true
