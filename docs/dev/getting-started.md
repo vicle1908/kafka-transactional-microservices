@@ -7,24 +7,61 @@ This document describes the standard development workflow for the Kafka Transact
 - JDK 25 (Temurin recommended); ensure `java -version` reports 25.x
 - Docker Desktop for running local dependencies via `infra/compose.yml` (pure KRaft mode, no ZooKeeper dependency)
 - IntelliJ IDEA (2025.2+) with Kotlin and Spring plugins enabled
+- **GitHub CLI** (`gh`) for repository management and CI/CD monitoring:
+
+  ```bash
+  # Install on macOS
+  brew install gh
+
+  # Authenticate with GitHub
+  gh auth login
+
+  # Verify installation
+  gh --version
+  ```
 
 ## Initial Setup
 
-1. Clone the repository and install the Git hooks if provided
-2. Start the local infrastructure stack:
+1. Clone the repository and install the Git hooks if provided:
+
+   ```bash
+   git clone https://github.com/vicle1908/kafka-transactional-microservices.git
+   cd kafka-transactional-microservices
+   ```
+
+2. **Authenticate with GitHub CLI** (required for CI/CD operations):
+
+   ```bash
+   gh auth login
+   gh auth status  # Verify authentication
+   ```
+
+3. Start the local infrastructure stack:
 
    ```bash
    docker compose -f infra/compose.yml up -d
    ```
 
-3. Verify tooling:
+4. Verify tooling:
 
    ```bash
    ./gradlew versionCheck
    ```
 
-4. Import the Gradle project into IntelliJ; enable the Kotlin code style shipped with the repo (see `.editorconfig`)
+5. Import the Gradle project into IntelliJ; enable the Kotlin code style shipped with the repo (see `.editorconfig`)
    - When collaborating via JetBrains MCP server, use tools such as `open_file_in_editor` for navigation and `get_file_problems` to surface IntelliJ inspections without leaving the shared environment
+
+6. **Configure Git and GitHub CLI**:
+
+   ```bash
+   # Set up Git user information
+   git config --global user.name "Your Name"
+   git config --global user.email "your.email@example.com"
+
+   # Test GitHub CLI functionality
+   gh repo view  # Should show repository information
+   gh run list --limit=3  # Should show recent CI runs
+   ```
 
 ## Environment configuration for local/dev
 
@@ -328,6 +365,85 @@ The project uses GitHub Actions for CI with the following workflows:
 - Validates Avro schema changes
 - Ensures backward compatibility
 - Prevents breaking changes
+
+## GitHub CLI for CI/CD Management
+
+The GitHub CLI (`gh`) is essential for monitoring and managing CI/CD workflows. Below are key commands for development workflow:
+
+### Monitoring Workflows
+
+```bash
+# View recent workflow runs
+gh run list
+
+# Monitor specific workflow
+gh run list --workflow="ci.yml" --limit=10
+
+# Watch a running workflow in real-time
+gh run watch <run-id> --compact --exit-status
+
+# View detailed workflow information
+gh run view <run-id> --exit-status --json name,conclusion,url
+
+# Re-run failed workflow
+gh run rerun <run-id> --failed
+```
+
+### Pull Request Management
+
+```bash
+# Create a pull request from current branch
+git push -u origin feature-branch
+gh pr create --fill
+
+# View PR status and checks
+gh pr checks <pr-number> --watch
+
+# Request review
+gh pr edit <pr-number> --add-reviewer username
+
+# Merge PR (when checks pass)
+gh pr merge <pr-number> --squash
+```
+
+### Pre-commit Workflow with GitHub CLI
+
+```bash
+# Check CI status before pushing
+gh run list --workflow="ci.yml" --limit=1
+
+# Run local checks first
+make lint
+./gradlew check
+
+# Push and create PR
+git push -u origin feature-branch
+gh pr create --fill
+
+# Monitor CI for the new PR
+gh pr checks $(gh pr view --json number --jq '.number') --watch
+```
+
+### Troubleshooting Workflows
+
+```bash
+# Download workflow artifacts
+gh run download <run-id> --dir artifacts/ --pattern '*report*'
+
+# Cancel a running workflow
+gh run cancel <run-id>
+
+# View workflow logs for specific job
+gh run view <run-id> --log --log-failed --job=<job-name>
+
+# Trigger workflow_dispatch with parameters
+gh workflow run .github/workflows/smoke.yml --ref feature-branch -f level=quick
+
+# Retrieve raw log archive when CLI log output fails
+gh api repos/<owner>/<repo>/actions/runs/<run-id>/logs > run-logs.zip
+```
+
+For comprehensive GitHub CLI usage patterns, see the **GitHub CLI Integration** section in `@AGENTS.md`.
 
 ## Deployment
 

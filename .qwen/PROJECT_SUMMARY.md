@@ -1,9 +1,11 @@
 # Project Summary
 
 ## Overall Goal
+
 Set up and configure OpenTelemetry infrastructure to fix gRPC connection errors in Qwen Code that were occurring due to unavailable OpenTelemetry collector endpoints.
 
 ## Key Knowledge
+
 - Qwen Code version 0.0.14 was attempting to export OpenTelemetry data to localhost:4317 but no collector was running
 - The project uses Docker Compose with a local profile for OpenTelemetry services (otel-collector and jaeger)
 - OpenTelemetry collector configuration was initially incorrect - using invalid exporter type "jaeger" instead of "otlp"
@@ -12,6 +14,7 @@ Set up and configure OpenTelemetry infrastructure to fix gRPC connection errors 
 - The docker-compose.yml file defines all infrastructure services for the Kafka-based microservices project
 
 ## Recent Actions
+
 - [DONE] Identified the root cause of the Qwen Code error - OpenTelemetry collector was not running
 - [DONE] Fixed the OpenTelemetry collector configuration file at `/infra/otel/otel-collector-config.yaml` to use correct exporter type
 - [DONE] Cleaned up Docker resources to free up disk space that was preventing containers from starting
@@ -20,6 +23,7 @@ Set up and configure OpenTelemetry infrastructure to fix gRPC connection errors 
 - [DONE] Confirmed Qwen Code now works properly without the gRPC connection error
 
 ## Current Plan
+
 - [DONE] Set up OpenTelemetry infrastructure to resolve Qwen Code connection errors
 - [DONE] Fix configuration issues in OpenTelemetry collector
 - [DONE] Verify all components are working properly
@@ -29,4 +33,5 @@ Set up and configure OpenTelemetry infrastructure to fix gRPC connection errors 
 ---
 
 ## Summary Metadata
-**Update time**: 2025-10-11T14:03:08.769Z 
+
+**Update time**: 2025-10-11T14:03:08.769Z

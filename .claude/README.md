@@ -4,7 +4,7 @@ This directory contains project-specific Claude Code configuration and hooks.
 
 ## Structure
 
-```
+```text
 .claude/
 ├── settings.json          # Project-level Claude settings
 ├── scripts/
@@ -17,6 +17,7 @@ This directory contains project-specific Claude Code configuration and hooks.
 ## Configuration
 
 ### `settings.json`
+
 Configures PostToolUse hooks that automatically run after `Write` or `Edit` operations on relevant files:
 
 - **Trigger**: `Write|Edit` operations
@@ -24,6 +25,7 @@ Configures PostToolUse hooks that automatically run after `Write` or `Edit` oper
 - **Tools**: markdownlint, yamllint, actionlint
 
 ### `linting_hook.sh`
+
 Comprehensive linting script that:
 
 1. **Markdown Files (.md)**
@@ -45,7 +47,7 @@ Comprehensive linting script that:
 
 The hooks run automatically whenever you edit relevant files. You'll see output like:
 
-```
+```text
 📝 Running markdownlint on: example.md
 ✅ Markdownlint passed
 
@@ -54,7 +56,7 @@ The hooks run automatically whenever you edit relevant files. You'll see output 
 
 Or if issues are found:
 
-```
+```text
 📝 Running markdownlint on: example.md
 ❌ Markdownlint found issues:
 example.md:5:1 MD018/no-missing-space-atx No space after hash

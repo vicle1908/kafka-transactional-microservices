@@ -30,11 +30,6 @@
   - Gradle Plugin Portal (<https://plugins.gradle.org/>) for Gradle plugins
   - Google's Maven Repository (<https://maven.google.com/web/index.html>) for Android libraries
   - Official project release pages and GitHub repositories
-  - **Docker CLI** for direct Docker Hub verification:
-    - Use `docker search <image_name>` to find official repositories
-    - Query Docker Hub API directly for accurate version information: `curl -s "https://registry.hub.docker.com/v2/repositories/library/<image>/tags?page_size=10"`
-    - Verify actual tag availability with `docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.CreatedAt}}"`
-    - Cross-reference with `docker manifest inspect <image>:<tag>` for multi-architecture support
 - When evaluating version upgrades, consider:
   - Compatibility with existing dependencies
   - Security fixes and vulnerability patches
@@ -82,13 +77,13 @@
 - Run a quarterly dependency review (see Research Backlog) to validate new maintenance drops; require smoke tests, upgrade playbooks, and rollback plans before updating production baselines.
 - Use CI checks (Gradle task `versionCheck`) to flag mismatched runtime versions across services; merge is blocked until the matrix is updated or the mismatch is resolved.
 
-## Docker Image Version Verification
+## Docker & Container Image Management
 
-### Using Docker CLI for Latest Version Research
+### Docker CLI Version Verification
 
-When managing Docker infrastructure components, use the Docker CLI directly to verify latest versions rather than relying solely on web searches:
+When managing Docker infrastructure components, use the Docker CLI directly to verify latest versions rather than relying solely on web searches.
 
-#### Core Docker CLI Commands
+#### Core Commands
 
 ```bash
 # Search for official repositories
@@ -99,55 +94,24 @@ docker search --limit 5 apache/kafka
 # Query Docker Hub API directly for accurate tags
 curl -s "https://registry.hub.docker.com/v2/repositories/library/postgres/tags?page_size=10" | jq -r '.results[] | "\(.name): \(.last_updated)"'
 
-# Check currently cached images and their creation dates
-docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | grep -E "(postgres|redis|kafka)"
-
 # Verify multi-architecture support
 docker manifest inspect redis:latest
 ```
 
-#### Best Practices for Docker Version Management
+#### Best Practices
 
 1. **Prefer Official Images**: Use `docker search` to identify official repositories marked with `[OK]`
-2. **Cross-Reference Sources**: Combine Docker CLI results with:
-   - Docker Hub API calls for exact timestamps
-   - `docker images` for local cache verification
-   - `docker manifest inspect` for architecture support
-3. **Version Selection Strategy**:
-   - Use major version tags (e.g., `postgres:18`, `redis:8-alpine`)
-   - Prefer Alpine variants for smaller footprint when appropriate
-   - Avoid `latest` tag in production - use specific versions
-4. **API-Based Verification**: When in doubt, query the Docker Hub API directly:
-   ```bash
-   # Get latest 5 tags with timestamps
-   curl -s "https://registry.hub.docker.com/v2/repositories/library/redis/tags?page_size=5" | jq -r '.results[] | "\(.name): \(.last_updated)"'
+2. **Version Selection**: Use major version tags (e.g., `postgres:18`, `redis:8-alpine`), avoid `latest` in production
+3. **Cross-Reference Sources**: Combine Docker CLI results with Docker Hub API calls and local cache verification
+4. **Environment Management**: Maintain image versions in `infra/.env` and use environment variables in `compose.yml`
 
-   # Find highest version numbers
-   curl -s "https://registry.hub.docker.com/v2/repositories/library/postgres/tags?page_size=30" | jq -r '.results[] | "\(.name)"' | grep -E "^[0-9]+" | sort -V | tail -3
-   ```
-
-#### Environment Variable Management
-
-- Maintain image versions in `infra/.env` with specific tags
-- Use environment variables in `compose.yml` for consistent version management:
-  ```yaml
-  services:
-    postgres:
-      image: ${POSTGRES_IMAGE:-postgres:18-alpine3.22}
-    redis:
-      image: ${REDIS_IMAGE:-redis:8-alpine3.22}
-  ```
-- Update version matrix with reasoning for version selections
-- Run smoke tests after version upgrades to validate compatibility
-
-#### Common Docker CLI Patterns
+#### Verification Workflow
 
 ```bash
-# Research workflow for new image versions
-docker search <service_name>                    # Find official repo
-curl -s "https://registry.hub.docker.com/v2/repositories/library/<service>/tags?page_size=10" | jq '.results[0:3] | .name'  # Check recent tags
-docker manifest inspect <image>:<tag>            # Verify architecture support
-docker pull <image>:<tag> --dry-run 2>&1 || echo "Manual verification needed"  # Test availability
+# Research new versions
+docker search <service_name>
+curl -s "https://registry.hub.docker.com/v2/repositories/library/<service>/tags?page_size=10" | jq '.results[0:3] | .name'
+docker manifest inspect <image>:<tag>
 ```
 
 ## Dev Workflow & Commands
@@ -164,21 +128,72 @@ docker pull <image>:<tag> --dry-run 2>&1 || echo "Manual verification needed"  #
 - Launch disposable CLI subagents with `clink` when fresh context windows are needed for specific tasks. Currently, only claude, codex, and gemini are supported by clink due to a hardcoded allowlist. For tasks requiring other CLIs like qwen, temporarily remap an existing client or use the CLI directly.
 - Always use the Gradle version catalog (`gradle/libs.versions.toml`) when adding new plugins or dependencies to build files to ensure consistent version management across all modules
 - **Local Workflow & Document Validation**: Before committing changes, especially to GitHub Actions workflows or documentation, run local validation tools to catch errors early. These tools are typically installed via package managers like `npm`, `pip`, or `brew`.
-  - **YAML Files**: Use `yamllint` to check for syntax errors and style issues.
-    ```bash
-    # Example: Lint all YAML/YML files in the project
-    yamllint .
-    ```
-  - **GitHub Actions**: Use `actionlint` to statically check for common issues and best practices in workflow files.
-    ```bash
-    # Example: Lint all workflow files in the .github/workflows directory
-    actionlint
-    ```
-  - **Markdown Files**: Use `markdownlint-cli` to ensure documentation standards are met.
-    ```bash
-    # Example: Lint all markdown files, ignoring node_modules
-    markdownlint-cli "**/*.md" --ignore node_modules
-    ```
+
+  **Post-Edit Validation Practice**: After editing any `.yml`, `.yaml`, or `.md` files, always run the appropriate linting tools to ensure quality and consistency:
+
+  ```bash
+  # After editing YAML files (.yml, .yaml)
+  yamllint <filename>.yml                    # Check single file
+  yamllint .                                 # Check all YAML files in project
+  yamllint infra/ .github/                   # Check specific directories
+
+  # After editing Markdown files (.md)
+  npx markdownlint <filename>.md             # Check single file
+  npx markdownlint "**/*.md"                 # Check all markdown files
+  npx markdownlint docs/**/*.md              # Check specific directories
+
+  # After editing GitHub Actions workflows
+  actionlint .github/workflows/*.yml         # Check workflow files
+  ```
+
+  **Automatic Fixing Workflow**: Many linting issues can be automatically fixed:
+
+  ```bash
+  # Auto-fix markdownlint issues
+  npx markdownlint "**/*.md" --fix
+
+  # Auto-fix YAML formatting issues (requires yamllint config)
+  yamllint -d relaxed .github/workflows/*.yml
+
+  # Format Kotlin code (after editing .kt files)
+  ./gradlew ktlintFormat
+  ```
+
+  **Comprehensive Validation Commands**:
+
+  ```bash
+  # Validate all documentation and configuration files
+  make lint-all                             # Custom make command (if available)
+  npx markdownlint "**/*.md" --fix && yamllint . --no-warnings
+
+  # Check specific file types
+  find . -name "*.yml" -o -name "*.yaml" | xargs yamllint --no-warnings
+  find . -name "*.md" -not -path "./build/*" | xargs npx markdownlint --fix
+  ```
+
+  **Tool Installation**:
+
+  ```bash
+  # Install required tools (macOS)
+  brew install yamllint actionlint
+  npm install -g markdownlint-cli
+
+  # Or use npx for markdownlint without global installation
+  # npx markdownlint is recommended for project consistency
+  ```
+
+  **Integration with Development Workflow**:
+
+  1. **After any file edit**: Run the appropriate linter immediately
+  2. **Before commits**: Run comprehensive lint check across all modified files
+  3. **CI/CD alignment**: Use the same tools and configurations as CI pipelines
+  4. **Error handling**: Review and fix all linting issues before pushing changes
+
+  **Common Linting Issues and Fixes**:
+
+  - **YAML**: Line length (>80 chars), indentation, trailing whitespace
+  - **Markdown**: Missing fence languages, list formatting, heading duplication
+  - **GitHub Actions**: Outdated actions, missing required fields, syntax errors
 
 ## Database & CDC Setup (Standardized Docker Compose)
 
@@ -212,25 +227,328 @@ docker pull <image>:<tag> --dry-run 2>&1 || echo "Manual verification needed"  #
 - When using external libraries, first research their correct usage patterns and configuration through documentation tools
 - Follow established patterns in shared modules (`common-*`) as templates for new implementations
 
-## MCP Search Practice
+## GitHub CLI Integration
+
+The GitHub CLI (`gh`) is essential for managing repository operations, monitoring CI/CD workflows, and handling pull requests efficiently. Below are common practices and commands for the microservices project.
+
+### Installation & Authentication
+
+```bash
+# Install GitHub CLI (macOS)
+brew install gh
+
+# Authenticate with GitHub (choose HTTPS + browser or PAT)
+gh auth login
+
+# Confirm scopes and active host
+gh auth status
+
+# Reuse credentials for git fetch/push
+gh auth setup-git
+
+# Set default editor for PR descriptions and issues
+gh config set editor <editor-name>
+
+# Optional: configure frequently used aliases
+gh alias set prd 'pr create --draft'
+```
+
+> **Token hygiene**: when scripting, export `GH_TOKEN`/`GITHUB_TOKEN` with minimal scopes (for CI logs use `actions:read`; reruns need `actions:write`). Rotate PATs alongside other credentials.
+
+### Monitoring Actions & Workflows
+
+**View recent workflow runs:**
+
+```bash
+# List recent workflow runs
+gh run list
+
+# View runs for a specific workflow
+gh run list --workflow="ci.yml"
+
+# View detailed information about a specific run and fail the shell on errors
+gh run view <run-id> --exit-status
+
+# View logs for a specific job and only show failed steps
+gh run view <run-id> --log --job=<job-name> --log-failed
+
+# Watch a running workflow in real-time
+gh run watch <run-id> --compact --exit-status --interval 5
+
+# Emit structured data for dashboards / scripts
+gh run view <run-id> --json conclusion,workflowName,url --jq '.workflowName + " → " + .conclusion'
+```
+
+**Workflow debugging and troubleshooting:**
+
+```bash
+# Download artifacts from a workflow run
+gh run download <run-id> --dir artifacts/ --pattern '*report*'
+
+# Rerun a failed workflow
+gh run rerun <run-id> --failed
+
+# Rerun a specific job (obtain job databaseId from --json jobs)
+gh run rerun <run-id> --job <job-database-id>
+
+# Cancel a running workflow
+gh run cancel <run-id>
+
+# Trigger workflow_dispatch with parameters
+gh workflow run path/to/workflow.yml --ref main -f smoke=true
+
+# Fallback when run names break log downloads: fetch archive directly
+gh api repos/<owner>/<repo>/actions/runs/<run-id>/logs > run-logs.zip
+
+# Enable debug logging (requires repository variables or rerun option)
+gh run rerun <run-id> --debug
+```
+
+### Pull Request Management
+
+**Create and manage pull requests:**
+
+```bash
+# Create a pull request from current branch
+gh pr create
+
+# Create PR with title and body
+gh pr create --title "feat: add transactional outbox" --body "Implement outbox pattern for orders service"
+
+# List pull requests
+gh pr list
+
+# View PR details and status checks
+gh pr view <pr-number>
+
+# Check PR status and CI results
+gh pr checks <pr-number> --watch
+
+# Merge a PR (with various merge methods)
+gh pr merge <pr-number> --merge
+gh pr merge <pr-number> --squash
+gh pr merge <pr-number> --rebase
+```
+
+**PR review and collaboration:**
+
+```bash
+# Request review from team members
+gh pr edit <pr-number> --add-reviewer vicle1908
+
+# Add labels to PR
+gh pr edit <pr-number> --add-label "dependencies"
+
+# Approve a PR
+gh pr review <pr-number> --approve
+
+# Request changes
+gh pr review <pr-number> --request-changes
+
+# View PR diff
+gh pr diff <pr-number>
+
+# View files changed in PR
+gh pr view <pr-number> --json files --jq '.files[].path'
+
+# Apply PR locally for testing without switching branches
+gh pr checkout <pr-number>
+```
+
+### Issue Management
+
+**Create and manage issues:**
+
+```bash
+# Create an issue
+gh issue create --title "Bug: Kafka consumer not processing messages" --body "Detailed description..."
+
+# List issues
+gh issue list
+
+# View issue details
+gh issue view <issue-number>
+
+# Assign issue to yourself
+gh issue edit <issue-number> --assignee vicle1908
+
+# Add labels to issue
+gh issue edit <issue-number> --add-label "bug,kafka"
+```
+
+### Repository Management
+
+**View repository information:**
+
+```bash
+# View repository overview
+gh repo view
+
+# View repository with specific fields
+gh repo view --json name,description,defaultBranch,createdAt
+
+# List repository collaborators
+gh repo list --json owner,name
+
+# View repository traffic
+gh repo view --json cloneTraffic,viewTraffic
+```
+
+### Configuration & Settings
+
+**Manage repository and branch settings:**
+
+```bash
+# View repository settings
+gh repo edit --json settings
+
+# Set default branch
+gh repo edit --default-branch main
+
+# Manage branch protection rules (requires GitHub CLI v2.0+)
+gh api repos/:owner/:repo/branches/:branch/protection
+
+# View repository secrets (requires admin access)
+gh secret list
+
+# Set repository environment secrets
+gh secret set ENV_VAR_NAME --body "secret_value"
+```
+
+### Project-Specific Workflows
+
+**Common patterns for this microservices project:**
+
+1. **Monitor CI/CD pipelines after Dependabot updates:**
+
+   ```bash
+   # Watch Dependabot PR builds
+   gh pr list --author "app/dependabot[bot]"
+   gh pr checks <pr-number>
+   ```
+
+2. **Verify deployment pipelines:**
+
+   ```bash
+   # Check deployment workflow status
+   gh run list --workflow="deploy.yml"
+   gh run view <run-id> --log
+   ```
+
+3. **Review dependency updates:**
+
+   ```bash
+   # Review Dependabot PR changes
+   gh pr diff --repo vicle1908/kafka-transactional-microservices <pr-number>
+   ```
+
+4. **Security and compliance:**
+
+   ```bash
+   # View security scan results
+   gh run list --workflow="security.yml"
+
+   # Check code scanning alerts
+   gh code scanning list
+   ```
+
+### Integration with Development Workflow
+
+**Pre-commit checks:**
+
+```bash
+# Run local checks before pushing
+make lint
+make test
+
+# Push and create PR with checks
+git push -u origin feature-branch
+gh pr create --fill --head feature-branch
+```
+
+**Post-merge cleanup:**
+
+```bash
+# Delete merged branches locally
+git branch --merged | grep -v main | xargs git branch -d
+
+# Sync with remote and clean up
+git fetch origin --prune
+```
+
+### Automation Script Examples
+
+**Batch operations for multiple PRs:**
+
+```bash
+# View all open Dependabot PRs with their status
+gh pr list --author "app/dependabot[bot]" --json number,state,title,mergeable --jq '.[] | "\(.number): \(.title) - \(.state) (mergeable: \(.mergeable))"'
+
+# Approve all passing Dependabot PRs
+gh pr list --author "app/dependabot[bot]" --json number --jq '.[].number' | xargs -I {} gh pr review {} --approve
+```
+
+**Workflow monitoring scripts:**
+
+```bash
+# Monitor CI status for current PR
+current_pr=$(gh pr view --json number --jq '.number')
+gh pr checks $current_pr --watch
+
+# Get workflow duration statistics
+gh run list --json databaseId,status,conclusion,createdAt,completedAt --jq '.[] | select(.status == "completed") | "\(.databaseId): \(.conclusion) - duration: \((.completedAt | fromdateiso8601) - (.createdAt | fromdateiso8601)) seconds"'
+```
+
+### GitHub CLI Best Practices
+
+1. **Always authenticate before use**: `gh auth login`
+2. **Use PR templates**: Leverage `.github/PULL_REQUEST_TEMPLATE.md`
+3. **Monitor CI closely**: Use `gh run watch` for long-running workflows
+4. **Review Dependabot PRs promptly**: Automated dependencies need timely review
+5. **Use meaningful commit messages**: They become PR titles with `gh pr create --fill`
+6. **Leverage GitHub Actions**: Automate repetitive tasks with workflows
+7. **Stay updated**: `gh --version` and `gh help` for latest features
+
+### Integration with Claude Code
+
+When working with Claude Code, you can use GitHub CLI commands to:
+
+- Verify workflow runs after making changes
+- Check PR status before starting new work
+- Review merge conflicts and resolve them
+- Monitor deployment pipelines after infrastructure changes
+- Validate configuration changes in CI/CD workflows
+
+The GitHub CLI is particularly valuable for this microservices project where frequent dependency updates, multiple services, and complex CI/CD pipelines require efficient repository management.
+
+## Research & Knowledge Management
+
+### MCP Search Practice
 
 - Triage query type first: use `mcp-router__brave_web_search` for broad web research, switching to `mcp-router__brave_news_search` when freshness (≤7 days) matters and `mcp-router__brave_image_search` for visual assets.
-- For deep-dive investigations build a map→extract pipeline: `mcp-router__tavily_map` to enumerate relevant docs, then `mcp-router__tavily_extract` (or `mcp-router__tavily_search` with `search_depth='advanced'`) for full-text pulls; request `include_raw_content` when evaluating technical specs.
-- When questions target repository docs or architecture notes, reach for DeepWiki (GitHub doc crawler) before general search; follow with `mcp-router__brave_web_search` only if the repo lacks internal docs.
+- For deep-dive investigations build a map→extract pipeline: `mcp-router__tavily_map` to enumerate relevant docs, then `mcp-router__tavily_extract` for full-text pulls; request `include_raw_content` when evaluating technical specs.
 - For library and framework-specific research, use `mcp-router__resolve-library-id` to find the correct Context7-compatible library ID, then `mcp-router__get-library-docs` to retrieve up-to-date documentation.
-- For real-world code examples and implementation patterns, leverage `mcp-router__searchGitHub` to find relevant code from over a million public repositories.
-- Prefer Brave over raw Google for low-latency fact checks; fall back to Tavily advanced search or `mcp-router__web_search_exa` when Brave results are thin or contradictory.
+- For real-world code examples, leverage `mcp-router__searchGitHub` to find relevant code from over a million public repositories.
 - For programming-related questions, leverage `mcp-router__get_code_context_exa` to find relevant context for APIs, libraries, and SDKs with the highest quality and freshest context.
-- When validating internal knowledge, use `mcp-router__search_in_files_by_text` (grep-mcp) or `mcp-router__start_search` with `searchType='content'` to cross-check local docs before escalating to web tools.
-- Leverage Medium-focused research with `mcp-router__search_medium_topic` for comprehensive topic-based research, `mcp-router__search_by_author` to find insights from domain experts, and `mcp-router__research_compilation` for multi-topic synthesis with citations.
-- Always capture tool outputs in the working note, link to `@IMPLEMENTATION_PLAN.md` action items, and record gaps in the Research Backlog when sources are inconclusive.
-- For complex decisions, use `mcp-router__consensus` (consulting Gemini, OpenAI, Grok-4 via Zen MCP) to gather multiple AI perspectives, then apply `mcp-router__thinkdeep` when deeper reasoning or resolution is required.
-- When researching, combine available search MCP tools (`mcp-router__brave_web_search`, `mcp-router__tavily_search`, `mcp-router__web_search_exa`, `mcp-router__searchGitHub`, `mcp-router__search_medium_topic`) to gather evidence before consulting Zen MCP (`consensus`, `thinkdeep`) for multi-model evaluation.
-- Launch disposable CLI subagents with `clink` when we need fresh context windows: codex uses the non-interactive `exec` path (`conf/cli_clients/codex.json`) and **requires a Zen MCP server restart** after config edits to pick up the new flags. Qwen is not yet first-class in upstream clink; either remap an existing client (e.g., temporarily wire `claude` to the `qwen` CLI) or track the upstream update before calling `cli_name='qwen'`.
-- Use `clink` to delegate tasks to external AICLIs like Gemini, Claude, or Codex when a task is better suited for another model's specific strengths. Note that `clink` has a hardcoded allowlist for supported CLIs; only 'claude', 'codex', and 'gemini' are currently accepted, which prevents integration with other CLIs like Qwen even if configuration files exist.
-- When using `clink`, you can pass context to the external CLI including files, images, and conversation history. Use the `role` parameter to invoke a pre-configured persona or skill for the target CLI (e.g., `codereviewer` for code review tasks).
-- For complex tasks requiring multiple tools, combine `clink` with other MCP tools in a tiered approach: use `clink` for CLI-specific tasks, `mcp-router__search_medium_topic` for comprehensive research, and `mcp-router__consensus` for multi-model evaluation.
-- When experiencing issues with `clink` argument forwarding (e.g., Codex not receiving the `--skip-git-repo-check` flag), consider using direct CLI execution or wrapper scripts to ensure flags are properly applied.
+- Use `mcp-router__consensus` for complex decisions to gather multiple AI perspectives, then apply `mcp-router__thinkdeep` when deeper reasoning is required.
+- Use `clink` to delegate tasks to external AICLIs when a task is better suited for another model's specific strengths.
+
+### Quarterly Research Priorities
+
+- Schedule quarterly version reviews using `mcp-router__brave_web_search` and `mcp-router__tavily_extract` to capture changelog highlights for Spring Boot, Kafka, Debezium, and Gradle
+- Evaluate OpenTelemetry tracing implementations and best practices for distributed systems
+- Research advanced Grafana dashboard patterns for microservices monitoring
+- Investigate service mesh integration with observability platforms
+- Review Debezium high-availability patterns and Spring Kafka EOS guidance
+
+### Key References
+
+- Spring Kafka exactly-once & transactions documentation
+- Confluent Platform release notes (KRaft-first transactions & licensing updates)
+- Debezium release notes and outbox pattern implementations
+- OpenTelemetry documentation and implementation guides
+- Istio service mesh documentation for ambient mode
+- ELK stack documentation for centralized logging
 
 ## Knowledge Memory Practice
 
@@ -259,80 +577,53 @@ docker pull <image>:<tag> --dry-run 2>&1 || echo "Manual verification needed"  #
 - **Dependency Management**: Added dependency review with license compliance checking and vulnerability scanning through GitHub's Dependency Review Action.
 - **Infrastructure Validation**: Implemented Docker Compose, Kubernetes, and Terraform configuration validation workflows.
 - **Static Analysis**: Integrated SpotBugs and Error Prone for enhanced code quality assurance.
-- **Observability**: Configured OpenTelemetry tracing for distributed tracing across services with context propagation.
 - Gradle builds must run with configuration cache and build cache enabled (`org.gradle.configuration-cache=true`, `org.gradle.caching=true`); CI invokes `./gradlew --configuration-cache` and developers should prefer the same for local workflows.
 - Run `./gradlew schemaCompatibilityCheck` to validate Avro schemas before publishing; CI executes the task alongside `check`.
-- Observability-first: enforce OpenTelemetry instrumentation, centralize logs/metrics, and maintain dashboards/alerts for latency, errors, saturation, and business SLIs.
 - Resilience engineering: run regular chaos drills (broker restarts, mesh failures, cache outages) and record findings in runbooks.
 
-## Enhanced Observability Implementation
+## Observability & Monitoring
 
-### Current State
+### Current Implementation
 
-The project has a partial observability implementation with the following components:
+The project implements comprehensive observability with the following components:
 
-1. **Metrics Collection**:
-   - Prometheus for metrics collection
-   - Micrometer for instrumentation in services - Grafana for dashboard visualization
-   - Pre-built dashboards for various components
+**Metrics & Dashboards**:
 
-2. **Distributed Tracing**:
-   - OpenTelemetry SDK integrated in services through the `common-observability` module
-   - Additional OpenTelemetry dependencies in `common-temporal`
-   - Dedicated OpenTelemetry runbook (`docs/runbooks/opentelemetry.md`) with configuration details
-   - Configuration for OpenTelemetry collector and Jaeger backend documented
+- Prometheus for metrics collection with Micrometer instrumentation
+- Grafana dashboards for service performance and business metrics
+- Pre-built dashboards for Kafka, databases, and application metrics
 
-3. **Health Checks**:
-   - Health check implementations for services
-   - Dedicated health check runbook
+**Distributed Tracing**:
 
-### Missing Components
+- OpenTelemetry SDK integrated via `common-observability` module
+- Context propagation across service boundaries
+- Configuration for OpenTelemetry collector and Jaeger backend
 
-1. **Centralized Logging**:
-   - Currently missing centralized logging solution
-   - Need to implement ELK (Elasticsearch, Logstash, Kibana) stack for:
-     - Centralized log aggregation from all services
-     - Advanced log search capabilities
-     - Real-time log visualization
-     - Structured log analysis
+**Health Checks**:
 
-2. **Complete OpenTelemetry Implementation**:
-   - Missing OpenTelemetry collector configuration in docker-compose
-   - Missing Jaeger backend for trace visualization
-   - Need to implement tracing across service boundaries, especially with Kafka
+- Service health endpoints with dependency status
+- Dedicated health check runbooks and monitoring procedures
 
-### Implementation Plan
+### Implementation Roadmap
 
-#### Phase 1: Implement Centralized Logging with ELK Stack
+#### Phase 1: Centralized Logging (ELK Stack)
 
-1. Add ELK stack components to `infra/compose.yml`:
-   - Elasticsearch for log storage
-   - Logstash for log processing
-   - Kibana for log visualization
+- Add Elasticsearch, Logstash, Kibana to `infra/compose.yml`
+- Configure Filebeat for log shipping from services
+- Create dashboards for service logs, error patterns, and performance analysis
 
-2. Configure log shipping from services:
-   - Add Filebeat to each service container
-   - Configure log format standardization
+#### Phase 2: Enhanced Tracing
 
-3. Create Kibana dashboards for:
-   - Service logs
-   - Error patterns
-   - Performance logs
+- Deploy OpenTelemetry Collector and Jaeger
+- Implement cross-service tracing (HTTP, Kafka, database)
+- Integrate trace data with existing dashboards
 
-#### Phase 2: Complete OpenTelemetry Implementation
+### Integration with Development
 
-1. Add OpenTelemetry Collector and Jaeger to `infra/compose.yml`
-2. Implement cross-service tracing:
-   - HTTP request tracing
-   - Kafka message tracing
-   - Database query tracing
-3. Enhance existing dashboards with trace data
-
-#### Phase 3: Documentation Updates
-
-1. Update `AGENTS.md` with complete observability setup
-2. Create implementation guides for new components
-3. Update existing runbooks with new integration points
+- Enforce OpenTelemetry instrumentation in all services
+- Centralize logs/metrics with configurable endpoints
+- Maintain dashboards/alerts for latency, errors, saturation, and business SLIs
+- Run chaos drills regularly to test monitoring resilience
 
 ## Data Consistency Workflow
 
@@ -413,26 +704,6 @@ The project has a partial observability implementation with the following compon
 - Maintain `docs/architecture/service-catalog.md`, `docs/notes/phase-0-*.md`, and ADRs in `docs/adrs/` as the source of truth for discovery outcomes.
 - Ensure `docs/dev/getting-started.md` stays current with tooling and workflow changes.
 - Keep runbooks up-to-date with implementation changes and regularly review for accuracy
-
-## Research Backlog & References
-
-- Review Debezium high-availability sample for relay failover patterns (see GitHub repo linked below).
-- Follow Spring Kafka EOS guidance to avoid regression in transactional containers.
-- Track Confluent Platform release notes for broker-side transaction updates and licensing changes.
-- Schedule a quarterly version review using `mcp-router__brave_web_search` (with `freshness='pm'`) and `mcp-router__tavily_extract` to capture changelog highlights for Spring Boot, Kafka, Debezium, and Gradle.
-- Evaluate OpenTelemetry tracing implementations and best practices for distributed systems
-- Research advanced Grafana dashboard patterns for microservices monitoring
-- Investigate service mesh integration with observability platforms.
-- Research ELK stack implementation for centralized logging in microservices
-- Key references:
-    - Spring Kafka exactly-once & transactions documentation.
-    - Spring Cloud Stream blog on EOS patterns with JPA transactions.
-    - Confluent Platform 8.0 release notes (KRaft-first transactions & licensing updates).
-    - Debezium 3.3 release notes (EOS support and connector updates).
-    - Debezium outbox pattern implementations (anarefin/high-availability-debezium, YunusEmreNalbant/transactional-outbox-pattern-with-debezium, chfern/debezium-outbox-pgkafka).
-    - OpenTelemetry documentation and implementation guides.
-    - Istio service mesh documentation for ambient mode.
-    - ELK stack documentation for centralized logging.
 
 ## Transactional Outbox Pattern Implementation
 
@@ -605,6 +876,7 @@ The Debezium connectors are configured with the Outbox Event Router SMT to proce
 ```
 
 When an outbox record is inserted into the database:
+
 1. Debezium captures the change through PostgreSQL's logical replication
 2. The Outbox Event Router transforms the change into a Kafka message
 3. The message is routed to a topic based on the `aggregate_type` (e.g., "Order" → "outbox.Order")
@@ -841,12 +1113,10 @@ class KafkaProducerConfig {
 5. **Idempotency**: Consumers can check a processed events table to avoid duplicate processing
 6. **Flexible Routing**: Events are routed based on aggregate type to appropriate Kafka topics
 
-### Best Practices
+### Outbox Pattern Best Practices
 
-1. **Event Design**: Events should be designed to be immutable and backward compatible.
-2. **Idempotency**: Consumers should be designed to handle duplicate events idempotently by checking a processed events table.
-3. **Monitoring**: Monitor outbox table depth and Debezium connector lag to ensure healthy operation.
-4. **Error Handling**: Implement proper error handling and dead letter queues for event processing failures.
-5. **Configuration**: Enable the polling relay with `outbox.relay.enabled=true` when Debezium is not available.
-
-This implementation provides a robust mechanism for ensuring that database changes and event publications occur atomically, which is critical for maintaining data consistency in a distributed microservices architecture.
+1. **Event Design**: Events should be designed to be immutable and backward compatible
+2. **Idempotency**: Consumers should be designed to handle duplicate events idempotently by checking a processed events table
+3. **Monitoring**: Monitor outbox table depth and Debezium connector lag to ensure healthy operation
+4. **Error Handling**: Implement proper error handling and dead letter queues for event processing failures
+5. **Configuration**: Enable the polling relay with `outbox.relay.enabled=true` when Debezium is not available

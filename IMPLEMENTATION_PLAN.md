@@ -200,6 +200,7 @@
 ## 4. Open Decisions & Research Tasks
 
 -Finalize choice between Debezium connectors vs lightweight polling for low-volume services based on operational complexity assessment.
+
 - Evaluate Confluent vs open-source Kafka distribution for licensing & support.
 - Decide on schema format (Avro vs JSON Schema) and registry enforcement rules.
 - Confirm saga coordinator needs for complex workflows (e.g.,orchestrator vs choreography).
@@ -223,6 +224,7 @@
 ## 6. Next Actions (Current Phase)
 
 ### 🚀 **Phase 7 Kickoff (Week 13 starting 2025-10-13)**
+
 - `P7.2`/`P7.3` Platform Team (due 2025-10-14): Complete AGENTS research loop (Context7 Istio docs, DeepWiki repo scan) and draft Helm/Terraform ambient-profile modules plus Spring Cloud Gateway ingress blueprint.
 - `P7.5`/`P7.6` Security Team (due 2025-10-16): Model service-to-service access matrices, author `PeerAuthentication` + `AuthorizationPolicy` manifests, and submit ADR 0006 addendum for review.
 - `P7.7` DevOps Team (due 2025-10-17): Update `canary-deployment.yml` with Istio traffic shifting stages and mesh-aware smoke tests; validate CI run in non-prod environment.
@@ -230,9 +232,10 @@
 - `P7.9` QA Team (due 2025-10-20): Execute integration suite covering mTLS enforcement, failure injection, and rollback paths; log findings and defects in the PHASE-7 board.
 
 ### 🧭 Phase 7 Readiness Checklist
+
 - Capture research artifacts and IaC design notes in `docs/phases/PHASE-7.md` prior to implementation to satisfy AGENTS research practice.
 - Align Istio waypoint strategy decision with open-decision tracker and update ADR 0006 once the approach is agreed.
 - Ensure CI environments include mesh components before running smoke tests; record adjustments in `docs/runbooks/service-mesh.md`.
 
 ---
-_Last updated: 2025-10-11_
+*Last updated: 2025-10-11*

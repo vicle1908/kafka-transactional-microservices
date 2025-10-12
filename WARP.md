@@ -778,16 +778,16 @@ Each service's database contains an `outbox` table defined in Flyway migrations:
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.outbox (
-  id UUID PRIMARY KEY,
-  aggregate_type TEXT NOT NULL,
-  aggregate_id TEXT NOT NULL,
-  event_type TEXT NOT NULL,
-  payload TEXT NOT NULL,
-  headers TEXT NULL,
-  status TEXT NOT NULL DEFAULT 'PENDING',
-  occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  published_at TIMESTAMP WITH TIME ZONE NULL,
-  version BIGINT NOT NULL DEFAULT 0
+                                             id UUID PRIMARY KEY,
+                                             aggregate_type TEXT NOT NULL,
+                                             aggregate_id TEXT NOT NULL,
+                                             event_type TEXT NOT NULL,
+                                             payload TEXT NOT NULL,
+                                             headers TEXT NULL,
+                                             status TEXT NOT NULL DEFAULT 'PENDING',
+                                             occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                                             published_at TIMESTAMP WITH TIME ZONE NULL,
+                                             version BIGINT NOT NULL DEFAULT 0
 );
 ```
 
@@ -839,39 +839,39 @@ The Debezium connectors are configured with the Outbox Event Router SMT to proce
 
 ```json
 {
-  "name": "orders-outbox-connector",
-  "config": {
-    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-    "tasks.max": "1",
-    "database.hostname": "postgres",
-    "database.port": "5432",
-    "database.user": "app",
-    "database.password": "app",
-    "database.dbname": "orders",
-    "topic.prefix": "orders",
-    "table.include.list": "public.outbox",
-    "plugin.name": "pgoutput",
-    "publication.name": "outbox_publication",
-    "publication.autocreate.mode": "filtered",
-    "slot.name": "orders_outbox_slot",
-    "snapshot.mode": "no_data",
-    "transforms": "outbox",
-    "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
-    "transforms.outbox.table.field.event.key": "aggregate_id",
-    "transforms.outbox.table.fields.additional.placement": "id:envelope:eventId,aggregate_id:envelope:aggregateId,aggregate_type:envelope:aggregateType,event_type:envelope:eventType,headers:envelope:headers",
-    "transforms.outbox.route.topic.replacement": "outbox.${routedByValue}",
-    "transforms.outbox.route.by.field": "aggregate_type",
-    "transforms.outbox.operation.routing.enabled": "false",
-    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "value.converter.schemas.enable": "false",
-    "internal.key.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "internal.value.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "internal.key.converter.schemas.enable": "false",
-    "internal.value.converter.schemas.enable": "false",
-    "topic.creation.default.partitions": "1",
-    "topic.creation.default.replication.factor": "1"
-  }
+    "name": "orders-outbox-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "tasks.max": "1",
+        "database.hostname": "postgres",
+        "database.port": "5432",
+        "database.user": "app",
+        "database.password": "app",
+        "database.dbname": "orders",
+        "topic.prefix": "orders",
+        "table.include.list": "public.outbox",
+        "plugin.name": "pgoutput",
+        "publication.name": "outbox_publication",
+        "publication.autocreate.mode": "filtered",
+        "slot.name": "orders_outbox_slot",
+        "snapshot.mode": "no_data",
+        "transforms": "outbox",
+        "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+        "transforms.outbox.table.field.event.key": "aggregate_id",
+        "transforms.outbox.table.fields.additional.placement": "id:envelope:eventId,aggregate_id:envelope:aggregateId,aggregate_type:envelope:aggregateType,event_type:envelope:eventType,headers:envelope:headers",
+        "transforms.outbox.route.topic.replacement": "outbox.${routedByValue}",
+        "transforms.outbox.route.by.field": "aggregate_type",
+        "transforms.outbox.operation.routing.enabled": "false",
+        "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter.schemas.enable": "false",
+        "internal.key.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "internal.value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "internal.key.converter.schemas.enable": "false",
+        "internal.value.converter.schemas.enable": "false",
+        "topic.creation.default.partitions": "1",
+        "topic.creation.default.replication.factor": "1"
+    }
 }
 ```
 
@@ -1099,7 +1099,7 @@ class KafkaProducerConfig {
             setTransactionIdPrefix(transactionIdPrefix)
         }
     }
-    
+
     // Other beans...
 }
 ```

@@ -36,7 +36,8 @@ tags:
 9. Multi-AI consensus
    - Zen MCP: mcp_zen_consensus
 10. Deep analysis (if complex)
-   - Zen MCP: mcp_zen_thinkdeep
+
+- Zen MCP: mcp_zen_thinkdeep
 
 ## Tool Selection Guidelines
 
@@ -67,11 +68,13 @@ tags:
 ## Failure Prevention
 
 Do not proceed without research when:
+
 - Adding or replacing libraries/frameworks
 - Architectural or security-critical changes
 - Performance optimization and dependency updates
 
 Research must include:
+
 - Existing codebase patterns via Claude Context
 - Official docs
 - Community best practices and real-world examples
