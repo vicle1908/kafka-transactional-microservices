@@ -15,6 +15,7 @@ import java.util.UUID
  * Bridges Temporal workflow activities with the notifications service domain logic.
  */
 @Component
+@Suppress("TooGenericExceptionCaught")
 class NotificationActivityImpl(
     private val notificationService: NotificationService,
     private val meterRegistry: MeterRegistry,
@@ -271,7 +272,12 @@ class NotificationActivityImpl(
         refundAmount: Long,
     ): NotificationResult {
         val startTime = System.currentTimeMillis()
-        logger.info("Sending refund confirmation for orderId: $orderId to email: $customerEmail, amount: $refundAmount")
+        logger.info(
+            "Sending refund confirmation for orderId={}, email={}, amount={}",
+            orderId,
+            customerEmail,
+            refundAmount,
+        )
 
         return try {
             val notificationOutcome = notificationService.sendRefundConfirmation(orderId, customerEmail, refundAmount)
@@ -283,7 +289,9 @@ class NotificationActivityImpl(
             if (notificationOutcome.success) {
                 notificationSuccessCounter.increment()
                 logger.info(
-                    "Refund confirmation sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}",
+                    "Refund confirmation sent successfully for orderId={}, notificationId={}",
+                    orderId,
+                    notificationOutcome.notificationId,
                 )
 
                 NotificationResult(
@@ -294,7 +302,9 @@ class NotificationActivityImpl(
             } else {
                 notificationFailureCounter.increment()
                 logger.error(
-                    "Failed to send refund confirmation for orderId: $orderId, reason: ${notificationOutcome.failureReason}",
+                    "Failed to send refund confirmation for orderId={}, reason={}",
+                    orderId,
+                    notificationOutcome.failureReason,
                 )
 
                 NotificationResult(
@@ -327,7 +337,12 @@ class NotificationActivityImpl(
         payload: String,
     ): NotificationResult {
         val startTime = System.currentTimeMillis()
-        logger.info("Sending custom notification for orderId: $orderId to recipient: $recipient via channel: $channel")
+        logger.info(
+            "Sending custom notification for orderId={}, recipient={}, channel={}",
+            orderId,
+            recipient,
+            channel,
+        )
 
         return try {
             val notificationOutcome =
@@ -346,7 +361,9 @@ class NotificationActivityImpl(
             if (notificationOutcome.success) {
                 notificationSuccessCounter.increment()
                 logger.info(
-                    "Custom notification sent successfully for orderId: $orderId, notificationId: ${notificationOutcome.notificationId}",
+                    "Custom notification sent successfully for orderId={}, notificationId={}",
+                    orderId,
+                    notificationOutcome.notificationId,
                 )
 
                 NotificationResult(
@@ -357,7 +374,9 @@ class NotificationActivityImpl(
             } else {
                 notificationFailureCounter.increment()
                 logger.error(
-                    "Failed to send custom notification for orderId: $orderId, reason: ${notificationOutcome.failureReason}",
+                    "Failed to send custom notification for orderId={}, reason={}",
+                    orderId,
+                    notificationOutcome.failureReason,
                 )
 
                 NotificationResult(

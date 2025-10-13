@@ -32,9 +32,6 @@ import java.util.UUID
  * The workflow provides detailed logging and error handling for operational visibility.
  */
 
-/**
- * Parameters for creating a successful OrderFulfillmentResult.
- */
 data class CreateSuccessResultParams(
     val orderId: UUID,
     val paymentResult: PaymentResult,
@@ -45,6 +42,7 @@ data class CreateSuccessResultParams(
 )
 
 @Component
+@Suppress("TooGenericExceptionCaught")
 class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
     private val logger = LoggerFactory.getLogger(OrderFulfillmentWorkflowImpl::class.java)
 
@@ -126,6 +124,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         execute(orderId)
     }
 
+    @Suppress("LongMethod")
     override fun execute(orderId: UUID): OrderFulfillmentResult {
         val workflowStartTime = Instant.now()
         val steps = mutableListOf<WorkflowStep>()
@@ -149,12 +148,13 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             if (shouldContinue) {
                 paymentResult = processPaymentStep(orderId, saga, steps)
                 if (!paymentResult.success) {
-                    result = handleWorkflowFailure(
-                        orderId,
-                        paymentResult.message ?: "Payment processing failed",
-                        saga,
-                        steps,
-                    )
+                    result =
+                        handleWorkflowFailure(
+                            orderId,
+                            paymentResult.message ?: "Payment processing failed",
+                            saga,
+                            steps,
+                        )
                     shouldContinue = false
                 }
             }
@@ -162,35 +162,39 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             if (shouldContinue) {
                 inventoryResult = processInventoryStep(orderId, saga, steps)
                 if (!inventoryResult.success) {
-                    result = handleWorkflowFailure(
-                        orderId,
-                        inventoryResult.message ?: "Inventory reservation failed",
-                        saga,
-                        steps,
-                    )
+                    result =
+                        handleWorkflowFailure(
+                            orderId,
+                            inventoryResult.message ?: "Inventory reservation failed",
+                            saga,
+                            steps,
+                        )
                     shouldContinue = false
                 }
             }
 
             if (shouldContinue) {
                 val notificationResult = processNotificationStep(orderId, steps)
-                result = createSuccessResult(
-                    CreateSuccessResultParams(
-                        orderId = orderId,
-                        paymentResult = paymentResult!!,
-                        inventoryResult = inventoryResult!!,
-                        notificationResult = notificationResult,
-                        steps = steps,
-                        workflowStartTime = workflowStartTime,
-                    ),
-                )
+                result =
+                    createSuccessResult(
+                        CreateSuccessResultParams(
+                            orderId = orderId,
+                            paymentResult = paymentResult!!,
+                            inventoryResult = inventoryResult!!,
+                            notificationResult = notificationResult,
+                            steps = steps,
+                            workflowStartTime = workflowStartTime,
+                        ),
+                    )
             }
         } catch (e: ActivityFailure) {
             logger.error("Activity failure in OrderFulfillmentWorkflow for orderId: $orderId", e)
-            result = handleActivityFailure(orderId, e, saga, steps, workflowStartTime)
+            result =
+                handleActivityFailure(orderId, e, saga, steps, workflowStartTime)
         } catch (e: Exception) {
             logger.error("Unexpected error in OrderFulfillmentWorkflow for orderId: $orderId", e)
-            result = handleUnexpectedError(orderId, e, steps, workflowStartTime)
+            result =
+                handleUnexpectedError(orderId, e, steps, workflowStartTime)
         }
 
         return result ?: handleUnexpectedError(
@@ -316,7 +320,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
                 executionDuration = executionDuration,
             )
 
-        logger.info("OrderFulfillmentWorkflow completed successfully for orderId: ${params.orderId}")
+        logger.info("OrderFulfillmentWorkflow completed successfully for orderId={}", params.orderId)
         return OrderFulfillmentResult.success(successParams)
     }
 
@@ -420,5 +424,4 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             RefundPaymentActivity::class.java,
             refundActivityOptions.toBuilder().setTaskQueue(TaskQueues.PAYMENTS_TASK_QUEUE).build(),
         )
-
-    }
+}

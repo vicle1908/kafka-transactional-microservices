@@ -667,7 +667,7 @@ The project implements **Temporal workflow orchestration** for complex, multi-do
 
 The Temporal implementation follows a **shared module approach** with the following structure:
 
-```
+```text
 common-temporal/
 ├── activity/           # Activity interfaces and result types
 │   ├── PaymentActivity.kt
@@ -685,20 +685,20 @@ common-temporal/
 
 ### Key Features
 
-**1. Saga Pattern with Parallel Compensation**
+#### 1. Saga Pattern with Parallel Compensation
 
 - Distributed transaction coordination across services (Payment → Inventory → Notification)
 - Parallel compensation execution for faster recovery
 - Comprehensive error handling and logging
 - Activity-specific timeout and retry configurations
 
-**2. Type-Safe Activity Interfaces**
+#### 2. Type-Safe Activity Interfaces
 
 - Structured result types (`PaymentResult`, `InventoryReservationResult`, `NotificationResult`)
 - Proper error propagation with detailed failure reasons
 - Metrics integration with Micrometer for all activities
 
-**3. Service Activity Workers**
+#### 3. Service Activity Workers
 
 - Each microservice runs its own activity worker on dedicated task queues:
   - `payments-service`: PaymentActivityImpl, RefundPaymentActivityImpl
@@ -706,13 +706,13 @@ common-temporal/
   - `notification-service`: NotificationActivityImpl
 - Workers integrate with existing domain logic and service patterns
 
-**4. Comprehensive Testing**
+#### 4. Comprehensive Testing
 
 - Activity tests using Temporal TestActivityEnvironment
 - Workflow tests covering success, failure, and compensation scenarios
 - Integration tests with real database and Kafka interactions
 
-**5. Observability & Monitoring**
+#### 5. Observability & Monitoring
 
 - Temporal metrics collection with Prometheus
 - Distributed tracing integration via OpenTelemetry
@@ -772,7 +772,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
 - Metrics recorded for workflow starts and completions
 - `WorkflowController` provides REST endpoints for workflow management
 
-### Best Practices
+### Best Practices (Temporal)
 
 **1. Activity Design:**
 
@@ -866,7 +866,7 @@ This approach provides a **gradual migration path** from event choreography to w
 
 ## Transactional Outbox Pattern Implementation
 
-### Overview
+### Overview (Outbox Pattern)
 
 The project implements the transactional outbox pattern using both Debezium as the primary mechanism and a polling relay as a fallback. This approach ensures that domain data changes and event publications happen atomically within the same database transaction, eliminating the risk of inconsistency between the database and the message broker.
 
@@ -1263,7 +1263,7 @@ class KafkaProducerConfig {
 }
 ```
 
-### Key Features
+### Key Features (Outbox Pattern)
 
 1. **Exactly-Once Semantics**: Achieved through Kafka transactions and Debezium's Outbox Event Router
 2. **High Availability**: The polling relay serves as a fallback when Debezium is unavailable

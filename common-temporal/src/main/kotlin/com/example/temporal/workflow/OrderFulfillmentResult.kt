@@ -33,25 +33,6 @@ data class OrderFulfillmentResult(
                 executionDuration = params.executionDuration,
             )
 
-        fun success(
-            orderId: UUID,
-            paymentId: UUID,
-            reservationId: UUID,
-            confirmationNotificationId: UUID? = null,
-            steps: List<WorkflowStep> = emptyList(),
-            executionDuration: Long = 0L,
-        ): OrderFulfillmentResult =
-            success(
-                SuccessParams(
-                    orderId = orderId,
-                    paymentId = paymentId,
-                    reservationId = reservationId,
-                    confirmationNotificationId = confirmationNotificationId,
-                    steps = steps,
-                    executionDuration = executionDuration,
-                ),
-            )
-
         fun failure(
             orderId: UUID,
             failureReason: String,

@@ -15,6 +15,7 @@ import java.util.UUID
  * Bridges Temporal workflow compensation activities with the payments service domain logic.
  */
 @Component
+@Suppress("TooGenericExceptionCaught")
 class RefundPaymentActivityImpl(
     private val paymentService: PaymentService,
     private val meterRegistry: MeterRegistry,

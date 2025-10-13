@@ -116,7 +116,7 @@ tags:
 - `list_directory`: Detailed file/directory listings
 - `start_search`: Advanced file and content search
 
-#### CLI Fallback
+#### CLI Fallback (File Ops)
 
 - `find`, `ls`, `tree` commands
 
@@ -290,7 +290,7 @@ mcp_zen_consensus(models=[{"model": "gemini-2.5-pro"}, {"model": "gpt-5"}], step
 
 ## Fallback Priority
 
-### Build Operations
+### Build Operations (Fallback Priority)
 
 1. **CLI**: `./gradlew clean build test`
 2. **Desktop Commander MCP**: `start_process` for interactive builds
@@ -310,13 +310,13 @@ mcp_zen_consensus(models=[{"model": "gemini-2.5-pro"}, {"model": "gpt-5"}], step
 3. **Desktop Commander MCP**: System-wide search capabilities
 4. **CLI**: grep/rg for quick checks
 
-### Research Operations
+### Research Operations (Fallback Priority)
 
 1. **MCP Search Tools**: Follow comprehensive search matrix above
 2. **Browser/CLI**: Manual research when MCP tools are unavailable
 3. **Document gaps**: Record in Research Backlog when sources are inconclusive
 
-### Android Operations
+### Android Operations (Fallback Priority)
 
 1. **CLI**: Direct `adb` commands
 2. **Desktop Commander MCP**: `start_process` for adb with process management

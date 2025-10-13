@@ -24,33 +24,33 @@ tags:
 
 ## Debugging Workflow
 
-1) Crash Detection (CLI)
+1. Crash Detection (CLI)
 
 - adb logcat -d | grep -E '(FATAL|AndroidRuntime|Exception)' | tail -20
 - For stack trace context: adb logcat -d | grep -A 30 -B 5 'FATAL EXCEPTION' | tail -40
 
-2) Investigation
+1. Investigation
 
 - Claude Context search for related patterns
 - Component-specific logs: adb logcat -d | grep -E '(UserDetail|MainActivity)' | tail -15
 
-3) Fix Application
+1. Fix Application
 
 - Apply code fixes; search for similar patterns with Claude Context
 - Run diagnostics: mcp-router open_file_in_editor → get_file_problems
 
-4) Build Verification (CLI)
+1. Build Verification (CLI)
 
 - ./gradlew :app:clean
 - ./gradlew :app:assembleDebug
 
-5) Installation and Testing (CLI)
+1. Installation and Testing (CLI)
 
 - adb install -r app-debug.apk
 - am start -n com.example.githubusers.debug/.MainActivity
 - Optional screenshot via adb or fallback to Mobile-MCP
 
-6) Verify Success
+1. Verify Success
 
 - adb logcat -d | grep -E '(Success|UserDetail)' | tail -10
 

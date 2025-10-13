@@ -22,6 +22,7 @@ import java.time.Instant
 import java.util.UUID
 
 @Component
+@Suppress("TooGenericExceptionCaught")
 class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
     private val logger = LoggerFactory.getLogger(OrderFulfillmentWorkflowImpl::class.java)
 
@@ -93,14 +94,19 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
 
             if (shouldContinue) {
                 val notificationResult = processNotification(orderId, steps)
-                result = createSuccessResult(
-                    orderId,
-                    paymentResult!!,
-                    inventoryResult!!,
-                    notificationResult,
-                    workflowStart,
-                    steps,
-                )
+                val duration = Duration.between(workflowStart, Instant.now()).toMillis()
+                logger.info("Temporal pilot workflow completed for orderId={} in {} ms", orderId, duration)
+                result =
+                    OrderFulfillmentResult(
+                        success = true,
+                        orderId = orderId,
+                        paymentId = paymentResult!!.paymentId,
+                        reservationId = inventoryResult!!.reservationId,
+                        confirmationNotificationId = notificationResult.notificationId,
+                        status = "COMPLETED",
+                        steps = steps,
+                        executionDuration = duration,
+                    )
             }
         } catch (ex: Exception) {
             result = handleUnexpectedError(orderId, ex, saga, steps)
@@ -165,29 +171,6 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         val notificationStep = WorkflowStep.started("Order Confirmation")
         steps += notificationStep
         return notificationActivities.sendOrderConfirmation(orderId, placeholderCustomerEmail(orderId))
-    }
-
-    private fun createSuccessResult(
-        orderId: UUID,
-        paymentResult: PaymentResult,
-        inventoryResult: InventoryReservationResult,
-        notificationResult: NotificationResult,
-        workflowStart: Instant,
-        steps: MutableList<WorkflowStep>,
-    ): OrderFulfillmentResult {
-        val duration = Duration.between(workflowStart, Instant.now()).toMillis()
-        logger.info("Temporal pilot workflow completed for orderId={} in {} ms", orderId, duration)
-
-        return OrderFulfillmentResult(
-            success = true,
-            orderId = orderId,
-            paymentId = paymentResult.paymentId,
-            reservationId = inventoryResult.reservationId,
-            confirmationNotificationId = notificationResult.notificationId,
-            status = "COMPLETED",
-            steps = steps,
-            executionDuration = duration,
-        )
     }
 
     private fun handleWorkflowFailure(

@@ -71,7 +71,9 @@ class InventoryActivityImpl(
 
             if (reservationResult.success) {
                 logger.info(
-                    "Inventory reserved successfully for orderId: $orderId, reservationId: ${reservationResult.reservationId}",
+                    "Inventory reserved successfully for orderId={}, reservationId={}",
+                    orderId,
+                    reservationResult.reservationId,
                 )
 
                 val reservedItems =
