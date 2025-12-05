@@ -1,3 +1,5 @@
+@file:Suppress("TooGenericExceptionCaught")
+
 package com.example.inventory.activity
 
 import com.example.inventory.InventoryService

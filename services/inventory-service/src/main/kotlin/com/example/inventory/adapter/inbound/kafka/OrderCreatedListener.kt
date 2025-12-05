@@ -1,3 +1,5 @@
+@file:Suppress("TooGenericExceptionCaught")
+
 package com.example.inventory.adapter.inbound.kafka
 
 import com.example.inventory.application.InventoryService

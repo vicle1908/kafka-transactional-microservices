@@ -1,3 +1,5 @@
+@file:Suppress("TooGenericExceptionCaught", "LongMethod")
+
 package com.example.orders.adapter.inbound.grpc
 
 import com.example.observability.StructuredLogger

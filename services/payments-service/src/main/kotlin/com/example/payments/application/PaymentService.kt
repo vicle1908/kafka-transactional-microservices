@@ -1,3 +1,5 @@
+@file:Suppress("TooGenericExceptionCaught", "LongMethod", "LongParameterList")
+
 package com.example.payments.application
 
 import com.example.events.avro.PaymentCompletedEvent

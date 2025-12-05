@@ -15,15 +15,15 @@ jobs:
   validate-connectors:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+      - uses: actions/checkout@v4
 
       - name: Harden Runner
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
+        uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@d70f72e2cf20e6585d7735f1e5d8a7e2e0b8c0c0
+        uses: docker/setup-buildx-action@v3
 
       - name: Start test infrastructure
         run: |

@@ -1216,8 +1216,8 @@ These implementations are registered with Temporal workers in each service and p
   - [x] 57.1 Review git status
     - 100+ files changed (major Spring Boot 4.0 migration + temporal-shaded)
     - _Requirements: 14.3_
-  - [ ] 57.2 Stage and commit changes
-    - Ready for commit
+  - [x] 57.2 Stage and commit changes
+    - Committed and pushed to origin/feature/temporal-workflow-orchestration
     - _Requirements: 14.3_
 
 ### Phase 14 Summary (December 5, 2025)
