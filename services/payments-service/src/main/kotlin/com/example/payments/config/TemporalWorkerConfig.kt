@@ -5,9 +5,9 @@ import com.example.payments.activity.RefundPaymentActivityImpl
 import com.example.temporal.TaskQueues
 import io.micrometer.core.instrument.MeterRegistry
 import io.temporal.client.WorkflowClient
-import io.temporal.serviceclient.WorkflowServiceStubs
 import io.temporal.worker.Worker
 import io.temporal.worker.WorkerFactory
+import io.temporal.worker.WorkerFactoryOptions
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
@@ -24,8 +24,8 @@ class TemporalWorkerConfig {
 
     @Bean(destroyMethod = "shutdown")
     fun workerFactory(
-        workflowServiceStubs: WorkflowServiceStubs,
         workflowClient: WorkflowClient,
+        workerFactoryOptions: WorkerFactoryOptions,
         paymentActivityImpl: PaymentActivityImpl,
         refundPaymentActivityImpl: RefundPaymentActivityImpl,
         meterRegistry: MeterRegistry,
@@ -34,11 +34,8 @@ class TemporalWorkerConfig {
 
         val factory =
             WorkerFactory.newInstance(
-                workflowServiceStubs,
-                workflowClient.options
-                    .toBuilder()
-                    .setNamespace(workflowClient.options.namespace)
-                    .build(),
+                workflowClient,
+                workerFactoryOptions,
             )
 
         // Create worker for payments task queue
@@ -49,7 +46,8 @@ class TemporalWorkerConfig {
 
         // Add metrics for worker monitoring
         val workerStartCounter = meterRegistry.counter("temporal.worker.started", "service", "payments")
-        val activitiesRegisteredGauge = meterRegistry.gauge("temporal.worker.activities.registered", 2)
+        val activitiesRegisteredGauge =
+            meterRegistry.gauge("temporal.worker.activities.registered", 2) ?: 0.0
 
         workerStartCounter.increment()
         logger.info(

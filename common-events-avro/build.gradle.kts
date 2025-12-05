@@ -19,3 +19,17 @@ avro {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// Ensure Kotlin compilation depends on Avro Java generation
+tasks.named("compileKotlin") {
+    dependsOn("generateAvroJava")
+}
+
+// Add generated Avro sources to the Kotlin source set
+sourceSets {
+    main {
+        java {
+            srcDir(layout.buildDirectory.dir("generated-main-avro-java"))
+        }
+    }
+}

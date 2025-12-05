@@ -210,6 +210,131 @@ class NotificationService(
         val status: String,
     )
 
+    fun sendOrderConfirmation(
+        orderId: UUID,
+        customerEmail: String,
+    ): SendNotificationResult =
+        try {
+            val notificationId =
+                send(
+                    SendNotificationCommand(
+                        orderId = orderId,
+                        channel = "email",
+                        template = "order-confirmation",
+                        recipient = customerEmail,
+                        payload = """{"orderId":"$orderId","email":"$customerEmail"}""",
+                    ),
+                )
+            SendNotificationResult(success = true, notificationId = notificationId)
+        } catch (e: Exception) {
+            SendNotificationResult(success = false, failureReason = e.message)
+        }
+
+    fun sendPaymentConfirmation(
+        orderId: UUID,
+        customerPhone: String,
+    ): SendNotificationResult =
+        try {
+            val notificationId =
+                send(
+                    SendNotificationCommand(
+                        orderId = orderId,
+                        channel = "sms",
+                        template = "payment-confirmation",
+                        recipient = customerPhone,
+                        payload = """{"orderId":"$orderId","phone":"$customerPhone"}""",
+                    ),
+                )
+            SendNotificationResult(success = true, notificationId = notificationId)
+        } catch (e: Exception) {
+            SendNotificationResult(success = false, failureReason = e.message)
+        }
+
+    fun sendShippingConfirmation(
+        orderId: UUID,
+        customerDeviceToken: String,
+    ): SendNotificationResult =
+        try {
+            val notificationId =
+                send(
+                    SendNotificationCommand(
+                        orderId = orderId,
+                        channel = "push",
+                        template = "shipping-confirmation",
+                        recipient = customerDeviceToken,
+                        payload = """{"orderId":"$orderId","deviceToken":"$customerDeviceToken"}""",
+                    ),
+                )
+            SendNotificationResult(success = true, notificationId = notificationId)
+        } catch (e: Exception) {
+            SendNotificationResult(success = false, failureReason = e.message)
+        }
+
+    fun sendOrderCancellation(
+        orderId: UUID,
+        customerEmail: String,
+        cancellationReason: String,
+    ): SendNotificationResult =
+        try {
+            val notificationId =
+                send(
+                    SendNotificationCommand(
+                        orderId = orderId,
+                        channel = "email",
+                        template = "order-cancellation",
+                        recipient = customerEmail,
+                        payload = """{"orderId":"$orderId","email":"$customerEmail","reason":"$cancellationReason"}""",
+                    ),
+                )
+            SendNotificationResult(success = true, notificationId = notificationId)
+        } catch (e: Exception) {
+            SendNotificationResult(success = false, failureReason = e.message)
+        }
+
+    fun sendRefundConfirmation(
+        orderId: UUID,
+        customerEmail: String,
+        refundAmount: Long,
+    ): SendNotificationResult =
+        try {
+            val notificationId =
+                send(
+                    SendNotificationCommand(
+                        orderId = orderId,
+                        channel = "email",
+                        template = "refund-confirmation",
+                        recipient = customerEmail,
+                        payload = """{"orderId":"$orderId","email":"$customerEmail","amount":$refundAmount}""",
+                    ),
+                )
+            SendNotificationResult(success = true, notificationId = notificationId)
+        } catch (e: Exception) {
+            SendNotificationResult(success = false, failureReason = e.message)
+        }
+
+    fun sendCustomNotification(
+        orderId: UUID,
+        recipient: String,
+        channel: String,
+        template: String,
+        payload: String,
+    ): SendNotificationResult =
+        try {
+            val notificationId =
+                send(
+                    SendNotificationCommand(
+                        orderId = orderId,
+                        channel = channel,
+                        template = template,
+                        recipient = recipient,
+                        payload = payload,
+                    ),
+                )
+            SendNotificationResult(success = true, notificationId = notificationId)
+        } catch (e: Exception) {
+            SendNotificationResult(success = false, failureReason = e.message)
+        }
+
     private companion object {
         val json = Json.Default
     }

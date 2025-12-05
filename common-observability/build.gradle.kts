@@ -8,7 +8,7 @@ plugins {
 dependencies {
     implementation(libs.spring.boot.starter)
     implementation(libs.spring.boot.starter.actuator)
-    implementation(libs.spring.boot.starter.aop)
+    implementation(libs.spring.boot.starter.aspectj)
 
     // OpenTelemetry core + tracing + metrics (versions managed via BOM in root)
     implementation(libs.opentelemetry.api)

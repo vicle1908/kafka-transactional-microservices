@@ -12,12 +12,14 @@ dependencies {
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.kafka)
-    implementation(libs.flyway.core)
+    implementation(libs.spring.boot.starter.flyway)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.postgresql)
     implementation(libs.kotlin.reflect)
     implementation(libs.avro)
     implementation(libs.kotlinx.serialization.json)
+    // Spring Retry - explicit dependency since Spring Boot 4.0 no longer manages it
+    implementation(libs.spring.retry)
     implementation(project(":common-proto"))
     implementation(project(":common-temporal"))
 
@@ -38,7 +40,9 @@ dependencies {
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.kafka)
     testImplementation(libs.mockk)
-    testImplementation(libs.temporal.testing)
+    rootProject.findProject("temporal-testing-support")?.let { temporalTesting ->
+        testImplementation(testFixtures(temporalTesting))
+    }
 
     // Development dependencies
     developmentOnly(libs.spring.boot.devtools)

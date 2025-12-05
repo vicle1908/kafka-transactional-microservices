@@ -3,8 +3,8 @@ package com.example.kafka
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.autoconfigure.kafka.DefaultKafkaProducerFactoryCustomizer
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties
+import org.springframework.boot.kafka.autoconfigure.DefaultKafkaProducerFactoryCustomizer
+import org.springframework.boot.kafka.autoconfigure.KafkaProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.core.DefaultKafkaProducerFactory
@@ -40,13 +40,13 @@ class KafkaProducerConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    fun kafkaTemplate(producerFactory: ProducerFactory<String, Any>): KafkaTemplate<String, Any> =
-        KafkaTemplate(producerFactory)
+    fun kafkaTemplate(producerFactory: ProducerFactory<String, Any>): KafkaTemplate<String, Any> = KafkaTemplate(producerFactory)
 
     @Bean
     @ConditionalOnMissingBean(KafkaTransactionManager::class)
-    fun kafkaTransactionManager(producerFactory: ProducerFactory<String, Any>): KafkaTransactionManager<String, Any> =
-        KafkaTransactionManager(producerFactory)
+    fun kafkaTransactionManager(
+        producerFactory: ProducerFactory<String, Any>,
+    ): KafkaTransactionManager<String, Any> = KafkaTransactionManager(producerFactory)
 
     @Bean
     fun idempotentProducerFactoryCustomizer(): DefaultKafkaProducerFactoryCustomizer =

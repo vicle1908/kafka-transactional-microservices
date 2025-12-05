@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement
 class OrdersPersistenceConfig {
     @Bean(name = ["transactionManager"])
     @Primary
-    fun jpaTransactionManager(entityManagerFactory: EntityManagerFactory): JpaTransactionManager =
-        JpaTransactionManager(entityManagerFactory)
+    fun jpaTransactionManager(
+        entityManagerFactory: EntityManagerFactory,
+    ): JpaTransactionManager = JpaTransactionManager(entityManagerFactory)
 }

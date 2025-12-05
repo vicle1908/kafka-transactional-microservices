@@ -1,6 +1,6 @@
 package com.example.payments.activity
 
-import com.example.payments.PaymentService
+import com.example.payments.application.PaymentService
 import com.example.temporal.activity.RefundPaymentActivity
 import com.example.temporal.activity.RefundResult
 import io.micrometer.core.instrument.Counter
@@ -51,34 +51,31 @@ class RefundPaymentActivityImpl(
         logger.info("Processing refund for orderId: $orderId")
 
         return try {
-            // Process refund using existing PaymentService compensation method
-            val refundOutcome = paymentService.compensate(orderId, "Saga compensation via Temporal workflow")
+            val refundResult = paymentService.processRefund(orderId, "Saga compensation via Temporal workflow")
             val duration = System.currentTimeMillis() - startTime
 
             refundProcessedCounter.increment()
             refundProcessingTimer.record(duration, java.util.concurrent.TimeUnit.MILLISECONDS)
 
-            if (refundOutcome.success) {
+            if (refundResult.success) {
                 refundSuccessCounter.increment()
-                logger.info("Refund processed successfully for orderId: $orderId, refundId: ${refundOutcome.refundId}")
+                logger.info("Refund processed successfully for orderId: $orderId, refundId: ${refundResult.refundId}")
 
                 RefundResult(
                     success = true,
-                    refundId = refundOutcome.refundId,
-                    amount = refundOutcome.amount,
-                    currency = refundOutcome.currency,
-                    message = "Refund processed successfully",
+                    refundId = refundResult.refundId,
+                    refundedAt = refundResult.refundedAt,
+                    message = refundResult.message ?: "Refund processed successfully",
                 )
             } else {
                 refundFailureCounter.increment()
-                logger.error("Refund processing failed for orderId: $orderId, reason: ${refundOutcome.failureReason}")
+                logger.error("Refund processing failed for orderId: $orderId, reason: ${refundResult.message}")
 
                 RefundResult(
                     success = false,
                     refundId = null,
-                    amount = refundOutcome.amount,
-                    currency = refundOutcome.currency,
-                    message = refundOutcome.failureReason ?: "Refund processing failed",
+                    refundedAt = null,
+                    message = refundResult.message ?: "Refund processing failed",
                 )
             }
         } catch (e: Exception) {
@@ -92,8 +89,7 @@ class RefundPaymentActivityImpl(
             RefundResult(
                 success = false,
                 refundId = null,
-                amount = null,
-                currency = null,
+                refundedAt = null,
                 message = "Error processing refund: ${e.message}",
             )
         }

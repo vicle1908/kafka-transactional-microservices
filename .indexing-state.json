@@ -1,0 +1,16 @@
+{
+  "status": {
+    "state": "idle",
+    "operation": "initial",
+    "progress": {
+      "current": 0,
+      "total": 0,
+      "percentage": 0
+    },
+    "metadata": {},
+    "lastUpdated": "2025-11-11T15:40:29.599Z"
+  },
+  "currentState": "idle",
+  "currentOperation": "initial",
+  "savedAt": "2025-11-27T03:30:49.122Z"
+}

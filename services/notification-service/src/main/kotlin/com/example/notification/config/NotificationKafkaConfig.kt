@@ -1,6 +1,6 @@
 package com.example.notification.config
 
-import org.springframework.boot.autoconfigure.kafka.ConcurrentKafkaListenerContainerFactoryConfigurer
+import org.springframework.boot.kafka.autoconfigure.ConcurrentKafkaListenerContainerFactoryConfigurer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
@@ -12,8 +12,9 @@ import org.springframework.kafka.transaction.KafkaTransactionManager
 @Configuration
 class NotificationKafkaConfig {
     @Bean
-    fun kafkaTransactionManager(producerFactory: ProducerFactory<String, Any>): KafkaTransactionManager<String, Any> =
-        KafkaTransactionManager(producerFactory)
+    fun kafkaTransactionManager(
+        producerFactory: ProducerFactory<String, Any>,
+    ): KafkaTransactionManager<String, Any> = KafkaTransactionManager(producerFactory)
 
     @Bean(name = ["notificationKafkaListenerContainerFactory"])
     fun notificationKafkaListenerContainerFactory(

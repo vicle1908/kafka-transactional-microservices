@@ -15,6 +15,8 @@ import java.util.UUID
 class OrderEntity(
     @Column(name = "customer_id", nullable = false)
     val customerId: String,
+    @Column(name = "total_amount", nullable = false)
+    val totalAmount: java.math.BigDecimal,
     @Column(name = "status", nullable = false)
     val status: OrderStatus,
     @Column(name = "created_at", nullable = false)

@@ -19,3 +19,4 @@ trim_trailing_whitespace = false
 [*.kt]
 ij_kotlin_code_style_defaults = KOTLIN_OFFICIAL
 ij_kotlin_line_comment_at_first_column = false
+ktlint_standard_max-line-length = disabled

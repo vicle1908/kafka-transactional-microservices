@@ -8,6 +8,10 @@ This project provides a reference implementation of Kafka-backed microservices t
 - Standardize on the transactional outbox pattern with Debezium-based relays for cross-service messaging with exactly-once semantics.
 - Provide observability, resiliency, and operational runbooks to support production deployment.
 - Implement comprehensive integration testing to validate end-to-end transactional guarantees.
+- **File Watcher Test**: Real-time file change monitoring verified successfully.
+- **New Test Added**: Real-time indexing verification test timestamp 2025-11-20-22:02.
+- **Latest Test**: File watcher and real-time indexing test timestamp 2025-11-20-23:36.
+- **Final Verification**: File watcher fully operational at 2025-11-22-14:46.
 
 ## Tech Stack
 

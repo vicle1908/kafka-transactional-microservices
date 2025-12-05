@@ -254,6 +254,97 @@ class InventoryService(
         val status: String,
     )
 
+    fun releaseStockForOrder(orderId: UUID) {
+        release(orderId, "Temporal workflow compensation")
+    }
+
+    data class ReserveStockForOrderResult(
+        val success: Boolean,
+        val reservationId: UUID? = null,
+        val reservedItems: List<ReservedItemInfo> = emptyList(),
+        val message: String? = null,
+    )
+
+    data class ReservedItemInfo(
+        val productId: String,
+        val quantity: Int,
+        val reservationId: UUID,
+    )
+
+    data class StockLevelInfo(
+        val productId: String,
+        val quantityAvailable: Int,
+        val quantityReserved: Int,
+        val version: Long,
+    )
+
+    fun reserveStockForOrder(orderId: UUID): ReserveStockForOrderResult {
+        val reservations = reservationRepository.findAllByOrderId(orderId)
+        if (reservations.isNotEmpty()) {
+            return ReserveStockForOrderResult(
+                success = true,
+                reservationId = reservations.first().id,
+                reservedItems =
+                    reservations.map { res ->
+                        ReservedItemInfo(
+                            productId = res.sku,
+                            quantity = res.quantity,
+                            reservationId = res.id!!,
+                        )
+                    },
+                message = "Inventory already reserved",
+            )
+        }
+        return ReserveStockForOrderResult(
+            success = false,
+            message = "No reservations found for order. Order items must be processed first.",
+        )
+    }
+
+    fun getStockForOrder(orderId: UUID): List<StockLevelInfo> {
+        val reservations = reservationRepository.findAllByOrderId(orderId)
+        return reservations.map { reservation ->
+            val stock = stockRepository.findBySku(reservation.sku)
+            StockLevelInfo(
+                productId = reservation.sku,
+                quantityAvailable = stock?.availableQuantity() ?: 0,
+                quantityReserved = reservation.quantity,
+                version = stock?.id?.hashCode()?.toLong() ?: 0L,
+            )
+        }
+    }
+
+    fun getCurrentStockLevels(productIds: List<String>): List<StockLevelInfo> =
+        productIds.mapNotNull { productId ->
+            val stock = stockRepository.findBySku(productId)
+            val reservations = reservationRepository.findAllBySku(productId)
+            val reservedQty = reservations.sumOf { it.quantity }
+            stock?.let {
+                StockLevelInfo(
+                    productId = productId,
+                    quantityAvailable = it.availableQuantity(),
+                    quantityReserved = reservedQty,
+                    version = it.id?.hashCode()?.toLong() ?: 0L,
+                )
+            }
+        }
+
+    fun adjustStock(
+        productId: String,
+        quantityAdjustment: Int,
+        reason: String?,
+    ) {
+        val stock =
+            stockRepository.lockBySku(productId)
+                ?: throw IllegalStateException("Stock not configured for productId=$productId")
+        if (quantityAdjustment > 0) {
+            stock.release(quantityAdjustment)
+        } else {
+            stock.reserve(-quantityAdjustment)
+        }
+        stockRepository.save(stock)
+    }
+
     private companion object {
         val json = Json.Default
 

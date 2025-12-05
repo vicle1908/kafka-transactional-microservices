@@ -4,9 +4,9 @@ import com.example.inventory.activity.InventoryActivityImpl
 import com.example.temporal.TaskQueues
 import io.micrometer.core.instrument.MeterRegistry
 import io.temporal.client.WorkflowClient
-import io.temporal.serviceclient.WorkflowServiceStubs
 import io.temporal.worker.Worker
 import io.temporal.worker.WorkerFactory
+import io.temporal.worker.WorkerFactoryOptions
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
@@ -23,8 +23,8 @@ class TemporalWorkerConfig {
 
     @Bean(destroyMethod = "shutdown")
     fun workerFactory(
-        workflowServiceStubs: WorkflowServiceStubs,
         workflowClient: WorkflowClient,
+        workerFactoryOptions: WorkerFactoryOptions,
         inventoryActivityImpl: InventoryActivityImpl,
         meterRegistry: MeterRegistry,
     ): WorkerFactory {
@@ -32,11 +32,8 @@ class TemporalWorkerConfig {
 
         val factory =
             WorkerFactory.newInstance(
-                workflowServiceStubs,
-                workflowClient.options
-                    .toBuilder()
-                    .setNamespace(workflowClient.options.namespace)
-                    .build(),
+                workflowClient,
+                workerFactoryOptions,
             )
 
         // Create worker for inventory task queue
@@ -47,7 +44,8 @@ class TemporalWorkerConfig {
 
         // Add metrics for worker monitoring
         val workerStartCounter = meterRegistry.counter("temporal.worker.started", "service", "inventory")
-        val activitiesRegisteredGauge = meterRegistry.gauge("temporal.worker.activities.registered", 1)
+        val activitiesRegisteredGauge =
+            meterRegistry.gauge("temporal.worker.activities.registered", 1) ?: 0.0
 
         workerStartCounter.increment()
         logger.info(

@@ -42,6 +42,11 @@ spring:
       enable-auto-commit: false
       isolation-level: read_committed
 
+orders:
+  grpc:
+    host: ${ORDERS_GRPC_HOST:localhost}
+    port: ${ORDERS_GRPC_PORT:9090}
+
 outbox:
   publisher: cdc
   transaction:

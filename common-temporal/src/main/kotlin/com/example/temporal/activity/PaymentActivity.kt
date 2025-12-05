@@ -5,5 +5,10 @@ import java.util.UUID
 
 @ActivityInterface
 interface PaymentActivity {
-    fun processPayment(orderId: UUID): PaymentResult
+    fun getOrderAmount(orderId: UUID): java.math.BigDecimal?
+
+    fun processPayment(
+        orderId: UUID,
+        amount: java.math.BigDecimal,
+    ): PaymentResult
 }

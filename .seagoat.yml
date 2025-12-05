@@ -1,0 +1,22 @@
+# SeaGOAT Configuration for Microservices Project
+server:
+  port: 31134
+  ignorePatterns:
+    - "build/**"
+    - "target/**"
+    - "node_modules/**"
+    - ".gradle/**"
+    - "gradle/**"
+    - "out/**"
+    - ".idea/**"
+    - "*.class"
+    - "*.jar"
+    - "*.war"
+    - "*.log"
+    - "*.tmp"
+    - "*.cache"
+    - ".DS_Store"
+    - "*.lock"
+    - "logs/**"
+    - "tmp/**"
+    - "cache/**"

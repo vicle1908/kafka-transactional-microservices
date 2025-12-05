@@ -12,6 +12,10 @@
 *.class
 *.log
 
+# Compiled Kotlin outputs
+**/bin/
+!src/**/bin/
+
 # Gradle
 .gradle/
 **/build/

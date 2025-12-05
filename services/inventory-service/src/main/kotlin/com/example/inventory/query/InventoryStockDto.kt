@@ -8,4 +8,7 @@ data class InventoryStockDto(
 )
 
 internal fun InventoryStockEntity.toDto(): InventoryStockDto =
-    InventoryStockDto(sku = this.sku, availableQuantity = this.availableQuantity())
+    InventoryStockDto(
+        sku = this.sku,
+        availableQuantity = this.availableQuantity(),
+    )
