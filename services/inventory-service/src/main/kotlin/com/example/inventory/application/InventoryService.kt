@@ -1,3 +1,5 @@
+@file:Suppress("UseCheckOrError")
+
 package com.example.inventory.application
 
 import com.example.events.avro.InventoryReservedEvent

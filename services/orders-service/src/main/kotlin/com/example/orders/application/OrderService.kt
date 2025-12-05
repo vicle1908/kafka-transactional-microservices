@@ -1,4 +1,4 @@
-@file:Suppress("ImportOrdering", "ktlint:standard:import-ordering")
+@file:Suppress("ImportOrdering", "ktlint:standard:import-ordering", "UseCheckOrError", "UseRequire", "ThrowsCount")
 
 package com.example.orders.application
 

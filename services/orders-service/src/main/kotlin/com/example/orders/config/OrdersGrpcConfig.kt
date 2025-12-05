@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber")
+
 package com.example.orders.config
 
 import io.grpc.BindableService

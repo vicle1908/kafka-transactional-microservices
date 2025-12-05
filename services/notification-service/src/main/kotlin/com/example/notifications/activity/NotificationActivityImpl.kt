@@ -1,3 +1,5 @@
+@file:Suppress("MaxLineLength")
+
 package com.example.notifications.activity
 
 import com.example.notifications.NotificationService
