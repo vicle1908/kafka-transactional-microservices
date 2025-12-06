@@ -1,4 +1,4 @@
-@file:Suppress("TooGenericExceptionCaught")
+@file:Suppress("TooGenericExceptionCaught", "LongMethod")
 
 package com.example.inventory.activity
 
@@ -46,76 +46,81 @@ class InventoryActivityImpl(
             .description("Duration of inventory reservation activities")
             .register(meterRegistry)
 
+    @Suppress("TooGenericExceptionCaught")
     override fun reserveInventory(orderId: UUID): InventoryReservationResult {
         val startTime = Instant.now()
         logger.info("Reserving inventory for orderId: $orderId")
 
         return try {
-            // Check current stock levels first
             val stockItems = inventoryService.getStockForOrder(orderId)
-
             if (stockItems.isEmpty()) {
                 logger.warn("No stock items found for orderId: $orderId")
-                return InventoryReservationResult(
-                    success = false,
-                    reservationId = null,
-                    reservedItems = emptyList(),
-                    message = "No stock items found for order",
-                )
+                return createFailedResult("No stock items found for order")
             }
-
-            // Attempt to reserve stock
-            val reservationResult = inventoryService.reserveStockForOrder(orderId)
-            val duration = Duration.between(startTime, Instant.now()).toMillis()
-
-            inventoryReservedCounter.increment()
-            inventoryReservationTimer.record(duration, java.util.concurrent.TimeUnit.MILLISECONDS)
-
-            if (reservationResult.success) {
-                logger.info(
-                    "Inventory reserved successfully for orderId={}, reservationId={}",
-                    orderId,
-                    reservationResult.reservationId,
-                )
-
-                val reservedItems =
-                    reservationResult.reservedItems.map { item ->
-                        ReservedItem(
-                            productId = item.productId,
-                            quantity = item.quantity,
-                            reservationId = item.reservationId,
-                        )
-                    }
-
-                InventoryReservationResult(
-                    success = true,
-                    reservationId = reservationResult.reservationId,
-                    reservedItems = reservedItems,
-                    message = "Inventory reserved successfully",
-                )
-            } else {
-                logger.error("Inventory reservation failed for orderId: $orderId")
-                InventoryReservationResult(
-                    success = false,
-                    reservationId = null,
-                    reservedItems = emptyList(),
-                    message = "Inventory reservation failed - insufficient stock",
-                )
-            }
+            processReservation(orderId, startTime)
         } catch (e: Exception) {
-            val duration = Duration.between(startTime, Instant.now()).toMillis()
-            logger.error("Error reserving inventory for orderId: $orderId", e)
-
-            inventoryReservedCounter.increment()
-            inventoryReservationTimer.record(duration, java.util.concurrent.TimeUnit.MILLISECONDS)
-
-            InventoryReservationResult(
-                success = false,
-                reservationId = null,
-                reservedItems = emptyList(),
-                message = "Error reserving inventory: ${e.message}",
-            )
+            handleReservationError(orderId, startTime, e)
         }
+    }
+
+    private fun processReservation(
+        orderId: UUID,
+        startTime: Instant,
+    ): InventoryReservationResult {
+        val reservationResult = inventoryService.reserveStockForOrder(orderId)
+        recordMetrics(startTime)
+
+        return if (reservationResult.success) {
+            createSuccessResult(orderId, reservationResult)
+        } else {
+            logger.error("Inventory reservation failed for orderId: $orderId")
+            createFailedResult("Inventory reservation failed - insufficient stock")
+        }
+    }
+
+    private fun createSuccessResult(
+        orderId: UUID,
+        reservationResult: InventoryService.ReserveStockForOrderResult,
+    ): InventoryReservationResult {
+        logger.info(
+            "Inventory reserved successfully for orderId={}, reservationId={}",
+            orderId,
+            reservationResult.reservationId,
+        )
+        val reservedItems =
+            reservationResult.reservedItems.map { item ->
+                ReservedItem(productId = item.productId, quantity = item.quantity, reservationId = item.reservationId)
+            }
+        return InventoryReservationResult(
+            success = true,
+            reservationId = reservationResult.reservationId,
+            reservedItems = reservedItems,
+            message = "Inventory reserved successfully",
+        )
+    }
+
+    private fun createFailedResult(message: String) =
+        InventoryReservationResult(
+            success = false,
+            reservationId = null,
+            reservedItems = emptyList(),
+            message = message,
+        )
+
+    private fun recordMetrics(startTime: Instant) {
+        val duration = Duration.between(startTime, Instant.now()).toMillis()
+        inventoryReservedCounter.increment()
+        inventoryReservationTimer.record(duration, java.util.concurrent.TimeUnit.MILLISECONDS)
+    }
+
+    private fun handleReservationError(
+        orderId: UUID,
+        startTime: Instant,
+        e: Exception,
+    ): InventoryReservationResult {
+        logger.error("Error reserving inventory for orderId: $orderId", e)
+        recordMetrics(startTime)
+        return createFailedResult("Error reserving inventory: ${e.message}")
     }
 
     override fun releaseInventory(orderId: UUID): InventoryReservationResult {

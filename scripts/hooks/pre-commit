@@ -57,9 +57,15 @@ if [ -n "$STAGED_KOTLIN_FILES" ]; then
                 exit 1
             fi
         else
-            # Fallback: Skip full project ktlint in pre-commit (too slow)
-            # Just warn the user to run it manually
-            echo -e "${YELLOW}⚠️  ktlint CLI not found. Run './gradlew ktlintCheck' manually before pushing.${NC}"
+            # Fallback: Use gradle ktlintFormat (slower but reliable)
+            echo -e "${YELLOW}⚠️  ktlint CLI not found. Using Gradle ktlintFormat...${NC}"
+            if ./gradlew ktlintFormat --no-daemon -q 2>/dev/null; then
+                echo -e "${GREEN}✅ ktlint format complete${NC}"
+                RESTAGE_NEEDED=true
+            else
+                echo -e "${RED}❌ ktlint format failed${NC}"
+                exit 1
+            fi
         fi
     fi
 fi
@@ -102,11 +108,19 @@ if [ -n "$STAGED_YAML_FILES" ]; then
 fi
 
 # ============================================
-# 4. Skip detekt in pre-commit (too slow for interactive use)
-# Detekt runs in CI and can be run manually with ./gradlew detektAll
+# 4. Detekt static analysis for staged Kotlin files
 # ============================================
 if [ -n "$STAGED_KOTLIN_FILES" ]; then
-    echo -e "${YELLOW}ℹ️  Skipping detekt (run './gradlew detektAll' before pushing)${NC}"
+    echo -e "${YELLOW}🔍 Running detekt on staged Kotlin files...${NC}"
+    
+    # Use detektChanged task which only analyzes staged files (fast)
+    if ./gradlew detektChanged --no-daemon --no-configuration-cache -q 2>&1; then
+        echo -e "${GREEN}✅ detekt passed${NC}"
+    else
+        echo -e "${RED}❌ detekt found issues. Please fix them before committing.${NC}"
+        echo -e "${YELLOW}ℹ️  Run './gradlew detektAll --no-configuration-cache' for full report${NC}"
+        exit 1
+    fi
 fi
 
 # ============================================
@@ -132,5 +146,4 @@ if [ "$RESTAGE_NEEDED" = true ]; then
 fi
 
 echo -e "${GREEN}🎉 Pre-commit checks passed!${NC}"
-echo -e "${YELLOW}ℹ️  Remember to run './gradlew ktlintCheck detektAll' before pushing${NC}"
 exit 0

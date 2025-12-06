@@ -37,45 +37,51 @@ class OrdersGrpcClient(
         )
     }
 
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
     fun getOrderAmount(orderId: UUID): BigDecimal? {
-        val stub = orderServiceStub
-        if (stub == null) {
-            logger.warn("Orders gRPC client not initialized", "orderId" to orderId)
-            return null
-        }
-
-        return try {
-            val request =
-                GetOrderRequest
-                    .newBuilder()
-                    .setOrderId(orderId.toString())
-                    .build()
-
-            logger.debug("Calling orders-service gRPC GetOrder", "orderId" to orderId)
-
-            val response = stub.getOrder(request)
-
-            if (response.status == "NOT_FOUND" || response.status == "INVALID_REQUEST") {
-                logger.warn(
-                    "Order not found or invalid via gRPC",
-                    "orderId" to orderId,
-                    "status" to response.status,
-                )
+        val stub =
+            orderServiceStub ?: run {
+                logger.warn("Orders gRPC client not initialized", "orderId" to orderId)
                 return null
             }
 
-            val amount = BigDecimal.valueOf(response.totalAmount)
-            logger.info(
-                "Retrieved order amount via gRPC",
-                "orderId" to orderId,
-                "amount" to amount,
-            )
-            amount
-        } catch (e: Exception) {
+        return try {
+            val request = GetOrderRequest.newBuilder().setOrderId(orderId.toString()).build()
+            logger.debug("Calling orders-service gRPC GetOrder", "orderId" to orderId)
+            val response = stub.getOrder(request)
+
+            when (response.status) {
+                "NOT_FOUND", "INVALID_REQUEST" -> {
+                    logger.warn(
+                        "Order not found or invalid via gRPC",
+                        "orderId" to orderId,
+                        "status" to response.status,
+                    )
+                    null
+                }
+
+                else -> {
+                    val amount = BigDecimal.valueOf(response.totalAmount)
+                    logger.info(
+                        "Retrieved order amount via gRPC",
+                        "orderId" to orderId,
+                        "amount" to amount,
+                    )
+                    amount
+                }
+            }
+        } catch (e: io.grpc.StatusRuntimeException) {
             logger.error(
-                "Error calling orders-service gRPC",
+                "gRPC error calling orders-service",
                 "orderId" to orderId,
-                "error" to (e.message ?: "Unknown error"),
+                "error" to (e.message ?: "Unknown"),
+            )
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.error(
+                "Invalid argument in gRPC call",
+                "orderId" to orderId,
+                "error" to (e.message ?: "Unknown"),
             )
             null
         }

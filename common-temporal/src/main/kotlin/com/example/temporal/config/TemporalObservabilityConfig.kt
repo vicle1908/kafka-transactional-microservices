@@ -1,3 +1,5 @@
+@file:Suppress("SpreadOperator")
+
 package com.example.temporal.config
 
 import io.opentelemetry.api.OpenTelemetry
@@ -32,6 +34,7 @@ class TemporalObservabilityConfig {
         return builder.build()
     }
 
+    @Suppress("SpreadOperator")
     @Bean
     fun workflowClientTracingCustomizer(
         tracingProperties: TemporalTracingProperties,

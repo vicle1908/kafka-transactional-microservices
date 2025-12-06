@@ -1,4 +1,4 @@
-@file:Suppress("UseCheckOrError")
+@file:Suppress("UseCheckOrError", "UnusedParameter")
 
 package com.example.inventory.application
 
@@ -331,6 +331,7 @@ class InventoryService(
             }
         }
 
+    @Suppress("UnusedParameter")
     fun adjustStock(
         productId: String,
         quantityAdjustment: Int,
