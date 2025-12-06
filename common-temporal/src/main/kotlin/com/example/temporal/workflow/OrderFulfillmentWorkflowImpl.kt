@@ -211,7 +211,13 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         saga.addCompensation { refundActivities.refundPayment(orderId) }
 
         val paymentStartTime = Instant.now()
-        val paymentResult = paymentActivities.processPayment(orderId)
+        val orderAmount =
+            paymentActivities.getOrderAmount(orderId)
+                ?: return PaymentResult(
+                    success = false,
+                    message = "Could not retrieve order amount for orderId: $orderId",
+                )
+        val paymentResult = paymentActivities.processPayment(orderId, orderAmount)
         val paymentDuration = Duration.between(paymentStartTime, Instant.now()).toMillis()
 
         return if (paymentResult.success) {
@@ -421,17 +427,26 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             refundActivityOptions.toBuilder().setTaskQueue(TaskQueues.PAYMENTS_TASK_QUEUE).build(),
         )
 
-    // Workflow state for query and signal methods
-    private var currentStatus: WorkflowStatus = WorkflowStatus.PENDING
+    // Workflow state for query and signal methods - orderId will be set during execute()
+    private var workflowOrderId: UUID? = null
+    private var currentStatusString: String = "PENDING"
     private var cancelled: Boolean = false
     private var cancellationReason: String? = null
+    private var workflowSteps: List<WorkflowStep> = emptyList()
 
-    override fun getStatus(): WorkflowStatus = currentStatus
+    override fun getStatus(): WorkflowStatus =
+        WorkflowStatus(
+            orderId = workflowOrderId ?: UUID.randomUUID(),
+            status = currentStatusString,
+            cancelled = cancelled,
+            cancellationReason = cancellationReason,
+            steps = workflowSteps,
+        )
 
     override fun cancel(reason: String) {
         cancelled = true
         cancellationReason = reason
-        currentStatus = WorkflowStatus.CANCELLED
+        currentStatusString = "CANCELLED"
         logger.info("Workflow cancellation requested: $reason")
     }
 }

@@ -23,7 +23,6 @@ import com.example.temporal.TaskQueues
 import com.example.temporal.workflow.WorkflowStatus
 import io.temporal.client.WorkflowClient
 import io.temporal.client.WorkflowOptions
-import io.temporal.client.WorkflowStub
 import org.apache.avro.io.EncoderFactory
 import org.apache.avro.specific.SpecificDatumWriter
 import org.springframework.beans.factory.annotation.Autowired

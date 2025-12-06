@@ -8,7 +8,6 @@ import com.example.payments.domain.PaymentRepository
 import com.example.payments.domain.PaymentStatus
 import com.example.saga.SagaNames
 import com.example.saga.SagaStateService
-import com.example.saga.SagaStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired

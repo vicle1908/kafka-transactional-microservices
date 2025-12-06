@@ -102,7 +102,9 @@ class PaymentActivityImpl(
                 is com.example.payments.application.PaymentProcessingOutcome.AlreadyProcessed -> {
                     paymentSuccessCounter.increment()
                     val payment = paymentService.getPaymentById(paymentOutcome.paymentId)
-                    logger.info("Payment already processed for orderId: $orderId, paymentId: ${paymentOutcome.paymentId}")
+                    logger.info(
+                        "Payment already processed for orderId: $orderId, paymentId: ${paymentOutcome.paymentId}",
+                    )
 
                     PaymentResult(
                         success = true,

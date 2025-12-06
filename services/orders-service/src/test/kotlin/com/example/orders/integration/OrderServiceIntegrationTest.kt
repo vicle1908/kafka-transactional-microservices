@@ -19,7 +19,6 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.kafka.KafkaContainer
 import org.testcontainers.utility.DockerImageName
 import java.math.BigDecimal
-import java.util.UUID
 
 @SpringBootTest
 @Testcontainers

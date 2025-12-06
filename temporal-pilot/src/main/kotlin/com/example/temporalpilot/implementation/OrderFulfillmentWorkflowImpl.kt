@@ -10,6 +10,7 @@ import com.example.temporal.activity.PaymentActivity
 import com.example.temporal.activity.PaymentResult
 import com.example.temporal.activity.RefundPaymentActivity
 import com.example.temporal.workflow.OrderFulfillmentResult
+import com.example.temporal.workflow.WorkflowStatus
 import com.example.temporal.workflow.WorkflowStep
 import io.temporal.activity.ActivityOptions
 import io.temporal.common.RetryOptions
@@ -61,11 +62,33 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             activityOptions.toBuilder().setTaskQueue(TaskQueues.PAYMENTS_TASK_QUEUE).build(),
         )
 
-    override fun start(orderId: UUID) {
-        execute(orderId)
+    // Workflow state
+    private var workflowOrderId: UUID? = null
+    private var currentStatusString: String = "PENDING"
+    private var cancelled: Boolean = false
+    private var cancellationReason: String? = null
+    private var workflowSteps: List<WorkflowStep> = emptyList()
+
+    override fun getStatus(): WorkflowStatus =
+        WorkflowStatus(
+            orderId = workflowOrderId ?: UUID.randomUUID(),
+            status = currentStatusString,
+            cancelled = cancelled,
+            cancellationReason = cancellationReason,
+            steps = workflowSteps,
+        )
+
+    override fun cancel(reason: String) {
+        cancelled = true
+        cancellationReason = reason
+        currentStatusString = "CANCELLED"
+        logger.info("Workflow cancellation requested: $reason")
     }
 
+
     override fun execute(orderId: UUID): OrderFulfillmentResult {
+        workflowOrderId = orderId
+        currentStatusString = "RUNNING"
         val workflowStart = Instant.now()
         val steps = mutableListOf<WorkflowStep>()
         val saga = createSaga()
@@ -79,7 +102,12 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             if (shouldContinue) {
                 paymentResult = processPayment(orderId, saga, steps)
                 if (!paymentResult.success) {
-                    result = handleWorkflowFailure(orderId, paymentResult.message, saga, steps)
+                    result = handleWorkflowFailure(
+                        orderId,
+                        paymentResult.message ?: "Payment failed",
+                        saga,
+                        steps,
+                    )
                     shouldContinue = false
                 }
             }
@@ -87,7 +115,12 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             if (shouldContinue) {
                 inventoryResult = processInventory(orderId, saga, steps)
                 if (!inventoryResult.success) {
-                    result = handleWorkflowFailure(orderId, inventoryResult.message, saga, steps)
+                    result = handleWorkflowFailure(
+                        orderId,
+                        inventoryResult.message ?: "Inventory reservation failed",
+                        saga,
+                        steps,
+                    )
                     shouldContinue = false
                 }
             }
@@ -96,6 +129,8 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
                 val notificationResult = processNotification(orderId, steps)
                 val duration = Duration.between(workflowStart, Instant.now()).toMillis()
                 logger.info("Temporal pilot workflow completed for orderId={} in {} ms", orderId, duration)
+                currentStatusString = "COMPLETED"
+                workflowSteps = steps
                 result =
                     OrderFulfillmentResult(
                         success = true,
@@ -135,7 +170,14 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
     ): PaymentResult {
         val paymentStep = WorkflowStep.started("Payment Processing")
         steps += paymentStep
-        val payment = paymentActivities.processPayment(orderId)
+
+        val orderAmount = paymentActivities.getOrderAmount(orderId)
+            ?: return PaymentResult(
+                success = false,
+                message = "Could not retrieve order amount for orderId: $orderId",
+            )
+
+        val payment = paymentActivities.processPayment(orderId, orderAmount)
 
         if (payment.success) {
             return payment
@@ -145,6 +187,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             return payment
         }
     }
+
 
     private fun processInventory(
         orderId: UUID,
@@ -179,6 +222,8 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         saga: Saga,
         steps: MutableList<WorkflowStep>,
     ): OrderFulfillmentResult {
+        currentStatusString = "FAILED"
+        workflowSteps = steps
         saga.compensate()
         return OrderFulfillmentResult(
             success = false,
@@ -196,6 +241,8 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
         steps: MutableList<WorkflowStep>,
     ): OrderFulfillmentResult {
         logger.error("Temporal pilot workflow failed for orderId={}", orderId, ex)
+        currentStatusString = "FAILED"
+        workflowSteps = steps
         try {
             saga.compensate()
         } catch (compensation: Exception) {
@@ -205,7 +252,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             success = false,
             orderId = orderId,
             status = "FAILED",
-            failureReason = ex.message,
+            failureReason = ex.message ?: "Unknown error",
             steps = steps,
         )
     }

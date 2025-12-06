@@ -1,3 +1,5 @@
+---
+---
 # SeaGOAT Configuration for Microservices Project
 server:
   port: 31134
@@ -20,3 +22,4 @@ server:
     - "logs/**"
     - "tmp/**"
     - "cache/**"
+

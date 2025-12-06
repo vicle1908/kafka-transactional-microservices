@@ -2,7 +2,7 @@
 
 package com.example.inventory.activity
 
-import com.example.inventory.InventoryService
+import com.example.inventory.application.InventoryService
 import com.example.temporal.activity.AdjustStockRequest
 import com.example.temporal.activity.InventoryActivity
 import com.example.temporal.activity.InventoryReservationResult

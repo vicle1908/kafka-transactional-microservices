@@ -2,7 +2,7 @@
 
 package com.example.notifications.activity
 
-import com.example.notifications.NotificationService
+import com.example.notification.application.NotificationService
 import com.example.temporal.activity.NotificationActivity
 import com.example.temporal.activity.NotificationResult
 import io.micrometer.core.instrument.Counter
