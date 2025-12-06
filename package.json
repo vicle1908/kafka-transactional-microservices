@@ -1,1 +1,19 @@
-{}
+{
+  "name": "kafka-transactional-microservices",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kafka Transactional Microservices - Development Tools",
+  "scripts": {
+    "lint:md": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#build\" \"#.gradle\" \"#.kiro\"",
+    "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\" \"#build\" \"#.gradle\" \"#.kiro\"",
+    "lint:yaml": "yamllint -c .yamllint .",
+    "lint:all": "npm run lint:md && npm run lint:yaml",
+    "prepare": "echo 'Run ./scripts/install-hooks.sh to install Git hooks'"
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "^0.19.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

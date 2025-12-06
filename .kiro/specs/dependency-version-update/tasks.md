@@ -18,6 +18,7 @@
 | Phase 12: Temporal Workflow Verification | Complete | 100% |
 | Phase 13: Temporal Shaded Migration | Complete | 100% |
 | Phase 14: Cleanup & Commit Preparation | Complete | 100% |
+| Phase 15: Pre-commit Hooks & GitHub Actions | Not Started | 0% |
 
 **Note**: Spring Boot 4.0 migration is production-ready. Phase 13 migrates to `temporal-shaded` for proper gRPC isolation.
 
@@ -1235,3 +1236,172 @@ These implementations are registered with Temporal workers in each service and p
 - All phases complete (1-14)
 - Spring Boot 4.0 migration production-ready
 - temporal-shaded properly configured for gRPC isolation
+
+
+---
+
+## Phase 15: Pre-commit Hooks & GitHub Actions
+
+- [ ] 58. Set up pre-commit hook infrastructure
+  - [ ] 58.1 Install and configure pre-commit framework
+    - Create `.pre-commit-config.yaml` configuration file
+    - Configure hooks for: detekt, ktlint, markdownlint-cli2, yamllint
+    - _Requirements: 10.2, 10.3_
+  - [ ] 58.2 Update package.json with lint dependencies
+    - Add markdownlint-cli2 as dev dependency
+    - Add yamllint configuration reference
+    - _Requirements: 10.2_
+  - [ ] 58.3 Create pre-commit hook script
+    - Create `.husky/pre-commit` or equivalent hook script
+    - Configure auto-fix for ktlint and markdownlint issues
+    - _Requirements: 10.2, 10.3_
+
+- [ ] 59. Configure detekt pre-commit validation
+  - [ ] 59.1 Create detekt pre-commit hook
+    - Run `./gradlew detektAll --no-configuration-cache` on staged Kotlin files
+    - Fail commit if violations found
+    - _Requirements: 10.3_
+  - [ ] 59.2 Test detekt hook
+    - Verify hook catches violations
+    - Verify hook passes on clean code
+    - _Requirements: 10.3_
+
+- [ ] 60. Configure ktlint pre-commit validation with auto-fix
+  - [ ] 60.1 Create ktlint pre-commit hook
+    - Run `./gradlew ktlintFormat` to auto-fix issues
+    - Run `./gradlew ktlintCheck` to verify
+    - Stage auto-fixed files
+    - _Requirements: 10.2_
+  - [ ] 60.2 Test ktlint hook
+    - Verify auto-fix works on staged files
+    - Verify hook fails on unfixable issues
+    - _Requirements: 10.2_
+
+- [ ] 61. Configure markdownlint-cli2 pre-commit validation with auto-fix
+  - [ ] 61.1 Update markdownlint configuration
+    - Migrate from markdownlint-cli to markdownlint-cli2
+    - Update `.markdownlint.jsonc` if needed
+    - _Requirements: 10.2_
+  - [ ] 61.2 Create markdownlint pre-commit hook
+    - Run `npx markdownlint-cli2 --fix` on staged .md files
+    - Stage auto-fixed files
+    - _Requirements: 10.2_
+  - [ ] 61.3 Test markdownlint hook
+    - Verify auto-fix works on staged markdown files
+    - Verify hook fails on unfixable issues
+    - _Requirements: 10.2_
+
+- [ ] 62. Configure yamllint pre-commit validation
+  - [ ] 62.1 Create yamllint pre-commit hook
+    - Run `yamllint` on staged .yml/.yaml files
+    - Use existing `.yamllint` configuration
+    - _Requirements: 10.2_
+  - [ ] 62.2 Test yamllint hook
+    - Verify hook catches YAML violations
+    - Verify hook passes on valid YAML
+    - _Requirements: 10.2_
+
+- [ ] 63. Fix GitHub Actions workflows
+  - [ ] 63.1 Update CI workflow for markdownlint-cli2
+    - Replace `markdownlint-cli` with `markdownlint-cli2`
+    - Update lint command to use markdownlint-cli2 syntax
+    - _Requirements: 10.2_
+  - [ ] 63.2 Add yamllint to CI workflow
+    - Add yamllint step to docs job
+    - Validate all YAML files in repository
+    - _Requirements: 10.2_
+  - [ ] 63.3 Add pre-commit validation to CI
+    - Add step to verify pre-commit hooks are configured
+    - Run pre-commit on all files in CI
+    - _Requirements: 10.2, 10.3_
+
+- [ ] 64. Commit and push changes using GitHub CLI
+  - [ ] 64.1 Review changes with gh
+    - Run `gh status` to check repository state
+    - Review staged files
+    - _Requirements: 14.3_
+  - [ ] 64.2 Create commit with gh
+    - Stage all pre-commit hook files
+    - Commit with descriptive message
+    - _Requirements: 14.3_
+  - [ ] 64.3 Push changes with gh
+    - Push to feature branch
+    - Create PR if needed using `gh pr create`
+    - _Requirements: 14.3_
+  - [ ] 64.4 Verify CI passes
+    - Monitor workflow run with `gh run watch`
+    - Fix any CI failures
+    - _Requirements: 13.1, 13.4_
+
+- [ ] 65. Update AGENTS.md terminal command guidelines
+  - [ ] 65.1 Add MCP tools guidance for terminal commands
+    - Document use of `mcp_desktop_commander_start_process` for terminal commands
+    - Emphasize avoiding terminal locking and multiple terminal spawning
+    - _Requirements: 14.2_
+  - [ ] 65.2 Add MCP tools guidance for long-running processes
+    - Document use of `mcp_desktop_commander_interact_with_process` for interactive sessions
+    - Document use of `mcp_desktop_commander_read_process_output` for monitoring
+    - _Requirements: 14.2_
+  - [ ] 65.3 Update Dev Workflow & Commands section
+    - Add note about preferring MCP tools over direct terminal commands
+    - Reference `execute_terminal_command` MCP tool for auditable commands
+    - _Requirements: 14.2_
+
+- [ ] 66. Research and validate setup using MCP tools
+  - [ ] 66.1 Use MCP search tools to research pre-commit best practices
+    - Use `mcp_exa_web_search_exa` or `mcp_brave_search_brave_web_search` for research
+    - Research pre-commit hook patterns for Kotlin/Gradle projects
+    - _Requirements: 10.2_
+  - [ ] 66.2 Validate pre-commit configuration using MCP tools
+    - Use `mcp_desktop_commander_start_process` to run validation commands
+    - Test hook execution without blocking terminal
+    - _Requirements: 10.2, 10.3_
+  - [ ] 66.3 Validate GitHub Actions using MCP tools
+    - Use `mcp_desktop_commander_start_process` to run local CI simulation
+    - Use GitHub CLI via MCP to check workflow status
+    - _Requirements: 13.4_
+
+- [ ] 67. Final Phase 15 Checkpoint
+  - Verify pre-commit hooks work locally
+  - Verify GitHub Actions pass
+  - Document hook usage in README or CONTRIBUTING.md
+  - Verify AGENTS.md MCP tools guidance is complete
+  - _Requirements: 10.2, 10.3, 13.4, 14.2, 14.3_
+
+### Phase 15 Pre-commit Hook Configuration
+
+**Tools to be configured:**
+
+| Tool | Purpose | Auto-fix | Files |
+|------|---------|----------|-------|
+| detekt | Kotlin static analysis | No | `*.kt` |
+| ktlint | Kotlin code formatting | Yes | `*.kt` |
+| markdownlint-cli2 | Markdown linting | Yes | `*.md` |
+| yamllint | YAML validation | No | `*.yml`, `*.yaml` |
+
+**Pre-commit hook flow:**
+1. Stage files for commit
+2. Pre-commit hook runs:
+   - ktlint format (auto-fix) → re-stage fixed files
+   - markdownlint-cli2 --fix (auto-fix) → re-stage fixed files
+   - detekt check (fail on violations)
+   - yamllint check (fail on violations)
+3. If all checks pass, commit proceeds
+4. If any check fails, commit is blocked
+
+**GitHub CLI commands to use:**
+```bash
+# Check status
+gh status
+
+# Stage and commit
+git add .
+git commit -m "feat: add pre-commit hooks for code quality"
+
+# Push and create PR
+git push -u origin feature/pre-commit-hooks
+gh pr create --title "Add pre-commit hooks" --body "..."
+
+# Monitor CI
+gh run watch
+```

@@ -1,0 +1,64 @@
+---
+# Pre-commit hook configuration
+# See https://pre-commit.com for more information
+# Install: pip install pre-commit && pre-commit install
+
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  # Markdown linting with auto-fix
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.19.1
+    hooks:
+      - id: markdownlint-cli2-fix
+        name: markdownlint-cli2-fix
+        description: Fixes markdown lint issues
+        entry: markdownlint-cli2 --fix
+        language: node
+        types: [markdown]
+        exclude: ^(node_modules|build|\.gradle|\.kiro)/
+
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        name: yamllint
+        description: Lints YAML files
+        args: [-c, .yamllint]
+        types: [yaml]
+        exclude: ^(node_modules|build|\.gradle)/
+
+  # Local hooks for Gradle-based tools
+  - repo: local
+    hooks:
+      # ktlint with auto-fix
+      - id: ktlint-format
+        name: ktlint-format
+        description: Auto-fix Kotlin code style issues
+        entry: ./gradlew ktlintFormat --no-daemon -q
+        language: system
+        types: [kotlin]
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # ktlint check (after format)
+      - id: ktlint-check
+        name: ktlint-check
+        description: Check Kotlin code style
+        entry: ./gradlew ktlintCheck --no-daemon -q
+        language: system
+        types: [kotlin]
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # detekt static analysis
+      - id: detekt
+        name: detekt
+        description: Run detekt static analysis
+        entry: ./gradlew detektAll --no-daemon --no-configuration-cache -q
+        language: system
+        types: [kotlin]
+        pass_filenames: false
+        stages: [pre-commit]

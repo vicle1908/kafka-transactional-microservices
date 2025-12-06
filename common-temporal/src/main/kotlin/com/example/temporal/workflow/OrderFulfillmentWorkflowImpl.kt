@@ -120,10 +120,6 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             .setRetryOptions(refundRetryOptions)
             .build()
 
-    override fun start(orderId: UUID) {
-        execute(orderId)
-    }
-
     @Suppress("LongMethod")
     override fun execute(orderId: UUID): OrderFulfillmentResult {
         val workflowStartTime = Instant.now()
@@ -212,7 +208,7 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
     ): PaymentResult {
         val paymentStep = WorkflowStep.started("Payment Processing")
         steps.add(paymentStep)
-        saga.addCompensation(refundActivities::refundPayment, orderId)
+        saga.addCompensation { refundActivities.refundPayment(orderId) }
 
         val paymentStartTime = Instant.now()
         val paymentResult = paymentActivities.processPayment(orderId)
@@ -424,4 +420,18 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             RefundPaymentActivity::class.java,
             refundActivityOptions.toBuilder().setTaskQueue(TaskQueues.PAYMENTS_TASK_QUEUE).build(),
         )
+
+    // Workflow state for query and signal methods
+    private var currentStatus: WorkflowStatus = WorkflowStatus.PENDING
+    private var cancelled: Boolean = false
+    private var cancellationReason: String? = null
+
+    override fun getStatus(): WorkflowStatus = currentStatus
+
+    override fun cancel(reason: String) {
+        cancelled = true
+        cancellationReason = reason
+        currentStatus = WorkflowStatus.CANCELLED
+        logger.info("Workflow cancellation requested: $reason")
+    }
 }

@@ -118,7 +118,12 @@ docker manifest inspect <image>:<tag>
 
 - Bootstrap infra with env: `cp infra/.env.example infra/.env && docker compose --env-file infra/.env -f infra/compose.yml up -d`.
 - Run all service tests with `./gradlew clean test` and integration tests with `./gradlew :service-* :integration-test` once modules exist.
-- When you need to run shell commands, prefer the `execute_terminal_command` MCP tool so terminal interactions stay auditable and repeatable.
+- When you need to run shell commands, prefer MCP tools to avoid terminal locking and multiple terminal spawning:
+  - Use `mcp_desktop_commander_start_process` for running commands that may take time (builds, tests, servers)
+  - Use `mcp_desktop_commander_interact_with_process` for interactive sessions (REPLs, debuggers)
+  - Use `mcp_desktop_commander_read_process_output` to monitor long-running processes
+  - Use `mcp_jetbrains_execute_terminal_command` when working within JetBrains IDE context
+  - These tools ensure terminal interactions stay auditable, repeatable, and don't block the agent workflow
 - Start a sample service locally via `./gradlew :orders-service:bootRun` after loading `.env` (copy from `.env.example` and use direnv or `source scripts/export-env.sh`).
 - Use `./gradlew flywayMigrate` to apply schema migrations before running services.
 - Lint/format with `./gradlew spotlessApply` (add plugin in the build once codebase is scaffolded).
@@ -137,10 +142,10 @@ docker manifest inspect <image>:<tag>
   yamllint .                                 # Check all YAML files in project
   yamllint infra/ .github/                   # Check specific directories
 
-  # After editing Markdown files (.md)
-  npx markdownlint <filename>.md             # Check single file
-  npx markdownlint "**/*.md"                 # Check all markdown files
-  npx markdownlint docs/**/*.md              # Check specific directories
+  # After editing Markdown files (.md) - using markdownlint-cli2
+  npx markdownlint-cli2 <filename>.md        # Check single file
+  npx markdownlint-cli2 "**/*.md"            # Check all markdown files
+  npx markdownlint-cli2 docs/**/*.md         # Check specific directories
 
   # After editing GitHub Actions workflows
   actionlint .github/workflows/*.yml         # Check workflow files
