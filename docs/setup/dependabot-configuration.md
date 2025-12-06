@@ -161,7 +161,7 @@ The Gradle configuration specifically supports our version catalog approach:
 
 - Redis 8.x
 - Docker (latest stable)
-- Temporal 1.31.x
+- Temporal 1.32.x
 
 **Code Quality**:
 

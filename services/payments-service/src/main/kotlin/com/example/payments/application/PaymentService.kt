@@ -1,3 +1,5 @@
+@file:Suppress("TooGenericExceptionCaught", "LongMethod", "LongParameterList", "ReturnCount")
+
 package com.example.payments.application
 
 import com.example.events.avro.PaymentCompletedEvent
@@ -16,6 +18,7 @@ import com.example.payments.application.port.out.PaymentGateway
 import com.example.payments.application.port.out.RefundGateway
 import com.example.payments.application.port.out.RefundRequest
 import com.example.payments.application.port.out.RefundResult
+import com.example.payments.client.OrdersGrpcClient
 import com.example.payments.domain.PaymentEntity
 import com.example.payments.domain.PaymentRepository
 import com.example.payments.domain.PaymentStatus
@@ -55,6 +58,7 @@ class PaymentService(
     private val refundRepository: RefundRepository,
     private val refundGateway: RefundGateway,
     private val paymentGateway: PaymentGateway,
+    private val ordersGrpcClient: OrdersGrpcClient,
 ) {
     private val logger = StructuredLogger.getLogger(PaymentService::class.java)
 
@@ -148,6 +152,103 @@ class PaymentService(
             "Payment compensation completed",
             "orderId" to orderId,
         )
+    }
+
+    fun getOrderAmount(orderId: UUID): BigDecimal? {
+        val amount = ordersGrpcClient.getOrderAmount(orderId)
+        if (amount != null) {
+            return amount
+        }
+        logger.warn(
+            "Could not retrieve order amount via gRPC, falling back to local payment repository",
+            "orderId" to orderId,
+        )
+        val existingPayment = paymentRepository.findTopByOrderIdOrderByProcessedAtDesc(orderId)
+        return existingPayment?.amount
+    }
+
+    fun getPaymentById(paymentId: UUID?): PaymentEntity? {
+        if (paymentId == null) return null
+        return paymentRepository.findById(paymentId).orElse(null)
+    }
+
+    @Transactional
+    fun processRefund(
+        orderId: UUID,
+        reason: String?,
+    ): ProcessRefundResult {
+        logger.info(
+            "Processing refund via Temporal activity",
+            "orderId" to orderId,
+            "reason" to reason,
+        )
+
+        return try {
+            val occurredAt = Instant.now()
+            val payment = paymentRepository.findTopByOrderIdOrderByProcessedAtDesc(orderId)
+
+            if (payment == null) {
+                logger.warn("No payment found for orderId: $orderId")
+                return ProcessRefundResult(
+                    success = false,
+                    message = "No payment found for order",
+                )
+            }
+
+            val paymentId =
+                payment.id ?: return ProcessRefundResult(
+                    success = false,
+                    message = "Payment ID missing",
+                )
+
+            if (payment.status() !in setOf(PaymentStatus.COMPLETED, PaymentStatus.REFUNDING, PaymentStatus.REFUNDED)) {
+                logger.warn("Payment not in refundable state for orderId: $orderId, status: ${payment.status()}")
+                return ProcessRefundResult(
+                    success = false,
+                    message = "Payment not in refundable state: ${payment.status()}",
+                )
+            }
+
+            val existingRefund = refundRepository.findFirstByPaymentIdOrderByRequestedAtDesc(paymentId)
+
+            if (existingRefund != null && existingRefund.status() == RefundStatus.COMPLETED) {
+                logger.info("Refund already completed for orderId: $orderId")
+                return ProcessRefundResult(
+                    success = true,
+                    refundId = existingRefund.id,
+                    refundedAt = existingRefund.completedAt(),
+                    message = "Refund already completed",
+                )
+            }
+
+            initiateRefund(orderId, reason, occurredAt)
+
+            val completedRefund = refundRepository.findFirstByPaymentIdOrderByRequestedAtDesc(paymentId)
+            if (completedRefund != null && completedRefund.status() == RefundStatus.COMPLETED) {
+                ProcessRefundResult(
+                    success = true,
+                    refundId = completedRefund.id,
+                    refundedAt = completedRefund.completedAt(),
+                    message = "Refund processed successfully",
+                )
+            } else {
+                ProcessRefundResult(
+                    success = false,
+                    refundId = completedRefund?.id,
+                    message = "Refund processing failed",
+                )
+            }
+        } catch (e: Exception) {
+            logger.error(
+                "Error processing refund for orderId: $orderId",
+                "error" to (e.message ?: "Unknown error"),
+                "exception" to e.javaClass.simpleName,
+            )
+            ProcessRefundResult(
+                success = false,
+                message = "Error processing refund: ${e.message}",
+            )
+        }
     }
 
     private fun findDuplicateOutcome(command: ProcessPaymentCommand): PaymentProcessingOutcome? {
@@ -596,3 +697,10 @@ sealed interface PaymentProcessingOutcome {
         val paymentId: UUID?,
     ) : PaymentProcessingOutcome
 }
+
+data class ProcessRefundResult(
+    val success: Boolean,
+    val refundId: UUID? = null,
+    val refundedAt: java.time.Instant? = null,
+    val message: String? = null,
+)

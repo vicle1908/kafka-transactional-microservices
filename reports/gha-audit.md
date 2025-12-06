@@ -16,14 +16,14 @@ Key findings and validations
 - Sources:
   - Workflow syntax (timeout-minutes default 360): <https://docs.github.com/actions/reference/workflow-syntax-for-github-actions>
 
-2) CodeQL required permissions
+1. CodeQL required permissions
 
 - Advanced setup requires permissions: security-events: write (and contents: read for private repos).
 - Action: Add permissions for CodeQL job/workflow in security-scan.yml.
 - Sources:
   - codeql-action README: <https://github.com/github/codeql-action#usage>
 
-3) Pin actions to full-length commit SHAs (supply chain)
+1. Pin actions to full-length commit SHAs (supply chain)
 
 - Pinning to a full SHA is the only immutable release mechanism; best practice for security hardening.
 - Action: Pin all actions to SHAs; optionally add step-security/harden-runner to audit/enforce network egress.
@@ -31,7 +31,7 @@ Key findings and validations
   - GitHub Docs – Secure use reference: <https://docs.github.com/en/actions/reference/security/secure-use>
   - Harden-Runner (marketplace/readme): <https://github.com/step-security/harden-runner>
 
-4) Dependency Review gating
+1. Dependency Review gating
 
 - dependency-review-action supports fail-on-severity to fail PRs based on severity threshold.
 - Action: Run on pull_request (currently push to main). Remove warn-only (prefer failing gate with fail-on-severity: high) to enforce policy, per WARP baseline.
@@ -39,7 +39,7 @@ Key findings and validations
   - Action README: <https://github.com/actions/dependency-review-action>
   - Docs: <https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/configuring-the-dependency-review-action>
 
-5) Docker Compose on GitHub runners
+1. Docker Compose on GitHub runners
 
 - Compose v1 is deprecated; hosted runners have Compose v2. docker/setup-compose-action exists and will install/skip as needed.
 - Action: Prefer docker compose (v2). Keep setup-compose action if you want explicit control.
@@ -47,14 +47,14 @@ Key findings and validations
   - Changelog: <https://github.blog/changelog/2024-04-10-github-hosted-runner-images-deprecation-notice-docker-compose-v1/>
   - Setup action: <https://github.com/docker/setup-compose-action>
 
-6) Debezium Connect with Avro Converter
+1. Debezium Connect with Avro Converter
 
 - Debezium containers do not include Confluent Avro converter jars by default.
 - Action (integration-test.yml): Either switch to JSON converters or include Confluent Avro converter into the Connect image when using Avro converters.
 - Sources:
   - Debezium docs: <https://debezium.io/documentation/reference/stable/configuration/avro.html>
 
-7) Apache Kafka image/tag
+1. Apache Kafka image/tag
 
 - Official apache/kafka repo exists; verify tag 4.1.0 is available or use a widely adopted image (bitnami/kafka) in CI.
 - Action: Verify image tag or switch to bitnami for stability in CI.
@@ -62,14 +62,14 @@ Key findings and validations
   - Docker Hub apache/kafka: <https://hub.docker.com/r/apache/kafka/>
   - bitnami/kafka: <https://hub.docker.com/r/bitnami/kafka>
 
-8) actions/checkout persist-credentials
+1. actions/checkout persist-credentials
 
 - Default persists token in git config; set persist-credentials: false to avoid token exposure to later steps.
 - Action: For PRs from forks, set persist-credentials: false.
 - Sources:
   - actions/checkout README: <https://github.com/actions/checkout>
 
-9) Trivy exit-code gating
+1. Trivy exit-code gating
 
 - By default trivy exits 0 even with findings; use exit-code to fail.
 - Action: Keep scheduled scans non-blocking; add PR-gating job with exit-code and severity thresholds if desired.
@@ -95,19 +95,19 @@ Actions to implement (high level)
 - security-scan.yml: add permissions security-events: write; pin actions.
 - dependency-review.yml: run on pull_request; remove warn-only; keep fail-on-severity: high.
 
-2) Integration environment correctness
+1. Integration environment correctness
 
 - integration-test.yml: use JSON converters for Debezium or add Avro converter plugin; verify Kafka image tag or switch to bitnami.
 
-3) Load test workflow fixes
+1. Load test workflow fixes
 
 - Replace docker-compose with docker compose; fix SPRING_KAFKA_BOOTSTRAP_SERVERS; consolidate k6 thresholds; align Gradle action to v4.
 
-4) Security & supply chain
+1. Security & supply chain
 
 - Pin actions to SHAs across workflows; add step-security/harden-runner as first step in each job.
 
-5) Optional enhancements
+1. Optional enhancements
 
 - Add actionlint and yamllint workflows on PRs.
 - Add gitleaks on PRs and pushes.

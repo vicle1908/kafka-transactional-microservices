@@ -3,19 +3,30 @@ package com.example.temporalpilot.implementation
 import com.example.temporal.OrderFulfillmentWorkflow
 import com.example.temporal.TaskQueues
 import com.example.temporal.activity.InventoryActivity
+import com.example.temporal.activity.InventoryReservationResult
 import com.example.temporal.activity.NotificationActivity
+import com.example.temporal.activity.NotificationResult
 import com.example.temporal.activity.PaymentActivity
+import com.example.temporal.activity.PaymentResult
 import com.example.temporal.activity.RefundPaymentActivity
+import com.example.temporal.workflow.OrderFulfillmentResult
+import com.example.temporal.workflow.WorkflowStatus
+import com.example.temporal.workflow.WorkflowStep
 import io.temporal.activity.ActivityOptions
 import io.temporal.common.RetryOptions
 import io.temporal.workflow.Saga
 import io.temporal.workflow.Workflow
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 
 @Component
+@Suppress("TooGenericExceptionCaught")
 class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
+    private val logger = LoggerFactory.getLogger(OrderFulfillmentWorkflowImpl::class.java)
+
     private val retryOptions =
         RetryOptions
             .newBuilder()
@@ -51,22 +62,200 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
             activityOptions.toBuilder().setTaskQueue(TaskQueues.PAYMENTS_TASK_QUEUE).build(),
         )
 
-    override fun start(orderId: UUID) {
-        val saga =
-            Saga(
-                Saga.Options
-                    .Builder()
-                    .setParallelCompensation(true)
-                    .build(),
-            )
+    // Workflow state
+    private var workflowOrderId: UUID? = null
+    private var currentStatusString: String = "PENDING"
+    private var cancelled: Boolean = false
+    private var cancellationReason: String? = null
+    private var workflowSteps: List<WorkflowStep> = emptyList()
+
+    override fun getStatus(): WorkflowStatus =
+        WorkflowStatus(
+            orderId = workflowOrderId ?: UUID.randomUUID(),
+            status = currentStatusString,
+            cancelled = cancelled,
+            cancellationReason = cancellationReason,
+            steps = workflowSteps,
+        )
+
+    override fun cancel(reason: String) {
+        cancelled = true
+        cancellationReason = reason
+        currentStatusString = "CANCELLED"
+        logger.info("Workflow cancellation requested: $reason")
+    }
+
+
+    override fun execute(orderId: UUID): OrderFulfillmentResult {
+        workflowOrderId = orderId
+        currentStatusString = "RUNNING"
+        val workflowStart = Instant.now()
+        val steps = mutableListOf<WorkflowStep>()
+        val saga = createSaga()
+
+        var result: OrderFulfillmentResult? = null
+        var shouldContinue = true
+        var paymentResult: PaymentResult? = null
+        var inventoryResult: InventoryReservationResult? = null
+
         try {
+            if (shouldContinue) {
+                paymentResult = processPayment(orderId, saga, steps)
+                if (!paymentResult.success) {
+                    result = handleWorkflowFailure(
+                        orderId,
+                        paymentResult.message ?: "Payment failed",
+                        saga,
+                        steps,
+                    )
+                    shouldContinue = false
+                }
+            }
+
+            if (shouldContinue) {
+                inventoryResult = processInventory(orderId, saga, steps)
+                if (!inventoryResult.success) {
+                    result = handleWorkflowFailure(
+                        orderId,
+                        inventoryResult.message ?: "Inventory reservation failed",
+                        saga,
+                        steps,
+                    )
+                    shouldContinue = false
+                }
+            }
+
+            if (shouldContinue) {
+                val notificationResult = processNotification(orderId, steps)
+                val duration = Duration.between(workflowStart, Instant.now()).toMillis()
+                logger.info("Temporal pilot workflow completed for orderId={} in {} ms", orderId, duration)
+                currentStatusString = "COMPLETED"
+                workflowSteps = steps
+                result =
+                    OrderFulfillmentResult(
+                        success = true,
+                        orderId = orderId,
+                        paymentId = paymentResult!!.paymentId,
+                        reservationId = inventoryResult!!.reservationId,
+                        confirmationNotificationId = notificationResult.notificationId,
+                        status = "COMPLETED",
+                        steps = steps,
+                        executionDuration = duration,
+                    )
+            }
+        } catch (ex: Exception) {
+            result = handleUnexpectedError(orderId, ex, saga, steps)
+        }
+
+        return result ?: handleUnexpectedError(
+            orderId,
+            IllegalStateException("Unexpected null result"),
+            saga,
+            steps,
+        )
+    }
+
+    private fun createSaga(): Saga =
+        Saga(
+            Saga.Options
+                .Builder()
+                .setParallelCompensation(true)
+                .build(),
+        )
+
+    private fun processPayment(
+        orderId: UUID,
+        saga: Saga,
+        steps: MutableList<WorkflowStep>,
+    ): PaymentResult {
+        val paymentStep = WorkflowStep.started("Payment Processing")
+        steps += paymentStep
+
+        val orderAmount = paymentActivities.getOrderAmount(orderId)
+            ?: return PaymentResult(
+                success = false,
+                message = "Could not retrieve order amount for orderId: $orderId",
+            )
+
+        val payment = paymentActivities.processPayment(orderId, orderAmount)
+
+        if (payment.success) {
+            return payment
+        } else {
             saga.addCompensation(refundPaymentActivities::refundPayment, orderId)
-            paymentActivities.processPayment(orderId)
-            inventoryActivities.reserveInventory(orderId)
-            notificationActivities.sendNotification(orderId)
-        } catch (e: Exception) {
             saga.compensate()
-            throw e
+            return payment
         }
     }
+
+
+    private fun processInventory(
+        orderId: UUID,
+        saga: Saga,
+        steps: MutableList<WorkflowStep>,
+    ): InventoryReservationResult {
+        val inventoryStep = WorkflowStep.started("Inventory Reservation")
+        steps += inventoryStep
+        val inventory = inventoryActivities.reserveInventory(orderId)
+
+        if (inventory.success) {
+            return inventory
+        } else {
+            saga.addCompensation(refundPaymentActivities::refundPayment, orderId)
+            saga.compensate()
+            return inventory
+        }
+    }
+
+    private fun processNotification(
+        orderId: UUID,
+        steps: MutableList<WorkflowStep>,
+    ): NotificationResult {
+        val notificationStep = WorkflowStep.started("Order Confirmation")
+        steps += notificationStep
+        return notificationActivities.sendOrderConfirmation(orderId, placeholderCustomerEmail(orderId))
+    }
+
+    private fun handleWorkflowFailure(
+        orderId: UUID,
+        failureReason: String,
+        saga: Saga,
+        steps: MutableList<WorkflowStep>,
+    ): OrderFulfillmentResult {
+        currentStatusString = "FAILED"
+        workflowSteps = steps
+        saga.compensate()
+        return OrderFulfillmentResult(
+            success = false,
+            orderId = orderId,
+            status = "FAILED",
+            failureReason = failureReason,
+            steps = steps,
+        )
+    }
+
+    private fun handleUnexpectedError(
+        orderId: UUID,
+        ex: Exception,
+        saga: Saga,
+        steps: MutableList<WorkflowStep>,
+    ): OrderFulfillmentResult {
+        logger.error("Temporal pilot workflow failed for orderId={}", orderId, ex)
+        currentStatusString = "FAILED"
+        workflowSteps = steps
+        try {
+            saga.compensate()
+        } catch (compensation: Exception) {
+            logger.warn("Temporal pilot compensation failed for orderId={}", orderId, compensation)
+        }
+        return OrderFulfillmentResult(
+            success = false,
+            orderId = orderId,
+            status = "FAILED",
+            failureReason = ex.message ?: "Unknown error",
+            steps = steps,
+        )
+    }
+
+    private fun placeholderCustomerEmail(orderId: UUID): String = "workflow+$orderId@example.com"
 }

@@ -17,17 +17,18 @@ fun main(args: Array<String>) {
     runApplication<TemporalPilotApplication>(*args)
 }
 
-@Component
-class WorkflowStarter(
-    private val workflowClient: WorkflowClient,
-) : CommandLineRunner {
-    override fun run(vararg args: String?) {
-        val workflowOptions =
-            WorkflowOptions
-                .newBuilder()
-                .setTaskQueue(TaskQueues.ORDER_FULFILLMENT_WORKFLOW_TASK_QUEUE)
-                .build()
-        val workflow = workflowClient.newWorkflowStub(OrderFulfillmentWorkflow::class.java, workflowOptions)
-        WorkflowClient.start(workflow::start, UUID.randomUUID())
-    }
-}
+// Workflow starter is disabled - workflows are started by orders-service
+// @Component
+// class WorkflowStarter(
+//     private val workflowClient: WorkflowClient,
+// ) : CommandLineRunner {
+//     override fun run(vararg args: String?) {
+//         val workflowOptions =
+//             WorkflowOptions
+//                 .newBuilder()
+//                 .setTaskQueue(TaskQueues.ORDER_FULFILLMENT_WORKFLOW_TASK_QUEUE)
+//                 .build()
+//         val workflow = workflowClient.newWorkflowStub(OrderFulfillmentWorkflow::class.java, workflowOptions)
+//         WorkflowClient.start(workflow::execute, UUID.randomUUID())
+//     }
+// }

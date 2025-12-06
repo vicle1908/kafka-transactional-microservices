@@ -1,10 +1,11 @@
 ---
 services:
   kafka:
-    image: ${KAFKA_IMAGE:-apache/kafka:4.1.0}
+    image: ${KAFKA_IMAGE:-apache/kafka:4.1.1}
     container_name: kafka
     profiles:
       - local
+      - services
     ports:
       - "${KAFKA_PLAINTEXT_PORT:-9092}:9092"
       - "${KAFKA_CONTROLLER_PORT:-9093}:9093"
@@ -33,10 +34,11 @@ services:
       retries: 5
 
   schema-registry:
-    image: ${SCHEMA_REGISTRY_IMAGE:-confluentinc/cp-schema-registry:8.0.1}
+    image: ${SCHEMA_REGISTRY_IMAGE:-confluentinc/cp-schema-registry:7.9.5}
     container_name: schema-registry
     profiles:
       - local
+      - services
     depends_on:
       - kafka
     environment:
@@ -52,11 +54,12 @@ services:
       retries: 5
 
   postgres:
-    image: ${POSTGRES_IMAGE:-postgres:18.0}
+    image: ${POSTGRES_IMAGE:-postgres:18.1-alpine}
     container_name: postgres
     profiles:
       - local
       - migrate
+      - services
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
@@ -70,7 +73,7 @@ services:
       - "-c"
       - "max_replication_slots=10"
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pg-data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
@@ -81,10 +84,11 @@ services:
       retries: 5
 
   redis:
-    image: ${REDIS_IMAGE:-redis:8.2.2-alpine}
+    image: ${REDIS_IMAGE:-redis:8.4.0-alpine}
     container_name: redis
     profiles:
       - local
+      - services
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
@@ -96,7 +100,7 @@ services:
       retries: 3
 
   debezium-connect:
-    image: ${DEBEZIUM_IMAGE:-quay.io/debezium/connect:3.3.0.Final}
+    image: ${DEBEZIUM_IMAGE:-quay.io/debezium/connect:3.3}
     container_name: debezium-connect
     profiles:
       - local
@@ -123,7 +127,7 @@ services:
       retries: 5
 
   akhq:
-    image: ${AKHQ_IMAGE:-tchiotludo/akhq:0.25.0}
+    image: ${AKHQ_IMAGE:-tchiotludo/akhq:0.26.0}
     container_name: akhq
     profiles:
       - local
@@ -147,7 +151,7 @@ services:
       retries: 5
 
   flyway-orders:
-    image: flyway/flyway:11.13.2
+    image: ${FLYWAY_IMAGE:-flyway/flyway:11.18.0}
     container_name: flyway-orders
     profiles:
       - migrate
@@ -165,7 +169,7 @@ services:
       migrate
 
   flyway-payments:
-    image: flyway/flyway:11.13.2
+    image: ${FLYWAY_IMAGE:-flyway/flyway:11.18.0}
     container_name: flyway-payments
     profiles:
       - migrate
@@ -183,7 +187,7 @@ services:
       migrate
 
   flyway-inventory:
-    image: flyway/flyway:11.13.2
+    image: ${FLYWAY_IMAGE:-flyway/flyway:11.18.0}
     container_name: flyway-inventory
     profiles:
       - migrate
@@ -201,7 +205,7 @@ services:
       migrate
 
   flyway-notification:
-    image: flyway/flyway:11.13.2
+    image: ${FLYWAY_IMAGE:-flyway/flyway:11.18.0}
     container_name: flyway-notification
     profiles:
       - migrate
@@ -221,7 +225,7 @@ services:
 
   # ELK Stack for centralized logging
   elasticsearch:
-    image: ${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch:8.19.5}
+    image: ${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch:9.2.1}
     container_name: elasticsearch
     profiles:
       - local
@@ -230,7 +234,7 @@ services:
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     ports:
-      - "9200:9200"
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
     healthcheck:
@@ -240,7 +244,7 @@ services:
       retries: 5
 
   logstash:
-    image: ${LOGSTASH_IMAGE:-docker.elastic.co/logstash/logstash:8.19.5}
+    image: ${LOGSTASH_IMAGE:-docker.elastic.co/logstash/logstash:9.2.1}
     container_name: logstash
     profiles:
       - local
@@ -248,8 +252,8 @@ services:
       elasticsearch:
         condition: service_healthy
     ports:
-      - "5044:5044"
-      - "9600:9600"
+      - "${LOGSTASH_BEATS_PORT:-5044}:5044"
+      - "${LOGSTASH_API_PORT:-9600}:9600"
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
@@ -260,7 +264,7 @@ services:
       retries: 5
 
   kibana:
-    image: ${KIBANA_IMAGE:-docker.elastic.co/kibana/kibana:8.19.5}
+    image: ${KIBANA_IMAGE:-docker.elastic.co/kibana/kibana:9.1.3}
     container_name: kibana
     profiles:
       - local
@@ -268,7 +272,7 @@ services:
       elasticsearch:
         condition: service_healthy
     ports:
-      - "5601:5601"
+      - "${KIBANA_PORT:-5601}:5601"
     environment:
       - ELASTICSEARCH_HOSTS=["http://elasticsearch:9200"]
     healthcheck:
@@ -278,7 +282,7 @@ services:
       retries: 5
 
   filebeat:
-    image: ${FILEBEAT_IMAGE:-docker.elastic.co/beats/filebeat:8.19.5}
+    image: ${FILEBEAT_IMAGE:-docker.elastic.co/beats/filebeat:9.2.1}
     container_name: filebeat
     profiles:
       - local
@@ -298,23 +302,23 @@ services:
       retries: 3
 
   prometheus:
-    image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.6.0}
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.7.3}
     container_name: prometheus
     profiles:
       - local
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     command: --config.file=/etc/prometheus/prometheus.yml
 
   grafana:
-    image: ${GRAFANA_IMAGE:-grafana/grafana:12.2.0}
+    image: ${GRAFANA_IMAGE:-grafana/grafana:12.3.0}
     container_name: grafana
     profiles:
       - local
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT:-3000}:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
@@ -323,7 +327,7 @@ services:
 
   # OpenTelemetry Collector and Jaeger for distributed tracing
   otel-collector:
-    image: ${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.137.0}
+    image: ${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.140.0}
     container_name: otel-collector
     profiles:
       - local
@@ -331,22 +335,198 @@ services:
     volumes:
       - ./otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "13133:13133"  # Health check
+      - "${OTEL_GRPC_PORT:-4317}:4317"   # OTLP gRPC receiver
+      - "${OTEL_HTTP_PORT:-4318}:4318"   # OTLP HTTP receiver
+      - "${OTEL_HEALTH_PORT:-13133}:13133"  # Health check
     depends_on:
       - jaeger
 
   jaeger:
-    image: ${JAEGER_IMAGE:-jaegertracing/all-in-one:1.74.0}
+    image: ${JAEGER_IMAGE:-jaegertracing/all-in-one:1.75.0}
     container_name: jaeger
     profiles:
       - local
     ports:
-      - "16686:16686"  # Jaeger UI
-      - "14250:14250"  # gRPC server
+      - "${JAEGER_UI_PORT:-16686}:16686"  # Jaeger UI
+      - "${JAEGER_GRPC_PORT:-14250}:14250"  # gRPC server
     environment:
       - COLLECTOR_OTLP_ENABLED=true
+
+  # ============================================
+  # Microservices
+  # ============================================
+
+  orders-service:
+    build:
+      context: ../services/orders-service
+      dockerfile: Dockerfile.local
+    image: orders-service:latest
+    container_name: orders-service
+    profiles:
+      - services
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    ports:
+      - "${ORDERS_SERVICE_PORT:-8080}:8080"
+      - "${ORDERS_GRPC_PORT:-9091}:9091"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      ORDERS_DB_NAME: orders
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ORDERS_GRPC_PORT: 9091
+      TEMPORAL_TARGET: temporal:7233
+      OTEL_ENDPOINT: otel-collector:4317
+      OTEL_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  payments-service:
+    build:
+      context: ../services/payments-service
+      dockerfile: Dockerfile.local
+    image: payments-service:latest
+    container_name: payments-service
+    profiles:
+      - services
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    ports:
+      - "${PAYMENTS_SERVICE_PORT:-8084}:8082"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      PAYMENTS_DB_NAME: payments
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TEMPORAL_TARGET: temporal:7233
+      OTEL_ENDPOINT: otel-collector:4317
+      OTEL_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  inventory-service:
+    build:
+      context: ../services/inventory-service
+      dockerfile: Dockerfile.local
+    image: inventory-service:latest
+    container_name: inventory-service
+    profiles:
+      - services
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    ports:
+      - "${INVENTORY_SERVICE_PORT:-8085}:8083"
+      - "${INVENTORY_GRPC_PORT:-9094}:9094"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      INVENTORY_DB_NAME: inventory
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      INVENTORY_GRPC_PORT: 9094
+      TEMPORAL_TARGET: temporal:7233
+      OTEL_ENDPOINT: otel-collector:4317
+      OTEL_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  notification-service:
+    build:
+      context: ../services/notification-service
+      dockerfile: Dockerfile.local
+    image: notification-service:latest
+    container_name: notification-service
+    profiles:
+      - services
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-8086}:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      NOTIFICATIONS_DB_NAME: notifications
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TEMPORAL_TARGET: temporal:7233
+      OTEL_ENDPOINT: otel-collector:4317
+      OTEL_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Temporal Workflow Orchestration
+  temporal:
+    image: ${TEMPORAL_IMAGE:-temporalio/auto-setup:1.29.1}
+    container_name: temporal
+    profiles:
+      - services
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${TEMPORAL_PORT:-7233}:7233"
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-app}
+      - POSTGRES_PWD=${POSTGRES_PASSWORD:-app}
+      - POSTGRES_SEEDS=postgres
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  temporal-ui:
+    image: ${TEMPORAL_UI_IMAGE:-temporalio/ui:2.43.3}
+    container_name: temporal-ui
+    profiles:
+      - services
+    depends_on:
+      - temporal
+    ports:
+      - "${TEMPORAL_UI_PORT:-8088}:8080"
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
 
 volumes:
   kafka-data:

@@ -3,7 +3,7 @@
 ROOT_DIR := $(shell pwd)
 COMPOSE := docker compose -f infra/compose.yml
 
-.PHONY: up down restart ps logs migrate connectors smoke clean-volumes
+.PHONY: up down restart ps logs migrate connectors smoke clean-volumes temporal-ui temporal-logs
 
 up:
 	$(COMPOSE) --profile local up -d
@@ -36,3 +36,11 @@ smoke:
 # DANGER: remove data volumes (fresh start)
 clean-volumes:
 	$(COMPOSE) down -v
+
+# Temporal commands
+temporal-ui:
+	@echo "Temporal Web UI: http://localhost:8089"
+	@echo "Temporal gRPC: localhost:7233"
+
+temporal-logs:
+	$(COMPOSE) logs --no-color --tail=100 temporal

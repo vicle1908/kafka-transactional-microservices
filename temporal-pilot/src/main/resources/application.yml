@@ -2,6 +2,10 @@
 spring:
   application:
     name: workflow-service
+  temporal:
+    connection:
+      target: ${TEMPORAL_TARGET:127.0.0.1:7233}
+    namespace: default
 
 management:
   endpoints:
@@ -16,12 +20,6 @@ management:
   otlp:
     tracing:
       endpoint: http://${OTEL_ENDPOINT:localhost:4317}
-
-temporal:
-  connection:
-    target: ${TEMPORAL_TARGET:127.0.0.1:7233}
-  workers:
-    - task-queue: OrderFulfillmentWorkflowTaskQueue
 
 # OpenTelemetry configuration
 otel:

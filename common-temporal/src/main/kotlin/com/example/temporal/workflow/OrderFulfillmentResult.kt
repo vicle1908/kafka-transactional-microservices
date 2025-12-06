@@ -1,7 +1,7 @@
 package com.example.temporal.workflow
 
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 /**
  * Result of the OrderFulfillmentWorkflow execution.
@@ -18,48 +18,51 @@ data class OrderFulfillmentResult(
     val compensationIssues: List<String> = emptyList(),
     val completedAt: Instant = Instant.now(),
     val executionDuration: Long = 0L, // Duration in milliseconds
-    val steps: List<WorkflowStep> = emptyList()
+    val steps: List<WorkflowStep> = emptyList(),
 ) {
     companion object {
-        fun success(
-            orderId: UUID,
-            paymentId: UUID,
-            reservationId: UUID,
-            confirmationNotificationId: UUID? = null,
-            steps: List<WorkflowStep> = emptyList(),
-            executionDuration: Long = 0L
-        ): OrderFulfillmentResult {
-            return OrderFulfillmentResult(
+        fun success(params: SuccessParams): OrderFulfillmentResult =
+            OrderFulfillmentResult(
                 success = true,
-                orderId = orderId,
-                paymentId = paymentId,
-                reservationId = reservationId,
-                confirmationNotificationId = confirmationNotificationId,
+                orderId = params.orderId,
+                paymentId = params.paymentId,
+                reservationId = params.reservationId,
+                confirmationNotificationId = params.confirmationNotificationId,
                 status = "COMPLETED",
-                steps = steps,
-                executionDuration = executionDuration
+                steps = params.steps,
+                executionDuration = params.executionDuration,
             )
-        }
 
         fun failure(
             orderId: UUID,
             failureReason: String,
             compensationIssues: List<String> = emptyList(),
             steps: List<WorkflowStep> = emptyList(),
-            executionDuration: Long = 0L
-        ): OrderFulfillmentResult {
-            return OrderFulfillmentResult(
+            executionDuration: Long = 0L,
+        ): OrderFulfillmentResult =
+            OrderFulfillmentResult(
                 success = false,
                 orderId = orderId,
                 status = "FAILED",
                 failureReason = failureReason,
                 compensationIssues = compensationIssues,
                 steps = steps,
-                executionDuration = executionDuration
+                executionDuration = executionDuration,
             )
-        }
     }
 }
+
+/**
+ * Parameters for creating a successful OrderFulfillmentResult.
+ */
+data class SuccessParams(
+    val orderId: UUID,
+    val paymentId: UUID,
+    val reservationId: UUID,
+    val confirmationNotificationId: UUID? = null,
+    val steps: List<WorkflowStep> = emptyList(),
+    val executionDuration: Long = 0L,
+)
 
 /**
  * Represents a step in the workflow execution.
@@ -71,21 +74,20 @@ data class WorkflowStep(
     val completedAt: Instant? = null,
     val duration: Long = 0L, // Duration in milliseconds
     val result: String? = null,
-    val error: String? = null
+    val error: String? = null,
 ) {
     companion object {
-        fun started(stepName: String): WorkflowStep {
-            return WorkflowStep(
+        fun started(stepName: String): WorkflowStep =
+            WorkflowStep(
                 stepName = stepName,
                 status = "STARTED",
-                startedAt = Instant.now()
+                startedAt = Instant.now(),
             )
-        }
 
         fun completed(
             stepName: String,
             result: String,
-            duration: Long
+            duration: Long,
         ): WorkflowStep {
             val now = Instant.now()
             return WorkflowStep(
@@ -94,14 +96,14 @@ data class WorkflowStep(
                 startedAt = now.minusMillis(duration),
                 completedAt = now,
                 duration = duration,
-                result = result
+                result = result,
             )
         }
 
         fun failed(
             stepName: String,
             error: String,
-            duration: Long
+            duration: Long,
         ): WorkflowStep {
             val now = Instant.now()
             return WorkflowStep(
@@ -110,7 +112,7 @@ data class WorkflowStep(
                 startedAt = now.minusMillis(duration),
                 completedAt = now,
                 duration = duration,
-                error = error
+                error = error,
             )
         }
     }

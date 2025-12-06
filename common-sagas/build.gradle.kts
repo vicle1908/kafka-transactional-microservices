@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.kotlin.reflect)
     api(libs.spring.boot.starter.actuator)
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.boot.starter.data.jpa.test)
     testImplementation(libs.h2)
 
     // Dependencies from other common modules

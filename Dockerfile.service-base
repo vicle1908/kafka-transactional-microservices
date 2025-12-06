@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1.7
+ARG SERVICE_PATH
+FROM gradle:9.1.0-jdk25 as builder
+WORKDIR /app
+COPY build.gradle.kts settings.gradle.kts gradlew gradlew.bat gradle.properties /app/
+COPY gradle /app/gradle
+COPY common-cache /app/common-cache
+COPY common-events /app/common-events
+COPY common-events-avro /app/common-events-avro
+COPY common-kafka /app/common-kafka
+COPY common-observability /app/common-observability
+COPY common-outbox-relay /app/common-outbox-relay
+COPY common-persistence /app/common-persistence
+COPY common-proto /app/common-proto
+COPY common-sagas /app/common-sagas
+COPY common-temporal /app/common-temporal
+COPY services/orders-service /app/services/orders-service
+COPY services/payments-service /app/services/payments-service
+COPY services/inventory-service /app/services/inventory-service
+COPY services/notification-service /app/services/notification-service
+RUN --mount=type=cache,target=/root/.gradle ./gradlew :$SERVICE_PATH:bootJar --no-daemon

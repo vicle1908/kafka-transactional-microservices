@@ -3,7 +3,7 @@ package com.example.kafka
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties
+import org.springframework.boot.kafka.autoconfigure.KafkaProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
@@ -34,7 +34,7 @@ class KafkaConsumerConfig {
         transactionManager: KafkaTransactionManager<String, Any>?,
     ): ConcurrentKafkaListenerContainerFactory<String, Any> {
         val factory = ConcurrentKafkaListenerContainerFactory<String, Any>()
-        factory.consumerFactory = consumerFactory
+        factory.setConsumerFactory(consumerFactory)
 
         // Configure for transactional consumption if transaction manager is available
         if (transactionManager != null) {

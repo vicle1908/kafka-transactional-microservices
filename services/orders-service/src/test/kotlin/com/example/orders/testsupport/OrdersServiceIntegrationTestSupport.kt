@@ -3,8 +3,8 @@ package com.example.orders.testsupport
 import io.temporal.client.WorkflowClient
 import org.flywaydb.core.Flyway
 import org.mockito.kotlin.mock
-import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
+import org.springframework.boot.flyway.autoconfigure.FlywayMigrationStrategy
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
@@ -15,7 +15,11 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
-@Import(TestCacheConfig::class, OrdersServiceIntegrationTestSupport.WorkflowClientStubConfig::class)
+@Import(
+    TestCacheConfig::class,
+    OrdersServiceIntegrationTestSupport.WorkflowClientStubConfig::class,
+    OrdersServiceIntegrationTestSupport.FlywayTestConfig::class,
+)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 abstract class OrdersServiceIntegrationTestSupport {
     companion object {

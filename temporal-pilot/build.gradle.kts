@@ -6,8 +6,8 @@ plugins {
 dependencies {
     implementation(project(":common-temporal"))
     implementation(project(":common-observability"))
-    implementation(libs.temporal.spring.boot.starter)
-    implementation(libs.temporal.sdk)
+    // temporal-shaded and temporal-spring-boot-starter are provided by common-temporal
+    // No need for explicit gRPC dependencies - temporal-shaded bundles its own
 
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.opentelemetry.api)

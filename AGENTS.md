@@ -118,7 +118,12 @@ docker manifest inspect <image>:<tag>
 
 - Bootstrap infra with env: `cp infra/.env.example infra/.env && docker compose --env-file infra/.env -f infra/compose.yml up -d`.
 - Run all service tests with `./gradlew clean test` and integration tests with `./gradlew :service-* :integration-test` once modules exist.
-- When you need to run shell commands, prefer the `execute_terminal_command` MCP tool so terminal interactions stay auditable and repeatable.
+- When you need to run shell commands, prefer MCP tools to avoid terminal locking and multiple terminal spawning:
+  - Use `mcp_desktop_commander_start_process` for running commands that may take time (builds, tests, servers)
+  - Use `mcp_desktop_commander_interact_with_process` for interactive sessions (REPLs, debuggers)
+  - Use `mcp_desktop_commander_read_process_output` to monitor long-running processes
+  - Use `mcp_jetbrains_execute_terminal_command` when working within JetBrains IDE context
+  - These tools ensure terminal interactions stay auditable, repeatable, and don't block the agent workflow
 - Start a sample service locally via `./gradlew :orders-service:bootRun` after loading `.env` (copy from `.env.example` and use direnv or `source scripts/export-env.sh`).
 - Use `./gradlew flywayMigrate` to apply schema migrations before running services.
 - Lint/format with `./gradlew spotlessApply` (add plugin in the build once codebase is scaffolded).
@@ -137,10 +142,10 @@ docker manifest inspect <image>:<tag>
   yamllint .                                 # Check all YAML files in project
   yamllint infra/ .github/                   # Check specific directories
 
-  # After editing Markdown files (.md)
-  npx markdownlint <filename>.md             # Check single file
-  npx markdownlint "**/*.md"                 # Check all markdown files
-  npx markdownlint docs/**/*.md              # Check specific directories
+  # After editing Markdown files (.md) - using markdownlint-cli2
+  npx markdownlint-cli2 <filename>.md        # Check single file
+  npx markdownlint-cli2 "**/*.md"            # Check all markdown files
+  npx markdownlint-cli2 docs/**/*.md         # Check specific directories
 
   # After editing GitHub Actions workflows
   actionlint .github/workflows/*.yml         # Check workflow files
@@ -667,7 +672,7 @@ The project implements **Temporal workflow orchestration** for complex, multi-do
 
 The Temporal implementation follows a **shared module approach** with the following structure:
 
-```
+```text
 common-temporal/
 ├── activity/           # Activity interfaces and result types
 │   ├── PaymentActivity.kt
@@ -685,30 +690,35 @@ common-temporal/
 
 ### Key Features
 
-**1. Saga Pattern with Parallel Compensation**
+#### 1. Saga Pattern with Parallel Compensation
+
 - Distributed transaction coordination across services (Payment → Inventory → Notification)
 - Parallel compensation execution for faster recovery
 - Comprehensive error handling and logging
 - Activity-specific timeout and retry configurations
 
-**2. Type-Safe Activity Interfaces**
+#### 2. Type-Safe Activity Interfaces
+
 - Structured result types (`PaymentResult`, `InventoryReservationResult`, `NotificationResult`)
 - Proper error propagation with detailed failure reasons
 - Metrics integration with Micrometer for all activities
 
-**3. Service Activity Workers**
+#### 3. Service Activity Workers
+
 - Each microservice runs its own activity worker on dedicated task queues:
   - `payments-service`: PaymentActivityImpl, RefundPaymentActivityImpl
   - `inventory-service`: InventoryActivityImpl
   - `notification-service`: NotificationActivityImpl
 - Workers integrate with existing domain logic and service patterns
 
-**4. Comprehensive Testing**
+#### 4. Comprehensive Testing
+
 - Activity tests using Temporal TestActivityEnvironment
 - Workflow tests covering success, failure, and compensation scenarios
 - Integration tests with real database and Kafka interactions
 
-**5. Observability & Monitoring**
+#### 5. Observability & Monitoring
+
 - Temporal metrics collection with Prometheus
 - Distributed tracing integration via OpenTelemetry
 - Health indicators for Temporal connectivity
@@ -750,41 +760,48 @@ class OrderFulfillmentWorkflowImpl : OrderFulfillmentWorkflow {
 ### Configuration & Deployment
 
 **Task Queue Configuration:**
+
 - `PAYMENTS_TASK_QUEUE`: Payment processing activities
 - `INVENTORY_TASK_QUEUE`: Inventory management activities
 - `NOTIFICATIONS_TASK_QUEUE`: Notification delivery activities
 
 **Worker Setup:**
+
 - Each service configures `TemporalWorkerConfig` with proper activity registration
 - Workers connect to Temporal server and poll for activities on their assigned queues
 - Health checks monitor worker connectivity and Temporal server availability
 
 **Integration with Orders Service:**
+
 - `OrderService` triggers workflows via `WorkflowClient` integration
 - Metrics recorded for workflow starts and completions
 - `WorkflowController` provides REST endpoints for workflow management
 
-### Best Practices
+### Best Practices (Temporal)
 
 **1. Activity Design:**
+
 - Activities should be idempotent and handle retries gracefully
 - Include comprehensive logging for operational visibility
 - Use structured result types instead of primitive returns
 - Integrate with existing service domain logic
 
 **2. Error Handling:**
+
 - Define specific exception types for different failure scenarios
 - Provide meaningful error messages for debugging
 - Configure appropriate retry policies per activity type
 - Ensure compensation actions are also idempotent
 
 **3. Monitoring:**
+
 - Track workflow execution duration and success rates
 - Monitor activity retry counts and failure patterns
 - Set up alerts for workflow timeouts and compensation failures
 - Log correlation IDs for end-to-end tracing
 
 **4. Testing:**
+
 - Write unit tests for activities using TestActivityEnvironment
 - Test workflow failure scenarios and compensation paths
 - Include integration tests with real Temporal server
@@ -854,7 +871,7 @@ This approach provides a **gradual migration path** from event choreography to w
 
 ## Transactional Outbox Pattern Implementation
 
-### Overview
+### Overview (Outbox Pattern)
 
 The project implements the transactional outbox pattern using both Debezium as the primary mechanism and a polling relay as a fallback. This approach ensures that domain data changes and event publications happen atomically within the same database transaction, eliminating the risk of inconsistency between the database and the message broker.
 
@@ -1251,7 +1268,7 @@ class KafkaProducerConfig {
 }
 ```
 
-### Key Features
+### Key Features (Outbox Pattern)
 
 1. **Exactly-Once Semantics**: Achieved through Kafka transactions and Debezium's Outbox Event Router
 2. **High Availability**: The polling relay serves as a fallback when Debezium is unavailable

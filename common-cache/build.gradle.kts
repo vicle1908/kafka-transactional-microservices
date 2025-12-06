@@ -8,4 +8,7 @@ dependencies {
     implementation(libs.spring.boot.starter.data.redis)
     implementation(libs.spring.boot.starter.json)
     implementation(libs.kotlin.reflect)
+    // Spring Data Redis's GenericJackson2JsonRedisSerializer requires Jackson 2.x
+    implementation(libs.jackson2.databind)
+    implementation(libs.jackson2.datatype.jsr310)
 }

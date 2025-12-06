@@ -7,4 +7,6 @@ import java.util.UUID
 @Repository
 interface InventoryReservationRepository : JpaRepository<InventoryReservationEntity, UUID> {
     fun findAllByOrderId(orderId: UUID): List<InventoryReservationEntity>
+
+    fun findAllBySku(sku: String): List<InventoryReservationEntity>
 }

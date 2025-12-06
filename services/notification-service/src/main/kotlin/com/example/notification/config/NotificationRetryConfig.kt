@@ -6,6 +6,12 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.retry.support.RetryTemplate
 
+/**
+ * Retry configuration for notification dispatch.
+ * Uses Spring Retry library for backward compatibility.
+ * Note: Spring Boot 4.0 recommends migrating to Spring Framework 7's built-in retry,
+ * but Spring Retry is still supported for existing applications.
+ */
 @Configuration
 class NotificationRetryConfig {
     @Bean

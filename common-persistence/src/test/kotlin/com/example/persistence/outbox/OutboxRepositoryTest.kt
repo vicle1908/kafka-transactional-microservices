@@ -3,9 +3,9 @@ package com.example.persistence.outbox
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
@@ -59,8 +59,7 @@ class OutboxRepositoryTest {
             registry.add("spring.datasource.username", postgres::getUsername)
             registry.add("spring.datasource.password", postgres::getPassword)
             registry.add("spring.datasource.driver-class-name") { "org.postgresql.Driver" }
-            registry.add("spring.jpa.hibernate.ddl-auto") { "none" }
-            registry.add("spring.flyway.clean-disabled") { false }
+            registry.add("spring.jpa.hibernate.ddl-auto") { "create-drop" }
         }
     }
 }

@@ -1,0 +1,7 @@
+# Optimized Dockerfile for local development - uses pre-built JAR
+FROM eclipse-temurin:25-jre-jammy
+WORKDIR /app
+COPY build/libs/*-SNAPSHOT.jar app.jar
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+EXPOSE 8080 9091
+ENTRYPOINT ["java", "-jar", "app.jar"]

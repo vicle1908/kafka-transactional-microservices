@@ -1,37 +1,50 @@
-# Multi-stage build: use Gradle to build the application
-FROM gradle:9.1.0-jdk25 as builder
+FROM eclipse-temurin:25-jdk-jammy AS builder
+WORKDIR /app
+ENV GRADLE_OPTS="-Dorg.gradle.internal.http.socketTimeout=120000 -Dorg.gradle.internal.http.connectionTimeout=120000"
+COPY gradle/ gradle/
+COPY gradlew ./
+COPY gradle.properties ./
+COPY build.gradle.kts ./
+COPY settings.gradle.kts ./
+COPY gradle/libs.versions.toml gradle/
+COPY common-cache/build.gradle.kts common-cache/
+COPY common-cache/src common-cache/src
+COPY common-events/build.gradle.kts common-events/
+COPY common-events/src common-events/src
+COPY common-events-avro/build.gradle.kts common-events-avro/
+COPY common-events-avro/src common-events-avro/src
+COPY common-kafka/build.gradle.kts common-kafka/
+COPY common-kafka/src common-kafka/src
+COPY common-observability/build.gradle.kts common-observability/
+COPY common-observability/src common-observability/src
+COPY common-outbox-relay/build.gradle.kts common-outbox-relay/
+COPY common-outbox-relay/src common-outbox-relay/src
+COPY common-persistence/build.gradle.kts common-persistence/
+COPY common-persistence/src common-persistence/src
+COPY common-proto/build.gradle.kts common-proto/
+COPY common-sagas/build.gradle.kts common-sagas/
+COPY common-sagas/src common-sagas/src
+COPY common-temporal/build.gradle.kts common-temporal/
+COPY common-temporal/src common-temporal/src
+COPY common-proto/src common-proto/src
+RUN mkdir -p services/orders-service services/payments-service services/inventory-service services/notification-service
+COPY services/orders-service/build.gradle.kts services/orders-service/
+COPY services/payments-service/build.gradle.kts services/payments-service/
+COPY services/inventory-service/build.gradle.kts services/inventory-service/
+COPY services/notification-service/build.gradle.kts services/notification-service/
+COPY services/notification-service/src services/notification-service/src
+RUN ./gradlew :services:notification-service:bootJar --no-daemon
+
+FROM eclipse-temurin:25-jre-jammy
 WORKDIR /app
 
-# Copy only the necessary files to build the notification-service
-COPY build.gradle.kts settings.gradle.kts gradlew gradlew.bat gradle.properties /app/
-COPY gradle /app/gradle
-COPY common-events/src /app/common-events/src
-COPY common-kafka/src /app/common-kafka/src
-COPY common-persistence/src /app/common-persistence/src
-COPY common-sagas/src /app/common-sagas/src
-COPY services/notification-service/src /app/services/notification-service/src
-COPY services/notification-service/build.gradle.kts /app/services/notification-service/build.gradle.kts
+# Create non-root user for security (least-privilege principle)
+RUN groupadd --gid 1000 appgroup && \
+    useradd --uid 1000 --gid appgroup --shell /bin/false appuser && \
+    chown -R appuser:appgroup /app
 
-RUN gradle :services:notification-service:bootJar --no-daemon
+COPY --from=builder --chown=appuser:appgroup /app/services/notification-service/build/libs/*.jar app.jar
 
-# Runtime stage: use OpenJDK 25 for running the application
-FROM openjdk:25-jdk-slim
-LABEL org.opencontainers.image.source="https://github.com/${{ GITHUB_REPOSITORY }}"
-LABEL org.opencontainers.image.description="Notification service for Kafka Transactional Microservices"
-LABEL org.opencontainers.image.licenses="Apache-2.0"
-
-WORKDIR /app
-
-# Copy the built JAR file from the builder stage
-COPY --from=builder /app/services/notification-service/build/libs/notification-service-*.jar app.jar
-
-# Create a non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser \
-    && chown -R appuser:appuser /app
 USER appuser
-
-# Expose the default Spring Boot port
 EXPOSE 8080
-
-# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -2,7 +2,7 @@ package com.example.payments
 
 import com.example.payments.application.port.out.RefundGateway
 import com.example.payments.support.StubRefundGateway
-import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy
+import org.springframework.boot.flyway.autoconfigure.FlywayMigrationStrategy
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
@@ -17,6 +17,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Import(
     PaymentServiceIntegrationTestSupport.FlywayTestConfig::class,
     PaymentServiceIntegrationTestSupport.RefundGatewayTestConfig::class,
+    PaymentServiceIntegrationTestSupport.WebClientTestConfig::class,
 )
 abstract class PaymentServiceIntegrationTestSupport {
     companion object {
@@ -55,5 +56,14 @@ abstract class PaymentServiceIntegrationTestSupport {
         @Bean
         @Primary
         fun stubRefundGateway(): RefundGateway = StubRefundGateway()
+    }
+
+    @TestConfiguration
+    class WebClientTestConfig {
+        @Bean
+        @Primary
+        fun webClientBuilder(): org.springframework.web.reactive.function.client.WebClient.Builder =
+            org.springframework.web.reactive.function.client.WebClient
+                .builder()
     }
 }

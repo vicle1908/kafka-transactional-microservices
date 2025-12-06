@@ -1,0 +1,37 @@
+# Build artifacts
+build/
+.gradle/
+*.iml
+.idea/
+
+# Test files
+**/test/
+**/tests/
+**/*Test.kt
+**/*Tests.kt
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporal testing support (not needed for service builds)
+temporal-testing-support/
+
+# Temporary files
+*.log
+*.tmp

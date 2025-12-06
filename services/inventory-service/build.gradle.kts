@@ -12,7 +12,7 @@ dependencies {
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.kafka)
-    implementation(libs.flyway.core)
+    implementation(libs.spring.boot.starter.flyway)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.postgresql)
     implementation(libs.kotlin.reflect)
@@ -44,7 +44,10 @@ dependencies {
     testImplementation(project(":common-proto"))
     testImplementation(libs.grpc.netty)
     testImplementation(libs.grpc.testing)
-    testImplementation(libs.temporal.testing)
+    testImplementation(libs.grpc.inprocess)
+    rootProject.findProject("temporal-testing-support")?.let { temporalTesting ->
+        testImplementation(testFixtures(temporalTesting))
+    }
     testRuntimeOnly(libs.grpc.netty.shaded)
 
     // Development dependencies

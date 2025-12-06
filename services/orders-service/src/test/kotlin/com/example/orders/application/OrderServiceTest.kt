@@ -45,7 +45,11 @@ class OrderServiceTest : OrdersServiceIntegrationTestSupport() {
         val command =
             CreateOrderCommand(
                 customerId = "customer-123",
-                orderItems = listOf("item-1", "item-2"),
+                orderItems =
+                    listOf(
+                        OrderItemCommand(productId = "item-1", quantity = 1, unitPrice = java.math.BigDecimal("10.00")),
+                        OrderItemCommand(productId = "item-2", quantity = 2, unitPrice = java.math.BigDecimal("20.00")),
+                    ),
             )
 
         val orderId = orderService.handle(command)
