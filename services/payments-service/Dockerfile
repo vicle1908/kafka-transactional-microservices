@@ -37,6 +37,14 @@ RUN ./gradlew :services:payments-service:bootJar --no-daemon
 
 FROM eclipse-temurin:25-jre-jammy
 WORKDIR /app
-COPY --from=builder /app/services/payments-service/build/libs/*.jar app.jar
+
+# Create non-root user for security (least-privilege principle)
+RUN groupadd --gid 1000 appgroup && \
+    useradd --uid 1000 --gid appgroup --shell /bin/false appuser && \
+    chown -R appuser:appgroup /app
+
+COPY --from=builder --chown=appuser:appgroup /app/services/payments-service/build/libs/*.jar app.jar
+
+USER appuser
 EXPOSE 8082
 ENTRYPOINT ["java", "-jar", "app.jar"]
